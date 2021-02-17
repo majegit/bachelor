@@ -1,2 +1,6 @@
 .idea/
 cmake-build-debug/
+
+FlexBison/lex.yy.c
+
+FlexBison/a.exe
