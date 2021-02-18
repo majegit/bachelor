@@ -1,48 +1,72 @@
 /*** Definitions ***/
 %{
-
+    extern int lineno;
 %}
 
 
 /*** Rule section ***/
 %option noyywrap
+
 %%
-print               {printf("PRINT");}
-function            {printf("FUNCTION");}
-return              {printf("RETURN");}
-boolean             {printf("BOOLEAN");}
-int                 {printf("INT");}
-double              {printf("DOUBLE");}
-char                {printf("CHAR");}
-true|false          {printf("BOOLEAN: %s", yytext);}
-[0-9]+              {printf("INT: %s", yytext);}
-[0-9]+\.[0-9]+      {printf("DOUBLE: %s", yytext);}
-[a-zA-Z]            {printf("CHAR: %s", yytext);}
-\;                  {printf(";");}
-\(                  {printf("(");}
-\)                  {printf(")");}
-\{                  {printf("{");}
-\}                  {printf("}");}
-[a-zA-Z]+           {printf("IDENTIFIER: %s", yytext);}
-\+                  {printf("ADDS");}
-\-                  {printf("SUBTRACTS");}
-\*                  {printf("MULTIPLIES");}
-\/                  {printf("DIVISION");}
-==                  {printf("EQUALS");}
-=                   {printf("ASSIGN");}
-&&                  {printf("AND");}
-\|\|                {printf("OR");}
-\<                  {printf("<");}
-\>                  {printf(">");}
-\<=                 {printf("<=");}
-\>=                 {printf(">=");}
-\n                  {printf("\n");}
-[ \t]               {printf(" ");}
-.     {printf("%s Unknown\n", yytext);}
+true|false          {
+                        yylval.boolconst = yytext == "true";
+                        return tBOOLCONST
+                    }
+
+[0-9]+              {
+                        yylval.intconst = atoi(yytext);
+                        return tINTCONST;
+                    }
+
+[0-9]+\.[0-9]+      {
+                        yylval.doubleconst = strtod(yytext);
+                        return tDOUBLECONST;
+                    }
+
+[a-zA-Z]            {
+                        yylval.charconst = yytext;
+                        return tCHARCONST;
+                    }
+
+[a-zA-Z]+           {
+                        yylval.stringconst = (char *)malloc(strlen(yytext)+1);
+                        return tIDENTIFIER;
+                    }
+print               return "PRINT";
+function            return "FUNCTION";
+return              return "RETURN";
+boolean             return "BOOLEAN";
+int                 return "INT";
+double              return "DOUBLE";
+char                return "CHAR";
+\;                  return ';';
+\(                  return '(';
+\)                  return ')';
+\{                  return '{';
+\}                  return '}';
+\+                  return '+';
+\-                  return '-';
+\*                  return '*';
+\/                  return '/';
+==                  return "==";
+=                   return '=';
+&&                  return "&&";
+\|\|                return '||';
+\<                  return '<';
+\>                  return '>';
+\<=                 return '<';
+\>=                 return '>';
+\n                  lineno++;
+[ \t]               ;
+.                   {
+                        yylval.unknown = yytext;
+                        return tUNKNOWN;
+                    }
 %%
 
 /*** Code section ***/
 int main(int argc, char **argv){
+    lineno = 1;
     yylex();
 
     return 0;

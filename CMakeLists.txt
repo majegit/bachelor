@@ -3,4 +3,4 @@ project(chboecaspnBachelor C)
 
 set(CMAKE_C_STANDARD 99)
 
-add_executable(chboecaspnBachelor main.c)
+add_executable(chboecaspnBachelor main.c FlexBison/Tree.c)
