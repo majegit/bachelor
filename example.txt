@@ -6,11 +6,17 @@ function main(){
     while(i > 10 ){
         name = name * i;
         if(name > 15 ){
-            somethingElse(name)
+            i = something(name);
+        } else {
+            i = somethingElse(name);
         }
         i++;
     }
-    print(name );
+    print(i);
+}
+
+function something(double asd ){
+    return asd*2;
 }
 
 function somethingElse(double asd ){

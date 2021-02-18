@@ -8,6 +8,8 @@
 %option noyywrap
 
 %%
+if                  {return "IF";}
+else                {return "ELSE";}
 true|false          {
                         yylval.boolconst = yytext == "true";
                         return tBOOLCONST
@@ -48,14 +50,15 @@ char                return "CHAR";
 \-                  return '-';
 \*                  return '*';
 \/                  return '/';
-==                  return "==";
-=                   return '=';
-&&                  return "&&";
-\|\|                return '||';
-\<                  return '<';
-\>                  return '>';
-\<=                 return '<';
-\>=                 return '>';
+=                   return "ASSIGN";
+==                  return "EQ";
+!=                  return "NEQ";
+&&                  return "AND";
+\|\|                return "OR";
+\<                  return "L";
+\>                  return "G";
+\<=|=\<             return "LEQ";
+\>=|=\>             return "GEQ";
 \n                  lineno++;
 [ \t]               ;
 .                   {
