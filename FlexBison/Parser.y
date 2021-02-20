@@ -6,21 +6,22 @@ extern char *yytext;
 
 %union {
    int intconst;
-   char *stringconst;
+   char* stringconst;
    int boolconst;
    double doubleconst;
    char charconst;
    char unknown;
+   PROGRAM* program;
 }
 
 %token <stringconst> tIDENTIFIER
-%token <intconst> tINTCONST
-%token <doubleconst> tDOUBLECONST
-%token <boolconst> tBOOLCONST
-%token <charconst> tCHARCONST
+%token <intconst> tINT
+%token <doubleconst> tDOUBLE
+%token <boolconst> tBOOLEAN
+%token <charconst> tCHAR
 %token <unknown> tUNKNOWN
 
-%start exp
+%start program
 
 %left '+' '-'
 %left '*' '/'
@@ -28,28 +29,38 @@ extern char *yytext;
 %left "OR"
 %left "AND"
 
+%type <stringconst> '-' '+'
+%type <program> program
 %type <exp> exp
 %type <stmt> stmt
 %type <stmtcompound> stmtcompound
 %type <stmtnode> stmtnode
-%type <variable> variable
+%type <aparameter> aparameter
+%type <aparameternode> aparameternode
+%type <fparameter> fparameter
+%type <fparameternode> fparameternode
+%type <function> function
+%type <functionnode> functionnode
+%type <type> type
 
 %%
-end : mainfunction
+program : "MAIN" '(' ')' stmtcompound functionnode
+          {$$ = makePROGRAM($4,$5);
+          printf("Great Success!");}
 ;
 
 exp : tIDENTIFIER
       {$$ = makeEXPid($1);}
-    | tINTCONST
+    | type tIDENTIFIER
+      {$$ = makeEXPvar($1,$2);}
+    | tINT
       {$$ = makeEXPint($1);}
-    | tDOUBLECONST
+    | tDOUBLE
       {$$ = makeEXPint($1);}
-    | tBOOLCONST
+    | tBOOLEAN
       {$$ = makeEXPint($1);}
-    | tCHARCONST
+    | tCHAR
       {$$ = makeEXPint($1);}
-    | variable
-      {$$ = makeEXPvar($1);}
     | '(' exp ')'
       {$$ = $2;}
     | exp '-' exp
@@ -76,6 +87,10 @@ exp : tIDENTIFIER
       {$$ = makeEXPbinop($1,$2,$3);}
     | exp "OR" exp
       {$$ = makeEXPbinop($1,$2,$3);}
+    | tIDENTIFIER '(' aparameternode ')'
+      {$$ = makeEXPfun($1,$3);}
+    | tIDENTIFIER '(' ')'
+      {$$ = makeEXPfun($1,NULL);}
     | tUNKNOWN
       {printf("unknown character %s at line: %d", tUNKNOWN.yylval, lineno);
        exit(1);}
@@ -102,22 +117,6 @@ stmt : "WHILE" exp stmtcompound
      | "PRINT" exp
        {$$ = makeSTMTprint($2);}
 ;
- 3+3; 2/4;
- modifyObject(o)
-
- modifyObject(object o) {
- 	o.val
- 	return;
- }
-
- exp;
-int a;
-variable;
-exp;
-
-variable : type tIDENTIFIER
-	   {$$ = makeVARIABLE($1,$2);}
-;
 
 stmtcompound : '{' stmtnode '}'
 	       {$$ = $2;}
@@ -129,20 +128,45 @@ stmtnode : stmt
 	   {$$ = makeSTMTNODE($1,$2);}
 ;
 
-declaration : variable ';'
-	    | type tIDENTIFIER '=' exp
-	      { ;}
+aparameter : tIDENTIFIER
+	    {$$ = makeAPARAMETERid($1);}
+	  | tCHAR
+	    {$$ = makeAPARAMETERchar($1);}
+	  | tDOUBLE
+	    {$$ = makeAPARAMETERdouble($1);}
+	  | tBOOLEAN
+	    {$$ = makeAPARAMETERbool($1);}
+	  | tINT
+	    {$$ = makeAPARAMETERint($1);}
+;
 
-function : "FUNCTION" '(' ... ')' stmtcompound
-         | "FUNCTION" '(' ... ')' stmt
+aparameternode : aparameter
+		{$$ = makeAPARAMETERNODE($1,NULL);}
+	      | aparameter aparameternode
+	      	{$$ = makeAPARAMETERNODE($1,$2);}
+;
 
-parameterlist : type tIDENTIFIER
-              |
+fparameter : type tIDENTIFIER
+	     {$$ = makeFPARAMETER($1,$2);}
+;
 
-parameter : type tIDENTIFIER
-            {$$ = $}
+fparameternode : fparameter
+                 {$$ = makeFPARAMETERNODE($1,NULL);}
+	       | fparameter fparameternode
+	         {$$ = makeFPARAMETERNODE($1,$2);}
+;
 
+function : type "FUNCTION" tIDENTIFIER '(' fparameternode ')' stmtcompound
+	   {$$ = makeFUNCTION($1,$3,$5,$7);}
+	 | type "FUNCTION" tIDENTIFIER '(' ')' stmtcompound
+	   {$$ = makeFUNCTION($1,$3,NULL,$6);}
+;
 
+functionnode : function
+	       {$$ = makeFUNCTIONNODE($1,NULL);}
+	     | function functionnode
+	       {$$ = makeFUNCTIONNODE($1,$2);}
+;
 
 type : "BOOLEAN"
        {$$ = $1;}
@@ -152,4 +176,6 @@ type : "BOOLEAN"
        {$$ = $1;}
      | "INT"
        {$$ = $1;}
+;
+
 %%

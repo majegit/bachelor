@@ -14,13 +14,13 @@ EXP* makeEXPid(char* id)
     return e;
 }
 
-EXP* makeEXPvar(VARIABLE* var)
+EXP* makeEXPvar(char* type, char* id)
 {
     EXP* e;
     e = (EXP* )malloc(sizeof(EXP));
-    e->lineno = lineno;
     e->kind = varK;
-    e->val.varE = var;
+    e->val.varE.type = type;
+    e->val.varE.id = id;
     return e;
 }
 
@@ -75,6 +75,17 @@ EXP* makeEXPbinop(EXP* left, char* operator, EXP* right)
     e->val.binopE.left = left;
     e->val.binopE.right = right;
     e->val.binopE.operator = operator;
+    return e;
+}
+
+EXP* makeEXPfun(char* id, APARAMETERNODE* aparameternode)
+{
+    EXP* e;
+    e = (EXP* )malloc(sizeof(EXP));
+    e->lineno = lineno;
+    e->kind = funK;
+    e->val.funE.id = id;
+    e->val.funE.aparameternode = aparameternode;
     return e;
 }
 
@@ -141,13 +152,113 @@ STMTNODE* makeSTMTNODE(STMT* stmt, STMTNODE* next)
     return sn;
 }
 
-VARIABLE* makeVARIABLE(char* type, char* id)
+APARAMETER* makeAPARAMETERid(char* id)
 {
-    VARIABLE* v;
-    v = (VARIABLE*)malloc(sizeof(VARIABLE));
-    v->lineno = lineno;
-    v->type = type;
-    v->id = id;
-    return v;
+    APARAMETER* p;
+    p = (APARAMETER*)malloc(sizeof(APARAMETER));
+    p->kind = idK;
+    p->val.idP = id;
+    return p;
 }
+
+APARAMETER* makeAPARAMETERint(int intval)
+{
+    APARAMETER* p;
+    p = (APARAMETER*)malloc(sizeof(APARAMETER));
+    p->kind = intK;
+    p->val.intP = intval;
+    return p;
+}
+
+APARAMETER* makeAPARAMETERdouble(double doubleval)
+{
+    APARAMETER* p;
+    p = (APARAMETER*)malloc(sizeof(APARAMETER));
+    p->kind = doubleK;
+    p->val.doubleP = doubleval;
+    return p;
+}
+
+APARAMETER* makeAPARAMETERbool(int boolval)
+{
+    APARAMETER* p;
+    p = (APARAMETER*)malloc(sizeof(APARAMETER));
+    p->kind = boolK;
+    p->val.idP = boolval;
+    return p;
+}
+
+APARAMETER* makeAPARAMETERchar(char charval)
+{
+    APARAMETER* p;
+    p = (APARAMETER*)malloc(sizeof(APARAMETER));
+    p->kind = charK;
+    p->val.idP = charval;
+    return p;
+}
+
+APARAMETERNODE* makeAPARAMETERNODE(APARAMETER* p, APARAMETERNODE* next)
+{
+    APARAMETERNODE* an;
+    an = (APARAMETERNODE*)malloc(sizeof(APARAMETERNODE));
+    an->aparameter = p;
+    an->next = next;
+    return an;
+}
+
+
+FPARAMETER* makeFPARAMETER(char* type, char* id)
+{
+    FPARAMETER* p;
+    p = (FPARAMETER*)malloc(sizeof(FPARAMETER));
+    p->id = id;
+    if(type == "BOOLEAN")
+        p->kind = boolK;
+    else if(type == "DOUBLE")
+        p->kind = doubleK;
+    else if(type == "CHAR")
+        p->kind = charK;
+    else
+        p->kind = intK;
+    return p;
+}
+
+FPARAMETERNODE* makeFPARAMETERNODE(FPARAMETER* p, FPARAMETERNODE* next)
+{
+    FPARAMETERNODE* fn;
+    fn = (FPARAMETERNODE*)malloc(sizeof(FPARAMETERNODE));
+    fn->fparameter = p;
+    fn->next = next;
+    return fn;
+}
+
+FUNCTION* makeFUNCTION(char* returnType, char* id, FPARAMETERNODE* args, STMTNODE* body)
+{
+    FUNCTION* fun;
+    fun = (FUNCTION*)malloc(sizeof(FUNCTION));
+    fun->returnType = returnType;
+    fun->id = id;
+    fun->args = args;
+    fun->body = body;
+    return fun;
+}
+
+FUNCTIONNODE* makeFUNCTIONNODE(FUNCTION* fun, FUNCTIONNODE* next)
+{
+    FUNCTIONNODE* fn;
+    fn = (FUNCTIONNODE*)malloc(sizeof(FUNCTIONNODE));
+    fn->fun = fun;
+    fn->next = next;
+    return fn;
+}
+
+PROGRAM* makePROGRAM(STMTNODE* body, FUNCTIONNODE* fn)
+{
+    PROGRAM* prog;
+    prog = (PROGRAM*)malloc(sizeof(PROGRAM));
+    prog->body = body;
+    prog->fn = fn;
+    return prog;
+}
+
 

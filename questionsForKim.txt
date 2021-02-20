@@ -1,0 +1,2 @@
+1. Vi konstruerer en var ud fra TYPE og identifier. Dette laves om til en exp. Er det en god ide?
+2. Har vi abstraheret parameter- og variabelkonstruktioner korrekt?

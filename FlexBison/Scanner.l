@@ -16,26 +16,27 @@ int                 return "INT";
 double              return "DOUBLE";
 char                return "CHAR";
 while               return "WHILE"
+main                return "MAIN"
 if                  {return "IF";}
 else                {return "ELSE";}
 true|false          {
                         yylval.boolconst = yytext == "true";
-                        return tBOOLCONST
+                        return tBOOLEAN
                     }
 
 [0-9]+              {
                         yylval.intconst = atoi(yytext);
-                        return tINTCONST;
+                        return tINT;
                     }
 
 [0-9]+\.[0-9]+      {
                         yylval.doubleconst = strtod(yytext);
-                        return tDOUBLECONST;
+                        return tDOUBLE;
                     }
 
 [a-zA-Z]            {
                         yylval.charconst = yytext;
-                        return tCHARCONST;
+                        return tCHAR;
                     }
 
 [a-zA-Z]+           {
