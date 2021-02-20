@@ -14,6 +14,16 @@ EXP* makeEXPid(char* id)
     return e;
 }
 
+EXP* makeEXPvar(VARIABLE* var)
+{
+    EXP* e;
+    e = (EXP* )malloc(sizeof(EXP));
+    e->lineno = lineno;
+    e->kind = varK;
+    e->val.varE = var;
+    return e;
+}
+
 EXP* makeEXPint(int intval)
 {
     EXP* e;
@@ -79,7 +89,7 @@ STMT* makeSTMTwhile(EXP* guard, STMTNODE* body)
     return s;
 }
 
-STMT* makeSTMTassign(EXP* id, STMT* val)
+STMT* makeSTMTassign(EXP* id, EXP* val)
 {
     STMT* s;
     s = (STMT*)malloc(sizeof(STMT));
@@ -129,5 +139,15 @@ STMTNODE* makeSTMTNODE(STMT* stmt, STMTNODE* next)
     sn->stmt = stmt;
     sn->next = next;
     return sn;
+}
+
+VARIABLE* makeVARIABLE(char* type, char* id)
+{
+    VARIABLE* v;
+    v = (VARIABLE*)malloc(sizeof(VARIABLE));
+    v->lineno = lineno;
+    v->type = type;
+    v->id = id;
+    return v;
 }
 

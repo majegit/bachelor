@@ -3,9 +3,10 @@
 
 typedef struct EXP {
     int lineno;
-    enum {idK,intK,doubleK,charK,boolK,binopK} kind;
+    enum {idK,intK,doubleK,charK,boolK,binopK,varK} kind;
     union {
         char* idE;
+        struct VARIABLE* varE;
         int intE, boolE;
         double doubleE;
         char charE;
@@ -14,6 +15,8 @@ typedef struct EXP {
 } EXP;
 
 EXP* makeEXPid(char* id);
+
+EXP* makeEXPvar(VARIABLE* var);
 
 EXP* makeEXPint(int intval);
 
@@ -24,6 +27,14 @@ EXP* makeEXPdouble(double doubleval);
 EXP* makeEXPchar(char charval);
 
 EXP* makeEXPbinop(EXP* left, char* operator, EXP* right);
+
+typedef struct VARIABLE {
+    int lineno;
+    char* type;
+    char* id;
+} VARIABLE;
+
+VARIABLE* makeVARIABLE(char* id, char* type);
 
 typedef struct STMT {
     int lineno;
@@ -44,7 +55,7 @@ typedef struct STMTNODE {
 
 STMT* makeSTMTwhile(EXP* guard, STMTNODE* body);
 
-STMT* makeSTMTassign(EXP* id, STMT* val);
+STMT* makeSTMTassign(EXP* id, EXP* val);
 
 STMT* makeSTMTifElse(EXP* cond, STMTNODE* ifbody, STMTNODE* elsebody);
 

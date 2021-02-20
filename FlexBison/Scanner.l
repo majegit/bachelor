@@ -8,6 +8,14 @@
 %option noyywrap
 
 %%
+print               return "PRINT";
+function            return "FUNCTION";
+return              return "RETURN";
+boolean             return "BOOLEAN";
+int                 return "INT";
+double              return "DOUBLE";
+char                return "CHAR";
+while               return "WHILE"
 if                  {return "IF";}
 else                {return "ELSE";}
 true|false          {
@@ -34,13 +42,7 @@ true|false          {
                         yylval.stringconst = (char *)malloc(strlen(yytext)+1);
                         return tIDENTIFIER;
                     }
-print               return "PRINT";
-function            return "FUNCTION";
-return              return "RETURN";
-boolean             return "BOOLEAN";
-int                 return "INT";
-double              return "DOUBLE";
-char                return "CHAR";
+\,                  return ',';
 \;                  return ';';
 \(                  return '(';
 \)                  return ')';
