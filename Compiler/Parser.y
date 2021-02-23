@@ -1,8 +1,11 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
+#include "Tree.h"
 extern char *yytext;
-struct PROGRAM;
+void yyerror (char const *s) {
+   printf ("yyerror triggered by: %s\n", s);
+}
 %}
 
 %union {
@@ -12,6 +15,15 @@ struct PROGRAM;
    double doubleconst;
    char charconst;
    char unknown;
+   EXP* exp;
+   FUNCTION* function;
+   FUNCTIONNODE* functionnode;
+   APARAMETER* aparameter;
+   APARAMETERNODE* aparameternode;
+   FPARAMETER* fparameter;
+   FPARAMETERNODE* fparameternode;
+   STMT* stmt;
+   STMTNODE* stmtnode;
    PROGRAM* program;
 }
 
@@ -30,19 +42,17 @@ struct PROGRAM;
 %left "OR"
 %left "AND"
 
-%type <stringconst> '-' '+' '*' '/' "L" "G" "LEQ" "GEQ" "EQ" "NEQ" "AND" "OR" "BOOLEAN" "INT" "CHAR" "DOUBLE"
+%type <stringconst> '-' '+' '*' '/' "L" "G" "LEQ" "GEQ" "EQ" "NEQ" "AND" "OR" "BOOLEAN" "INT" "CHAR" "DOUBLE" type
 %type <program> program
 %type <exp> exp
 %type <stmt> stmt
-%type <stmtcompound> stmtcompound
-%type <stmtnode> stmtnode
+%type <stmtnode> stmtcompound stmtnode
 %type <aparameter> aparameter
 %type <aparameternode> aparameternode
 %type <fparameter> fparameter
 %type <fparameternode> fparameternode
 %type <function> function
 %type <functionnode> functionnode
-%type <stringconst> type
 
 %%
 program : "MAIN" '(' ')' stmtcompound functionnode
@@ -94,7 +104,7 @@ exp : tIDENTIFIER
     | tIDENTIFIER '(' ')'
       {$$ = makeEXPfun($1,NULL);}
     | tUNKNOWN
-      {printf("unknown character %s at line: %d", tUNKNOWN.yylval, lineno);
+      {printf("unknown character");
        exit(1);}
 ;
 
@@ -111,7 +121,7 @@ stmt : "WHILE" '(' exp ')' stmtcompound
      | type tIDENTIFIER ';'
        {$$ = makeSTMTdecl($1,$2,NULL);}
      | type tIDENTIFIER '=' exp ';'
-       {$$ = makeSTMTdecl($1,$2,exp);}
+       {$$ = makeSTMTdecl($1,$2,$4);}
      | tIDENTIFIER '=' exp ';'
        {$$ = makeSTMTassign($1,$3);}
 ;

@@ -71,10 +71,13 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "Tree.h"
 extern char *yytext;
-struct PROGRAM;
+void yyerror (char const *s) {
+   printf ("yyerror triggered by: %s at lineno: %d\n", s, lineno);
+}
 
-#line 78 "Parser.tab.c"
+#line 81 "Parser.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -97,7 +100,71 @@ struct PROGRAM;
 #  endif
 # endif
 
-#include "Parser.tab.h"
+
+/* Debug traces.  */
+#ifndef YYDEBUG
+# define YYDEBUG 0
+#endif
+#if YYDEBUG
+extern int yydebug;
+#endif
+
+/* Token kinds.  */
+#ifndef YYTOKENTYPE
+# define YYTOKENTYPE
+  enum yytokentype
+  {
+    YYEMPTY = -2,
+    YYEOF = 0,                     /* "end of file"  */
+    YYerror = 256,                 /* error  */
+    YYUNDEF = 257,                 /* "invalid token"  */
+    tIDENTIFIER = 258,             /* tIDENTIFIER  */
+    tINT = 259,                    /* tINT  */
+    tDOUBLE = 260,                 /* tDOUBLE  */
+    tBOOLEAN = 261,                /* tBOOLEAN  */
+    tCHAR = 262,                   /* tCHAR  */
+    tUNKNOWN = 263                 /* tUNKNOWN  */
+  };
+  typedef enum yytokentype yytoken_kind_t;
+#endif
+
+/* Value type.  */
+#if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
+union YYSTYPE
+{
+#line 11 "Parser.y"
+
+   int intconst;
+   char* stringconst;
+   int boolconst;
+   double doubleconst;
+   char charconst;
+   char unknown;
+   EXP* exp;
+   FUNCTION* function;
+   FUNCTIONNODE* functionnode;
+   APARAMETER* aparameter;
+   APARAMETERNODE* aparameternode;
+   FPARAMETER* fparameter;
+   FPARAMETERNODE* fparameternode;
+   STMT* stmt;
+   STMTNODE* stmtnode;
+   PROGRAM* program;
+
+#line 155 "Parser.tab.c"
+
+};
+typedef union YYSTYPE YYSTYPE;
+# define YYSTYPE_IS_TRIVIAL 1
+# define YYSTYPE_IS_DECLARED 1
+#endif
+
+
+extern YYSTYPE yylval;
+
+int yyparse (void);
+
+
 /* Symbol kind.  */
 enum yysymbol_kind_t
 {
@@ -524,12 +591,12 @@ static const yytype_int8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    48,    48,    51,    56,    58,    60,    62,    64,    66,
-      68,    70,    72,    74,    76,    78,    80,    82,    84,    86,
-      88,    90,    92,    94,    96,   101,   103,   105,   107,   109,
-     111,   113,   115,   119,   123,   125,   129,   131,   133,   135,
-     137,   141,   143,   147,   151,   153,   157,   159,   163,   165,
-     169,   171,   173,   175
+       0,    58,    58,    61,    66,    68,    70,    72,    74,    76,
+      78,    80,    82,    84,    86,    88,    90,    92,    94,    96,
+      98,   100,   102,   104,   106,   111,   113,   115,   117,   119,
+     121,   123,   125,   129,   133,   135,   139,   141,   143,   145,
+     147,   151,   153,   157,   161,   163,   167,   169,   173,   175,
+     179,   181,   183,   185
 };
 #endif
 
@@ -1197,322 +1264,322 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* program: "MAIN" '(' ')' stmtcompound functionnode  */
-#line 49 "Parser.y"
-          {(yyval.program) = makePROGRAM((yyvsp[-1].stmtcompound),(yyvsp[0].functionnode));
-          printf("Great Success!");}
-#line 1204 "Parser.tab.c"
-    break;
-
-  case 3: /* program: "MAIN" '(' ')' stmtcompound  */
-#line 52 "Parser.y"
-          {(yyval.program) = makePROGRAM((yyvsp[0].stmtcompound),NULL);
-           printf("Great Success!");}
-#line 1211 "Parser.tab.c"
-    break;
-
-  case 4: /* exp: tIDENTIFIER  */
-#line 57 "Parser.y"
-      {(yyval.exp) = makeEXPid((yyvsp[0].stringconst));}
-#line 1217 "Parser.tab.c"
-    break;
-
-  case 5: /* exp: tINT  */
 #line 59 "Parser.y"
-      {(yyval.exp) = makeEXPint((yyvsp[0].intconst));}
-#line 1223 "Parser.tab.c"
-    break;
-
-  case 6: /* exp: tDOUBLE  */
-#line 61 "Parser.y"
-      {(yyval.exp) = makeEXPint((yyvsp[0].doubleconst));}
-#line 1229 "Parser.tab.c"
-    break;
-
-  case 7: /* exp: tBOOLEAN  */
-#line 63 "Parser.y"
-      {(yyval.exp) = makeEXPint((yyvsp[0].boolconst));}
-#line 1235 "Parser.tab.c"
-    break;
-
-  case 8: /* exp: tCHAR  */
-#line 65 "Parser.y"
-      {(yyval.exp) = makeEXPint((yyvsp[0].charconst));}
-#line 1241 "Parser.tab.c"
-    break;
-
-  case 9: /* exp: '(' exp ')'  */
-#line 67 "Parser.y"
-      {(yyval.exp) = (yyvsp[-1].exp);}
-#line 1247 "Parser.tab.c"
-    break;
-
-  case 10: /* exp: exp '-' exp  */
-#line 69 "Parser.y"
-      {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),(yyvsp[-1].stringconst),(yyvsp[0].exp));}
-#line 1253 "Parser.tab.c"
-    break;
-
-  case 11: /* exp: exp '+' exp  */
-#line 71 "Parser.y"
-      {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),(yyvsp[-1].stringconst),(yyvsp[0].exp));}
-#line 1259 "Parser.tab.c"
-    break;
-
-  case 12: /* exp: exp '*' exp  */
-#line 73 "Parser.y"
-      {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),(yyvsp[-1].stringconst),(yyvsp[0].exp));}
-#line 1265 "Parser.tab.c"
-    break;
-
-  case 13: /* exp: exp '/' exp  */
-#line 75 "Parser.y"
-      {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),(yyvsp[-1].stringconst),(yyvsp[0].exp));}
+          {(yyval.program) = makePROGRAM((yyvsp[-1].stmtnode),(yyvsp[0].functionnode));
+          printf("Great Success!");}
 #line 1271 "Parser.tab.c"
     break;
 
-  case 14: /* exp: exp "L" exp  */
-#line 77 "Parser.y"
-      {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),(yyvsp[-1].stringconst),(yyvsp[0].exp));}
-#line 1277 "Parser.tab.c"
+  case 3: /* program: "MAIN" '(' ')' stmtcompound  */
+#line 62 "Parser.y"
+          {(yyval.program) = makePROGRAM((yyvsp[0].stmtnode),NULL);
+           printf("Great Success!");}
+#line 1278 "Parser.tab.c"
     break;
 
-  case 15: /* exp: exp "G" exp  */
+  case 4: /* exp: tIDENTIFIER  */
+#line 67 "Parser.y"
+      {(yyval.exp) = makeEXPid((yyvsp[0].stringconst));}
+#line 1284 "Parser.tab.c"
+    break;
+
+  case 5: /* exp: tINT  */
+#line 69 "Parser.y"
+      {(yyval.exp) = makeEXPint((yyvsp[0].intconst));}
+#line 1290 "Parser.tab.c"
+    break;
+
+  case 6: /* exp: tDOUBLE  */
+#line 71 "Parser.y"
+      {(yyval.exp) = makeEXPint((yyvsp[0].doubleconst));}
+#line 1296 "Parser.tab.c"
+    break;
+
+  case 7: /* exp: tBOOLEAN  */
+#line 73 "Parser.y"
+      {(yyval.exp) = makeEXPint((yyvsp[0].boolconst));}
+#line 1302 "Parser.tab.c"
+    break;
+
+  case 8: /* exp: tCHAR  */
+#line 75 "Parser.y"
+      {(yyval.exp) = makeEXPint((yyvsp[0].charconst));}
+#line 1308 "Parser.tab.c"
+    break;
+
+  case 9: /* exp: '(' exp ')'  */
+#line 77 "Parser.y"
+      {(yyval.exp) = (yyvsp[-1].exp);}
+#line 1314 "Parser.tab.c"
+    break;
+
+  case 10: /* exp: exp '-' exp  */
 #line 79 "Parser.y"
       {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),(yyvsp[-1].stringconst),(yyvsp[0].exp));}
-#line 1283 "Parser.tab.c"
+#line 1320 "Parser.tab.c"
     break;
 
-  case 16: /* exp: exp "LEQ" exp  */
+  case 11: /* exp: exp '+' exp  */
 #line 81 "Parser.y"
       {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),(yyvsp[-1].stringconst),(yyvsp[0].exp));}
-#line 1289 "Parser.tab.c"
+#line 1326 "Parser.tab.c"
     break;
 
-  case 17: /* exp: exp "GEQ" exp  */
+  case 12: /* exp: exp '*' exp  */
 #line 83 "Parser.y"
       {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),(yyvsp[-1].stringconst),(yyvsp[0].exp));}
-#line 1295 "Parser.tab.c"
+#line 1332 "Parser.tab.c"
     break;
 
-  case 18: /* exp: exp "EQ" exp  */
+  case 13: /* exp: exp '/' exp  */
 #line 85 "Parser.y"
       {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),(yyvsp[-1].stringconst),(yyvsp[0].exp));}
-#line 1301 "Parser.tab.c"
-    break;
-
-  case 19: /* exp: exp "NEQ" exp  */
-#line 87 "Parser.y"
-      {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),(yyvsp[-1].stringconst),(yyvsp[0].exp));}
-#line 1307 "Parser.tab.c"
-    break;
-
-  case 20: /* exp: exp "AND" exp  */
-#line 89 "Parser.y"
-      {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),(yyvsp[-1].stringconst),(yyvsp[0].exp));}
-#line 1313 "Parser.tab.c"
-    break;
-
-  case 21: /* exp: exp "OR" exp  */
-#line 91 "Parser.y"
-      {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),(yyvsp[-1].stringconst),(yyvsp[0].exp));}
-#line 1319 "Parser.tab.c"
-    break;
-
-  case 22: /* exp: tIDENTIFIER '(' aparameternode ')'  */
-#line 93 "Parser.y"
-      {(yyval.exp) = makeEXPfun((yyvsp[-3].stringconst),(yyvsp[-1].aparameternode));}
-#line 1325 "Parser.tab.c"
-    break;
-
-  case 23: /* exp: tIDENTIFIER '(' ')'  */
-#line 95 "Parser.y"
-      {(yyval.exp) = makeEXPfun((yyvsp[-2].stringconst),NULL);}
-#line 1331 "Parser.tab.c"
-    break;
-
-  case 24: /* exp: tUNKNOWN  */
-#line 97 "Parser.y"
-      {printf("unknown character %s at line: %d", tUNKNOWN.yylval, lineno);
-       exit(1);}
 #line 1338 "Parser.tab.c"
     break;
 
-  case 25: /* stmt: "WHILE" '(' exp ')' stmtcompound  */
-#line 102 "Parser.y"
-       {(yyval.stmt) = makeSTMTwhile((yyvsp[-2].exp),(yyvsp[0].stmtcompound));}
+  case 14: /* exp: exp "L" exp  */
+#line 87 "Parser.y"
+      {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),(yyvsp[-1].stringconst),(yyvsp[0].exp));}
 #line 1344 "Parser.tab.c"
     break;
 
-  case 26: /* stmt: "IF" '(' exp ')' stmtcompound "ELSE" stmtcompound  */
-#line 104 "Parser.y"
-       {(yyval.stmt) = makeSTMTifElse((yyvsp[-4].exp),(yyvsp[-2].stmtcompound),(yyvsp[0].stmtcompound));}
+  case 15: /* exp: exp "G" exp  */
+#line 89 "Parser.y"
+      {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),(yyvsp[-1].stringconst),(yyvsp[0].exp));}
 #line 1350 "Parser.tab.c"
     break;
 
-  case 27: /* stmt: "IF" '(' exp ')' stmtcompound  */
-#line 106 "Parser.y"
-       {(yyval.stmt) = makeSTMTifElse((yyvsp[-2].exp),(yyvsp[0].stmtcompound),NULL);}
+  case 16: /* exp: exp "LEQ" exp  */
+#line 91 "Parser.y"
+      {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),(yyvsp[-1].stringconst),(yyvsp[0].exp));}
 #line 1356 "Parser.tab.c"
     break;
 
-  case 28: /* stmt: "RETURN" exp ';'  */
-#line 108 "Parser.y"
-       {(yyval.stmt) = makeSTMTreturn((yyvsp[-1].exp));}
+  case 17: /* exp: exp "GEQ" exp  */
+#line 93 "Parser.y"
+      {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),(yyvsp[-1].stringconst),(yyvsp[0].exp));}
 #line 1362 "Parser.tab.c"
     break;
 
-  case 29: /* stmt: "PRINT" exp ';'  */
-#line 110 "Parser.y"
-       {(yyval.stmt) = makeSTMTprint((yyvsp[-1].exp));}
+  case 18: /* exp: exp "EQ" exp  */
+#line 95 "Parser.y"
+      {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),(yyvsp[-1].stringconst),(yyvsp[0].exp));}
 #line 1368 "Parser.tab.c"
     break;
 
-  case 30: /* stmt: type tIDENTIFIER ';'  */
-#line 112 "Parser.y"
-       {(yyval.stmt) = makeSTMTdecl((yyvsp[-2].stringconst),(yyvsp[-1].stringconst),NULL);}
+  case 19: /* exp: exp "NEQ" exp  */
+#line 97 "Parser.y"
+      {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),(yyvsp[-1].stringconst),(yyvsp[0].exp));}
 #line 1374 "Parser.tab.c"
     break;
 
-  case 31: /* stmt: type tIDENTIFIER '=' exp ';'  */
-#line 114 "Parser.y"
-       {(yyval.stmt) = makeSTMTdecl((yyvsp[-4].stringconst),(yyvsp[-3].stringconst),exp);}
+  case 20: /* exp: exp "AND" exp  */
+#line 99 "Parser.y"
+      {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),(yyvsp[-1].stringconst),(yyvsp[0].exp));}
 #line 1380 "Parser.tab.c"
     break;
 
-  case 32: /* stmt: tIDENTIFIER '=' exp ';'  */
-#line 116 "Parser.y"
-       {(yyval.stmt) = makeSTMTassign((yyvsp[-3].stringconst),(yyvsp[-1].exp));}
+  case 21: /* exp: exp "OR" exp  */
+#line 101 "Parser.y"
+      {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),(yyvsp[-1].stringconst),(yyvsp[0].exp));}
 #line 1386 "Parser.tab.c"
     break;
 
-  case 33: /* stmtcompound: '{' stmtnode '}'  */
-#line 120 "Parser.y"
-               {(yyval.stmtcompound) = (yyvsp[-1].stmtnode);}
+  case 22: /* exp: tIDENTIFIER '(' aparameternode ')'  */
+#line 103 "Parser.y"
+      {(yyval.exp) = makeEXPfun((yyvsp[-3].stringconst),(yyvsp[-1].aparameternode));}
 #line 1392 "Parser.tab.c"
     break;
 
-  case 34: /* stmtnode: stmt  */
-#line 124 "Parser.y"
-           {(yyval.stmtnode) = makeSTMTNODE((yyvsp[0].stmt),NULL);}
+  case 23: /* exp: tIDENTIFIER '(' ')'  */
+#line 105 "Parser.y"
+      {(yyval.exp) = makeEXPfun((yyvsp[-2].stringconst),NULL);}
 #line 1398 "Parser.tab.c"
     break;
 
-  case 35: /* stmtnode: stmt stmtnode  */
+  case 24: /* exp: tUNKNOWN  */
+#line 107 "Parser.y"
+      {printf("unknown character");
+       exit(1);}
+#line 1405 "Parser.tab.c"
+    break;
+
+  case 25: /* stmt: "WHILE" '(' exp ')' stmtcompound  */
+#line 112 "Parser.y"
+       {(yyval.stmt) = makeSTMTwhile((yyvsp[-2].exp),(yyvsp[0].stmtnode));}
+#line 1411 "Parser.tab.c"
+    break;
+
+  case 26: /* stmt: "IF" '(' exp ')' stmtcompound "ELSE" stmtcompound  */
+#line 114 "Parser.y"
+       {(yyval.stmt) = makeSTMTifElse((yyvsp[-4].exp),(yyvsp[-2].stmtnode),(yyvsp[0].stmtnode));}
+#line 1417 "Parser.tab.c"
+    break;
+
+  case 27: /* stmt: "IF" '(' exp ')' stmtcompound  */
+#line 116 "Parser.y"
+       {(yyval.stmt) = makeSTMTifElse((yyvsp[-2].exp),(yyvsp[0].stmtnode),NULL);}
+#line 1423 "Parser.tab.c"
+    break;
+
+  case 28: /* stmt: "RETURN" exp ';'  */
+#line 118 "Parser.y"
+       {(yyval.stmt) = makeSTMTreturn((yyvsp[-1].exp));}
+#line 1429 "Parser.tab.c"
+    break;
+
+  case 29: /* stmt: "PRINT" exp ';'  */
+#line 120 "Parser.y"
+       {(yyval.stmt) = makeSTMTprint((yyvsp[-1].exp));}
+#line 1435 "Parser.tab.c"
+    break;
+
+  case 30: /* stmt: type tIDENTIFIER ';'  */
+#line 122 "Parser.y"
+       {(yyval.stmt) = makeSTMTdecl((yyvsp[-2].stringconst),(yyvsp[-1].stringconst),NULL);}
+#line 1441 "Parser.tab.c"
+    break;
+
+  case 31: /* stmt: type tIDENTIFIER '=' exp ';'  */
+#line 124 "Parser.y"
+       {(yyval.stmt) = makeSTMTdecl((yyvsp[-4].stringconst),(yyvsp[-3].stringconst),(yyvsp[-1].exp));}
+#line 1447 "Parser.tab.c"
+    break;
+
+  case 32: /* stmt: tIDENTIFIER '=' exp ';'  */
 #line 126 "Parser.y"
+       {(yyval.stmt) = makeSTMTassign((yyvsp[-3].stringconst),(yyvsp[-1].exp));}
+#line 1453 "Parser.tab.c"
+    break;
+
+  case 33: /* stmtcompound: '{' stmtnode '}'  */
+#line 130 "Parser.y"
+               {(yyval.stmtnode) = (yyvsp[-1].stmtnode);}
+#line 1459 "Parser.tab.c"
+    break;
+
+  case 34: /* stmtnode: stmt  */
+#line 134 "Parser.y"
+           {(yyval.stmtnode) = makeSTMTNODE((yyvsp[0].stmt),NULL);}
+#line 1465 "Parser.tab.c"
+    break;
+
+  case 35: /* stmtnode: stmt stmtnode  */
+#line 136 "Parser.y"
            {(yyval.stmtnode) = makeSTMTNODE((yyvsp[-1].stmt),(yyvsp[0].stmtnode));}
-#line 1404 "Parser.tab.c"
+#line 1471 "Parser.tab.c"
     break;
 
   case 36: /* aparameter: tIDENTIFIER  */
-#line 130 "Parser.y"
+#line 140 "Parser.y"
             {(yyval.aparameter) = makeAPARAMETERid((yyvsp[0].stringconst));}
-#line 1410 "Parser.tab.c"
+#line 1477 "Parser.tab.c"
     break;
 
   case 37: /* aparameter: tCHAR  */
-#line 132 "Parser.y"
+#line 142 "Parser.y"
             {(yyval.aparameter) = makeAPARAMETERchar((yyvsp[0].charconst));}
-#line 1416 "Parser.tab.c"
+#line 1483 "Parser.tab.c"
     break;
 
   case 38: /* aparameter: tDOUBLE  */
-#line 134 "Parser.y"
+#line 144 "Parser.y"
             {(yyval.aparameter) = makeAPARAMETERdouble((yyvsp[0].doubleconst));}
-#line 1422 "Parser.tab.c"
+#line 1489 "Parser.tab.c"
     break;
 
   case 39: /* aparameter: tBOOLEAN  */
-#line 136 "Parser.y"
+#line 146 "Parser.y"
             {(yyval.aparameter) = makeAPARAMETERbool((yyvsp[0].boolconst));}
-#line 1428 "Parser.tab.c"
+#line 1495 "Parser.tab.c"
     break;
 
   case 40: /* aparameter: tINT  */
-#line 138 "Parser.y"
+#line 148 "Parser.y"
             {(yyval.aparameter) = makeAPARAMETERint((yyvsp[0].intconst));}
-#line 1434 "Parser.tab.c"
+#line 1501 "Parser.tab.c"
     break;
 
   case 41: /* aparameternode: aparameter  */
-#line 142 "Parser.y"
+#line 152 "Parser.y"
                 {(yyval.aparameternode) = makeAPARAMETERNODE((yyvsp[0].aparameter),NULL);}
-#line 1440 "Parser.tab.c"
+#line 1507 "Parser.tab.c"
     break;
 
   case 42: /* aparameternode: aparameter ',' aparameternode  */
-#line 144 "Parser.y"
+#line 154 "Parser.y"
                 {(yyval.aparameternode) = makeAPARAMETERNODE((yyvsp[-2].aparameter),(yyvsp[0].aparameternode));}
-#line 1446 "Parser.tab.c"
+#line 1513 "Parser.tab.c"
     break;
 
   case 43: /* fparameter: type tIDENTIFIER  */
-#line 148 "Parser.y"
+#line 158 "Parser.y"
              {(yyval.fparameter) = makeFPARAMETER((yyvsp[-1].stringconst),(yyvsp[0].stringconst));}
-#line 1452 "Parser.tab.c"
+#line 1519 "Parser.tab.c"
     break;
 
   case 44: /* fparameternode: fparameter  */
-#line 152 "Parser.y"
+#line 162 "Parser.y"
                  {(yyval.fparameternode) = makeFPARAMETERNODE((yyvsp[0].fparameter),NULL);}
-#line 1458 "Parser.tab.c"
+#line 1525 "Parser.tab.c"
     break;
 
   case 45: /* fparameternode: fparameter ',' fparameternode  */
-#line 154 "Parser.y"
+#line 164 "Parser.y"
                  {(yyval.fparameternode) = makeFPARAMETERNODE((yyvsp[-2].fparameter),(yyvsp[0].fparameternode));}
-#line 1464 "Parser.tab.c"
+#line 1531 "Parser.tab.c"
     break;
 
   case 46: /* function: type "FUNCTION" tIDENTIFIER '(' fparameternode ')' stmtcompound  */
-#line 158 "Parser.y"
-           {(yyval.function) = makeFUNCTION((yyvsp[-6].stringconst),(yyvsp[-4].stringconst),(yyvsp[-2].fparameternode),(yyvsp[0].stmtcompound));}
-#line 1470 "Parser.tab.c"
+#line 168 "Parser.y"
+           {(yyval.function) = makeFUNCTION((yyvsp[-6].stringconst),(yyvsp[-4].stringconst),(yyvsp[-2].fparameternode),(yyvsp[0].stmtnode));}
+#line 1537 "Parser.tab.c"
     break;
 
   case 47: /* function: type "FUNCTION" tIDENTIFIER '(' ')' stmtcompound  */
-#line 160 "Parser.y"
-           {(yyval.function) = makeFUNCTION((yyvsp[-5].stringconst),(yyvsp[-3].stringconst),NULL,(yyvsp[0].stmtcompound));}
-#line 1476 "Parser.tab.c"
+#line 170 "Parser.y"
+           {(yyval.function) = makeFUNCTION((yyvsp[-5].stringconst),(yyvsp[-3].stringconst),NULL,(yyvsp[0].stmtnode));}
+#line 1543 "Parser.tab.c"
     break;
 
   case 48: /* functionnode: function  */
-#line 164 "Parser.y"
+#line 174 "Parser.y"
                {(yyval.functionnode) = makeFUNCTIONNODE((yyvsp[0].function),NULL);}
-#line 1482 "Parser.tab.c"
+#line 1549 "Parser.tab.c"
     break;
 
   case 49: /* functionnode: function functionnode  */
-#line 166 "Parser.y"
+#line 176 "Parser.y"
                {(yyval.functionnode) = makeFUNCTIONNODE((yyvsp[-1].function),(yyvsp[0].functionnode));}
-#line 1488 "Parser.tab.c"
+#line 1555 "Parser.tab.c"
     break;
 
   case 50: /* type: "BOOLEAN"  */
-#line 170 "Parser.y"
+#line 180 "Parser.y"
        {(yyval.stringconst) = (yyvsp[0].stringconst);}
-#line 1494 "Parser.tab.c"
+#line 1561 "Parser.tab.c"
     break;
 
   case 51: /* type: "CHAR"  */
-#line 172 "Parser.y"
+#line 182 "Parser.y"
        {(yyval.stringconst) = (yyvsp[0].stringconst);}
-#line 1500 "Parser.tab.c"
+#line 1567 "Parser.tab.c"
     break;
 
   case 52: /* type: "DOUBLE"  */
-#line 174 "Parser.y"
+#line 184 "Parser.y"
        {(yyval.stringconst) = (yyvsp[0].stringconst);}
-#line 1506 "Parser.tab.c"
+#line 1573 "Parser.tab.c"
     break;
 
   case 53: /* type: "INT"  */
-#line 176 "Parser.y"
+#line 186 "Parser.y"
        {(yyval.stringconst) = (yyvsp[0].stringconst);}
-#line 1512 "Parser.tab.c"
+#line 1579 "Parser.tab.c"
     break;
 
 
-#line 1516 "Parser.tab.c"
+#line 1583 "Parser.tab.c"
 
       default: break;
     }
@@ -1706,4 +1773,4 @@ yyreturn:
   return yyresult;
 }
 
-#line 179 "Parser.y"
+#line 189 "Parser.y"

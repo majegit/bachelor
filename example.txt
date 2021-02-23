@@ -1,4 +1,4 @@
-function main(){
+main(){
     int i = 1;
     char firstLetterOfAlphabet = a;
     double name = 1.1;
@@ -15,10 +15,10 @@ function main(){
     print(i);
 }
 
-function something(double asd ){
+double function something(double asd ){
     return asd*2;
 }
 
-function somethingElse(double asd ){
+double function somethingElse(double asd ){
     return (asd - (asd / 2));
 }

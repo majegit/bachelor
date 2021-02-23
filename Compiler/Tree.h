@@ -1,5 +1,5 @@
-#ifndef __tree_h
-#define __tree_h
+#ifndef __Tree_h
+#define __Tree_h
 
 typedef struct EXP {
     int lineno;
@@ -27,7 +27,7 @@ typedef struct STMT {
     enum {whileK,assignK,ifElseK,returnK,printK,declK} kind;
     union {
         struct {struct EXP* guard; struct STMTNODE* body;} whileS;
-        struct {struct EXP* id; struct EXP* val;} assignS;
+        struct {char* name; struct EXP* val;} assignS;
         struct {struct EXP* cond; struct STMTNODE* ifbody; struct STMTNODE* elsebody;} ifElseS;
         struct EXP* returnS;
         struct EXP* printS;
@@ -36,7 +36,7 @@ typedef struct STMT {
 } STMT;
 
 STMT* makeSTMTwhile(EXP* guard, struct STMTNODE* body);
-STMT* makeSTMTassign(EXP* id, EXP* val);
+STMT* makeSTMTassign(char* name, EXP* val);
 STMT* makeSTMTifElse(EXP* cond, struct STMTNODE* ifbody, struct STMTNODE* elsebody);
 STMT* makeSTMTreturn(EXP* returnEXP);
 STMT* makeSTMTprint(EXP* printEXP);

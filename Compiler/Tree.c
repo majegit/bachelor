@@ -1,6 +1,6 @@
+#include "Tree.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include "Tree.h"
 
 extern int lineno;
 
@@ -90,13 +90,13 @@ STMT* makeSTMTwhile(EXP* guard, STMTNODE* body)
     return s;
 }
 
-STMT* makeSTMTassign(EXP* id, EXP* val)
+STMT* makeSTMTassign(char* name, EXP* val)
 {
     STMT* s;
     s = (STMT*)malloc(sizeof(STMT));
     s->lineno = lineno;
     s->kind = assignK;
-    s->val.assignS.id = id;
+    s->val.assignS.name = name;
     s->val.assignS.val = val;
     return s;
 }
