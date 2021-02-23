@@ -1,11 +1,12 @@
 /*** Definitions ***/
 %{
+    #include "Parser.tab.h"
     extern int lineno;
 %}
 
 
 /*** Rule section ***/
-%option noyywrap
+%option noyywrap nounput noinput
 
 %%
 print               return "PRINT";

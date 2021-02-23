@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 extern char *yytext;
+struct PROGRAM;
 %}
 
 %union {
@@ -47,12 +48,13 @@ extern char *yytext;
 program : "MAIN" '(' ')' stmtcompound functionnode
           {$$ = makePROGRAM($4,$5);
           printf("Great Success!");}
+        | "MAIN" '(' ')' stmtcompound
+          {$$ = makePROGRAM($4,NULL);
+           printf("Great Success!");}
 ;
 
 exp : tIDENTIFIER
       {$$ = makeEXPid($1);}
-    | type tIDENTIFIER
-      {$$ = makeEXPvar($1,$2);}
     | tINT
       {$$ = makeEXPint($1);}
     | tDOUBLE
@@ -96,26 +98,22 @@ exp : tIDENTIFIER
        exit(1);}
 ;
 
-stmt : "WHILE" exp stmtcompound
-       {$$ = makeSTMTwhile($2,$3);}
-     | "WHILE" exp stmt
-       {$$ = makeSTMTwhile($2,makeSTMTNODE($3));}
-     | "IF" exp stmtcompound "ELSE" stmtcompound
-       {$$ = makeSTMTifElse($2,$3,$5);}
-     | "IF" exp stmt "ELSE" stmtcompound
-       {$$ = makeSTMTifElse($2,$3,$5);}
-     | "IF" exp stmtcompound "ELSE" stmt
-       {$$ = makeSTMTifElse($2,$3,makeSTMTNODE($5));}
-     | "IF" exp stmt "ELSE" stmt
-       {$$ = makeSTMTifElse($2,makeSTMTNODE($3),makeSTMTNODE($5));}
-     | exp '=' exp
-       {$$ = makeSTMTassign($1,$3);}
-     | exp ';'
-       {  }
-     | "RETURN" exp
+stmt : "WHILE" '(' exp ')' stmtcompound
+       {$$ = makeSTMTwhile($3,$5);}
+     | "IF" '(' exp ')' stmtcompound "ELSE" stmtcompound
+       {$$ = makeSTMTifElse($3,$5,$7);}
+     | "IF" '(' exp ')' stmtcompound
+       {$$ = makeSTMTifElse($3,$5,NULL);}
+     | "RETURN" exp ';'
        {$$ = makeSTMTreturn($2);}
-     | "PRINT" exp
+     | "PRINT" exp ';'
        {$$ = makeSTMTprint($2);}
+     | type tIDENTIFIER ';'
+       {$$ = makeSTMTdecl($1,$2,NULL);}
+     | type tIDENTIFIER '=' exp ';'
+       {$$ = makeSTMTdecl($1,$2,exp);}
+     | tIDENTIFIER '=' exp ';'
+       {$$ = makeSTMTassign($1,$3);}
 ;
 
 stmtcompound : '{' stmtnode '}'
@@ -142,8 +140,8 @@ aparameter : tIDENTIFIER
 
 aparameternode : aparameter
 		{$$ = makeAPARAMETERNODE($1,NULL);}
-	      | aparameter aparameternode
-	      	{$$ = makeAPARAMETERNODE($1,$2);}
+	      | aparameter ',' aparameternode
+	      	{$$ = makeAPARAMETERNODE($1,$3);}
 ;
 
 fparameter : type tIDENTIFIER
@@ -152,8 +150,8 @@ fparameter : type tIDENTIFIER
 
 fparameternode : fparameter
                  {$$ = makeFPARAMETERNODE($1,NULL);}
-	       | fparameter fparameternode
-	         {$$ = makeFPARAMETERNODE($1,$2);}
+	       | fparameter ',' fparameternode
+	         {$$ = makeFPARAMETERNODE($1,$3);}
 ;
 
 function : type "FUNCTION" tIDENTIFIER '(' fparameternode ')' stmtcompound
