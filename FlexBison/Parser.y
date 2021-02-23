@@ -29,7 +29,7 @@ extern char *yytext;
 %left "OR"
 %left "AND"
 
-%type <stringconst> '-' '+'
+%type <stringconst> '-' '+' '*' '/' "L" "G" "LEQ" "GEQ" "EQ" "NEQ" "AND" "OR" "BOOLEAN" "INT" "CHAR" "DOUBLE"
 %type <program> program
 %type <exp> exp
 %type <stmt> stmt
@@ -41,7 +41,7 @@ extern char *yytext;
 %type <fparameternode> fparameternode
 %type <function> function
 %type <functionnode> functionnode
-%type <type> type
+%type <stringconst> type
 
 %%
 program : "MAIN" '(' ')' stmtcompound functionnode
