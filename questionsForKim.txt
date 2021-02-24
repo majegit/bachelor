@@ -1,2 +1,9 @@
-1. Vi konstruerer en var ud fra TYPE og identifier. Dette laves om til en exp. Er det en god ide?
-2. Har vi abstraheret parameter- og variabelkonstruktioner korrekt?
+1. Har vi abstraheret parameter- og variabelkonstruktioner korrekt?
+2. SymbolCollection - Se billede
+3. Er det en god ide at have et funktionstabel og en symbol tabel seperat?
+Funktionstabellen ligger nuværende i det yderste scope,
+og der er en symbol tabel til alle compound statements.
+4. Vis parser - måske Kim synes det er underligt.
+5. Funktionskald - statements/expressions - hvordan parser vi dem?
+exp_functioncall : ID ( aparameternode )
+stmt : exp_functioncall ;
