@@ -1,5 +1,5 @@
 %{
-#include "Tree.h"
+#include "Compiler\Tree.h"
 #include <stdio.h>
 #include <stdlib.h>
 extern char *yytext;

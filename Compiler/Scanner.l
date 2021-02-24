@@ -1,6 +1,6 @@
 /*** Definitions ***/
 %{
-    #include "Tree.h"
+    #include "Compiler\Tree.h"
     #include "y.tab.h"
     extern int lineno;
 %}
