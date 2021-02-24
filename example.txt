@@ -10,7 +10,7 @@ main(){
         } else {
             i = somethingElse(name);
         }
-        i++;
+        i = i + 1;
     }
     print(i);
 }

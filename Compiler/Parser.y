@@ -1,10 +1,12 @@
 %{
+#include "Tree.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include "Tree.h"
 extern char *yytext;
+extern int lineno;
+extern PROGRAM* program;
 void yyerror (char const *s) {
-   printf ("yyerror triggered by: %s\n", s);
+   printf ("yyerror triggered by: %s, lineno: %d\n", yytext,lineno);
 }
 %}
 
@@ -32,17 +34,17 @@ void yyerror (char const *s) {
 %token <doubleconst> tDOUBLE
 %token <boolconst> tBOOLEAN
 %token <charconst> tCHAR
-%token <unknown> tUNKNOWN
+%token MAIN PRINT FUNC RETURN WHILE IF ELSE L G LEQ GEQ EQ NEQ OR AND BOOLEAN CHAR DOUBLE INT ASSIGN
 
 %start program
 
 %left '+' '-'
 %left '*' '/'
-%left "L" "G" "LEQ" "GEQ" "EQ" "NEQ"
-%left "OR"
-%left "AND"
+%left L G LEQ GEQ EQ NEQ
+%left OR
+%left AND
 
-%type <stringconst> '-' '+' '*' '/' "L" "G" "LEQ" "GEQ" "EQ" "NEQ" "AND" "OR" "BOOLEAN" "INT" "CHAR" "DOUBLE" type
+%type <stringconst> type
 %type <program> program
 %type <exp> exp
 %type <stmt> stmt
@@ -55,11 +57,11 @@ void yyerror (char const *s) {
 %type <functionnode> functionnode
 
 %%
-program : "MAIN" '(' ')' stmtcompound functionnode
-          {$$ = makePROGRAM($4,$5);
+program : MAIN '(' ')' stmtcompound functionnode
+          {program = makePROGRAM($4,$5);
           printf("Great Success!");}
-        | "MAIN" '(' ')' stmtcompound
-          {$$ = makePROGRAM($4,NULL);
+        | MAIN '(' ')' stmtcompound
+          {program = makePROGRAM($4,NULL);
            printf("Great Success!");}
 ;
 
@@ -76,53 +78,56 @@ exp : tIDENTIFIER
     | '(' exp ')'
       {$$ = $2;}
     | exp '-' exp
-      {$$ = makeEXPbinop($1,$2,$3);}
+      {$$ = makeEXPbinop($1,"-",$3);}
     | exp '+' exp
-      {$$ = makeEXPbinop($1,$2,$3);}
+      {$$ = makeEXPbinop($1,"+",$3);}
     | exp '*' exp
-      {$$ = makeEXPbinop($1,$2,$3);}
+      {$$ = makeEXPbinop($1,"*",$3);}
     | exp '/' exp
-      {$$ = makeEXPbinop($1,$2,$3);}
-    | exp "L" exp
-      {$$ = makeEXPbinop($1,$2,$3);}
-    | exp "G" exp
-      {$$ = makeEXPbinop($1,$2,$3);}
-    | exp "LEQ" exp
-      {$$ = makeEXPbinop($1,$2,$3);}
-    | exp "GEQ" exp
-      {$$ = makeEXPbinop($1,$2,$3);}
-    | exp "EQ" exp
-      {$$ = makeEXPbinop($1,$2,$3);}
-    | exp "NEQ" exp
-      {$$ = makeEXPbinop($1,$2,$3);}
-    | exp "AND" exp
-      {$$ = makeEXPbinop($1,$2,$3);}
-    | exp "OR" exp
-      {$$ = makeEXPbinop($1,$2,$3);}
+      {$$ = makeEXPbinop($1,"/",$3);}
+    | exp L exp
+      {$$ = makeEXPbinop($1,"L",$3);}
+    | exp G exp
+      {$$ = makeEXPbinop($1,"G",$3);}
+    | exp LEQ exp
+      {$$ = makeEXPbinop($1,"LEQ",$3);}
+    | exp GEQ exp
+      {$$ = makeEXPbinop($1,"GEQ",$3);}
+    | exp EQ exp
+      {$$ = makeEXPbinop($1,"EQ",$3);}
+    | exp NEQ exp
+      {$$ = makeEXPbinop($1,"NEQ",$3);}
+    | exp AND exp
+      {$$ = makeEXPbinop($1,"AND",$3);}
+    | exp OR exp
+      {$$ = makeEXPbinop($1,"OR",$3);}
     | tIDENTIFIER '(' aparameternode ')'
       {$$ = makeEXPfun($1,$3);}
     | tIDENTIFIER '(' ')'
       {$$ = makeEXPfun($1,NULL);}
-    | tUNKNOWN
-      {printf("unknown character");
-       exit(1);}
 ;
 
-stmt : "WHILE" '(' exp ')' stmtcompound
+stmt : WHILE '(' exp ')' stmtcompound
        {$$ = makeSTMTwhile($3,$5);}
-     | "IF" '(' exp ')' stmtcompound "ELSE" stmtcompound
+     | IF '(' exp ')' stmtcompound ELSE stmtcompound
        {$$ = makeSTMTifElse($3,$5,$7);}
-     | "IF" '(' exp ')' stmtcompound
+     | IF '(' exp ')' stmtcompound
        {$$ = makeSTMTifElse($3,$5,NULL);}
-     | "RETURN" exp ';'
+     | RETURN exp ';'
        {$$ = makeSTMTreturn($2);}
-     | "PRINT" exp ';'
+     | PRINT exp ';'
        {$$ = makeSTMTprint($2);}
      | type tIDENTIFIER ';'
        {$$ = makeSTMTdecl($1,$2,NULL);}
-     | type tIDENTIFIER '=' exp ';'
+     | type tIDENTIFIER ASSIGN exp ';'
        {$$ = makeSTMTdecl($1,$2,$4);}
-     | tIDENTIFIER '=' exp ';'
+     | tIDENTIFIER ASSIGN exp ';'
+       {$$ = makeSTMTassign($1,$3);}
+     | type tCHAR ';'
+       {$$ = makeSTMTdecl($1,$2,NULL);}
+     | type tCHAR ASSIGN exp ';'
+       {$$ = makeSTMTdecl($1,$2,$4);}
+     | tCHAR ASSIGN exp ';'
        {$$ = makeSTMTassign($1,$3);}
 ;
 
@@ -164,10 +169,10 @@ fparameternode : fparameter
 	         {$$ = makeFPARAMETERNODE($1,$3);}
 ;
 
-function : type "FUNCTION" tIDENTIFIER '(' fparameternode ')' stmtcompound
-	   {$$ = makeFUNCTION($1,$3,$5,$7);}
-	 | type "FUNCTION" tIDENTIFIER '(' ')' stmtcompound
-	   {$$ = makeFUNCTION($1,$3,NULL,$6);}
+function : type FUNC tIDENTIFIER '(' fparameternode ')' stmtcompound
+	    {$$ = makeFUNCTION($1,$3,$5,$7);}
+	  | type FUNC tIDENTIFIER '(' ')' stmtcompound
+	    {$$ = makeFUNCTION($1,$3,NULL,$6);}
 ;
 
 functionnode : function
@@ -176,14 +181,14 @@ functionnode : function
 	       {$$ = makeFUNCTIONNODE($1,$2);}
 ;
 
-type : "BOOLEAN"
-       {$$ = $1;}
-     | "CHAR"
-       {$$ = $1;}
-     | "DOUBLE"
-       {$$ = $1;}
-     | "INT"
-       {$$ = $1;}
+type : BOOLEAN
+       {$$ = "BOOLEAN";}
+     | CHAR
+       {$$ = "CHAR";}
+     | DOUBLE
+       {$$ = "DOUBLE";}
+     | INT
+       {$$ = "INT";}
 ;
 
 %%

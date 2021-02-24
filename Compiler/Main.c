@@ -3,7 +3,7 @@
 
 int lineno;
 void yyparse();
-
+PROGRAM* program;
 
 int main()
 {

@@ -10,17 +10,17 @@
 %option noyywrap
 
 %%
-print               return "PRINT";
-function            return "FUNCTION";
-return              return "RETURN";
-boolean             return "BOOLEAN";
-int                 return "INT";
-double              return "DOUBLE";
-char                return "CHAR";
-while               return "WHILE";
-main                {printf("MAIN"); return "MAIN";}
-if                  return "IF";
-else                return "ELSE";
+print               return PRINT;
+function            return FUNC;
+return              return RETURN;
+boolean             return BOOLEAN;
+int                 return INT;
+double              return DOUBLE;
+char                return CHAR;
+while               return WHILE;
+main                return MAIN;
+if                  return IF;
+else                return ELSE;
 true|false          {
                         yylval.boolconst = yytext == "true";
                         return tBOOLEAN;
@@ -44,28 +44,25 @@ true|false          {
                     }
 ,                   return ',';
 ;                   return ';';
-(                   {printf("YOOO"); return '(';}
-\                   return ')';
-{                   return '{';
-}                   return '}';
-+                   return '+';
--                   return '-';
-*                   return '*';
-/                   return '/';
-=                   return "ASSIGN";
-==                  return "EQ";
-!=                  return "NEQ";
-&&                  return "AND";
-\|\|                return "OR";
-\<                  return "L";
-\>                  return "G";
-\<=|=\<             return "LEQ";
-\>=|=\>             return "GEQ";
+"("                 return '(';
+")"                 return ')';
+"{"                 return '{';
+"}"                 return '}';
+"+"                 return '+';
+"-"                 return '-';
+"*"                 return '*';
+"/"                 return '/';
+=                   return ASSIGN;
+==                  return EQ;
+!=                  return NEQ;
+&&                  return AND;
+\|\|                return OR;
+\<                  return L;
+\>                  return G;
+\<=|=\<             return LEQ;
+\>=|=\>             return GEQ;
 \n                  lineno++;
 [ \t]               ;
-.                   {
-                        printf("WTF is this char");
-                        yylval.unknown = yytext;
-                        return tUNKNOWN;
-                    }
+.                   printf("WTF is this char: %s", yytext);
+
 %%

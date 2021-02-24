@@ -789,57 +789,57 @@ do_action:	/* This label is used only to access EOF actions. */
 case 1:
 YY_RULE_SETUP
 #line 13 "Scanner.l"
-return "PRINT";
+return PRINT;
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
 #line 14 "Scanner.l"
-return "FUNCTION";
+return FUNC;
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
 #line 15 "Scanner.l"
-return "RETURN";
+return RETURN;
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
 #line 16 "Scanner.l"
-return "BOOLEAN";
+return BOOLEAN;
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
 #line 17 "Scanner.l"
-return "INT";
+return INT;
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
 #line 18 "Scanner.l"
-return "DOUBLE";
+return DOUBLE;
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
 #line 19 "Scanner.l"
-return "CHAR";
+return CHAR;
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
 #line 20 "Scanner.l"
-return "WHILE";
+return WHILE;
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
 #line 21 "Scanner.l"
-{printf("MAIN"); return "MAIN";}
+return MAIN;
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
 #line 22 "Scanner.l"
-return "IF";
+return IF;
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
 #line 23 "Scanner.l"
-return "ELSE";
+return ELSE;
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
@@ -895,7 +895,7 @@ return ';';
 case 19:
 YY_RULE_SETUP
 #line 47 "Scanner.l"
-{printf("YOOO"); return '(';}
+return '(';
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
@@ -935,47 +935,47 @@ return '/';
 case 27:
 YY_RULE_SETUP
 #line 55 "Scanner.l"
-return "ASSIGN";
+return ASSIGN;
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
 #line 56 "Scanner.l"
-return "EQ";
+return EQ;
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
 #line 57 "Scanner.l"
-return "NEQ";
+return NEQ;
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
 #line 58 "Scanner.l"
-return "AND";
+return AND;
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
 #line 59 "Scanner.l"
-return "OR";
+return OR;
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
 #line 60 "Scanner.l"
-return "L";
+return L;
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
 #line 61 "Scanner.l"
-return "G";
+return G;
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
 #line 62 "Scanner.l"
-return "LEQ";
+return LEQ;
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
 #line 63 "Scanner.l"
-return "GEQ";
+return GEQ;
 	YY_BREAK
 case 36:
 /* rule 36 can match eol */
@@ -991,18 +991,14 @@ YY_RULE_SETUP
 case 38:
 YY_RULE_SETUP
 #line 66 "Scanner.l"
-{
-                        printf("WTF is this char");
-                        yylval.unknown = yytext;
-                        return tUNKNOWN;
-                    }
+printf("WTF is this char: %s", yytext);
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 71 "Scanner.l"
+#line 68 "Scanner.l"
 ECHO;
 	YY_BREAK
-#line 1005 "lex.yy.c"
+#line 1001 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -2007,6 +2003,6 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 71 "Scanner.l"
+#line 68 "Scanner.l"
 
 
