@@ -5,6 +5,7 @@ main(){
 
     while(i > 10 ){
         name = name * i;
+
         if(name > 15 ){
             i = something(name);
         } else {
