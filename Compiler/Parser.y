@@ -163,7 +163,7 @@ opt_fparameternode :
 ;
 
 function : type FUNC tIDENTIFIER '(' opt_fparameternode ')' stmtcompound
-	    {$$ = makeFUNCTION($1,$3,$5,$7);}
+	   {$$ = makeFUNCTION($1,$3,$5,$7);}
 ;
 
 functionnode : function
