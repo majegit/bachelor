@@ -33,10 +33,6 @@ true|false          {
                         yylval.doubleconst = strtod(yytext, NULL);
                         return tDOUBLE;
                     }
-[a-zA-Z]            {
-                        yylval.charconst = yytext;
-                        return tCHAR;
-                    }
 [a-zA-Z]+           {
                         yylval.stringconst = (char *)malloc(strlen(yytext)+1);
                         sprintf(yylval.stringconst,"%s",yytext);

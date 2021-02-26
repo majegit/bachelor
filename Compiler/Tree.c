@@ -46,16 +46,6 @@ EXP* makeEXPdouble(double doubleval)
     return e;
 }
 
-EXP* makeEXPchar(char charval)
-{
-    EXP* e;
-    e = (EXP*)malloc(sizeof(EXP));
-    e->lineno = lineno;
-    e->kind = charK;
-    e->val.charE = charval;
-    return e;
-}
-
 EXP* makeEXPbinop(EXP* left, char* operator, EXP* right)
 {
     EXP* e;
@@ -144,6 +134,16 @@ STMT* makeSTMTdecl(char* type, char* name, void* value)
     return s;
 }
 
+STMT* makeSTMTexp(EXP* exp)
+{
+    STMT* s;
+    s = (STMT*)malloc(sizeof(STMT));
+    s->lineno = lineno;
+    s->kind = expK;
+    s->val.expS = exp;
+    return s;
+}
+
 STMTNODE* makeSTMTNODE(STMT* stmt, STMTNODE* next)
 {
     STMTNODE* sn;
@@ -153,49 +153,12 @@ STMTNODE* makeSTMTNODE(STMT* stmt, STMTNODE* next)
     return sn;
 }
 
-APARAMETER* makeAPARAMETERid(char* id)
+APARAMETER* makeAPARAMETER(EXP* exp)
 {
-    APARAMETER* p;
-    p = (APARAMETER*)malloc(sizeof(APARAMETER));
-    p->type = idT;
-    p->val.idP = id;
-    return p;
-}
-
-APARAMETER* makeAPARAMETERint(int intval)
-{
-    APARAMETER* p;
-    p = (APARAMETER*)malloc(sizeof(APARAMETER));
-    p->type = intT;
-    p->val.intP = intval;
-    return p;
-}
-
-APARAMETER* makeAPARAMETERdouble(double doubleval)
-{
-    APARAMETER* p;
-    p = (APARAMETER*)malloc(sizeof(APARAMETER));
-    p->type = doubleT;
-    p->val.doubleP = doubleval;
-    return p;
-}
-
-APARAMETER* makeAPARAMETERbool(int boolval)
-{
-    APARAMETER* p;
-    p = (APARAMETER*)malloc(sizeof(APARAMETER));
-    p->type = boolT;
-    p->val.boolP = boolval;
-    return p;
-}
-
-APARAMETER* makeAPARAMETERchar(char charval)
-{
-    APARAMETER* p;
-    p = (APARAMETER*)malloc(sizeof(APARAMETER));
-    p->type = charT;
-    p->val.charP = charval;
-    return p;
+    APARAMETER* a;
+    a = (APARAMETER*)malloc(sizeof(APARAMETER));
+    a->exp = exp;
+    return a;
 }
 
 APARAMETERNODE* makeAPARAMETERNODE(APARAMETER* p, APARAMETERNODE* next)

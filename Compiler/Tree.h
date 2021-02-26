@@ -3,12 +3,11 @@
 
 typedef struct EXP {
     int lineno;
-    enum {idK,intK,doubleK,charK,boolK,binopK,funK} kind;
+    enum {idK,intK,doubleK,boolK,binopK,funK} kind;
     union {
         char* idE;
         int intE, boolE;
         double doubleE;
-        char charE;
         struct {struct EXP* left; struct EXP* right; char* operator;} binopE;
         struct {char* id; struct APARAMETERNODE* aparameternode;} funE;
     } val;
@@ -18,13 +17,12 @@ EXP* makeEXPid(char* id);
 EXP* makeEXPint(int intval);
 EXP* makeEXPbool(int boolval);
 EXP* makeEXPdouble(double doubleval);
-EXP* makeEXPchar(char charval);
 EXP* makeEXPbinop(EXP* left, char* operator, EXP* right);
 EXP* makeEXPfun(char* id, struct APARAMETERNODE* aparameternode);
 
 typedef struct STMT {
     int lineno;
-    enum {whileK,assignK,ifElseK,returnK,printK,declK} kind;
+    enum {whileK,assignK,ifElseK,returnK,printK,declK,expK} kind;
     union {
         struct {struct EXP* guard; struct STMTNODE* body;} whileS;
         struct {char* name; struct EXP* val;} assignS;
@@ -32,6 +30,7 @@ typedef struct STMT {
         struct EXP* returnS;
         struct EXP* printS;
         struct {char* type; char* name; void* value;} declS;
+        struct EXP* expS;
     } val;
 } STMT;
 
@@ -41,6 +40,7 @@ STMT* makeSTMTifElse(EXP* cond, struct STMTNODE* ifbody, struct STMTNODE* elsebo
 STMT* makeSTMTreturn(EXP* returnEXP);
 STMT* makeSTMTprint(EXP* printEXP);
 STMT* makeSTMTdecl(char* type, char* name, void* value);
+STMT* makeSTMTexp(EXP* exp);
 
 typedef struct STMTNODE {
     STMT* stmt;
@@ -51,20 +51,10 @@ STMTNODE* makeSTMTNODE(STMT* stmt, STMTNODE* stmtnode);
 
 typedef struct APARAMETER {
     int lineno;
-    enum {idT,intT,doubleT,charT,boolT} type;
-    union {
-        char* idP;
-        int intP, boolP;
-        double doubleP;
-        char charP;
-    } val;
+    EXP* exp;
 } APARAMETER;
 
-APARAMETER* makeAPARAMETERid(char* id);
-APARAMETER* makeAPARAMETERint(int intval);
-APARAMETER* makeAPARAMETERdouble(double doubleval);
-APARAMETER* makeAPARAMETERbool(int boolval);
-APARAMETER* makeAPARAMETERchar(char charval);
+APARAMETER* makeAPARAMETER(EXP* exp);
 
 typedef struct APARAMETERNODE {
     APARAMETER* current;
@@ -109,5 +99,7 @@ typedef struct PROGRAM {
     STMTNODE* body;
     FUNCTIONNODE* fn;
 } PROGRAM;
+
+PROGRAM* makePROGRAM(STMTNODE* body, FUNCTIONNODE* fn);
 
 #endif

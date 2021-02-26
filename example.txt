@@ -8,11 +8,13 @@ main(){
 
         if(name > 15 ){
             i = something(name);
+            i = something((3+3));
         } else {
             i = somethingElse(name);
         }
         i = i + 1;
     }
+    something(7.5);
     print(i);
 }
 

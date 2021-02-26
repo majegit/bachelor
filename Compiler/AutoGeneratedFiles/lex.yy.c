@@ -354,8 +354,8 @@ static void yynoreturn yy_fatal_error ( const char* msg  );
 	(yy_hold_char) = *yy_cp; \
 	*yy_cp = '\0'; \
 	(yy_c_buf_p) = yy_cp;
-#define YY_NUM_RULES 39
-#define YY_END_OF_BUFFER 40
+#define YY_NUM_RULES 38
+#define YY_END_OF_BUFFER 39
 /* This struct is not used in this scanner,
    but its presence is necessary. */
 struct yy_trans_info
@@ -365,16 +365,16 @@ struct yy_trans_info
 	};
 static const flex_int16_t yy_accept[96] =
     {   0,
-        0,    0,   40,   38,   37,   36,   38,   38,   19,   20,
-       25,   23,   17,   24,   26,   13,   18,   32,   27,   33,
+        0,    0,   39,   37,   36,   35,   37,   37,   18,   19,
+       24,   22,   16,   23,   25,   13,   17,   31,   26,   32,
        15,   15,   15,   15,   15,   15,   15,   15,   15,   15,
-       15,   15,   21,   38,   22,   29,   30,    0,   13,   34,
-       28,   35,   16,   16,   16,   16,   16,   16,   16,   10,
-       16,   16,   16,   16,   16,   16,   31,   14,   16,   16,
-       16,   16,   16,   16,    5,   16,   16,   16,   16,   16,
-       16,    7,   16,   11,   16,   16,    9,   16,   16,   12,
-       16,   16,   16,   16,    1,   16,    8,   16,    6,   16,
-        3,    4,   16,    2,    0
+       15,   15,   20,   37,   21,   28,   29,    0,   13,   33,
+       27,   34,   15,   15,   15,   15,   15,   15,   15,   10,
+       15,   15,   15,   15,   15,   15,   30,   14,   15,   15,
+       15,   15,   15,   15,    5,   15,   15,   15,   15,   15,
+       15,    7,   15,   11,   15,   15,    9,   15,   15,   12,
+       15,   15,   15,   15,    1,   15,    8,   15,    6,   15,
+        3,    4,   15,    2,    0
 
     } ;
 
@@ -869,136 +869,128 @@ case 15:
 YY_RULE_SETUP
 #line 36 "Compiler\\Scanner.l"
 {
-                        yylval.charconst = yytext;
-                        return tCHAR;
-                    }
-	YY_BREAK
-case 16:
-YY_RULE_SETUP
-#line 40 "Compiler\\Scanner.l"
-{
                         yylval.stringconst = (char *)malloc(strlen(yytext)+1);
                         sprintf(yylval.stringconst,"%s",yytext);
                         return tIDENTIFIER;
                     }
 	YY_BREAK
+case 16:
+YY_RULE_SETUP
+#line 41 "Compiler\\Scanner.l"
+return ',';
+	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 45 "Compiler\\Scanner.l"
-return ',';
+#line 42 "Compiler\\Scanner.l"
+return ';';
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 46 "Compiler\\Scanner.l"
-return ';';
+#line 43 "Compiler\\Scanner.l"
+return '(';
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 47 "Compiler\\Scanner.l"
-return '(';
+#line 44 "Compiler\\Scanner.l"
+return ')';
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 48 "Compiler\\Scanner.l"
-return ')';
+#line 45 "Compiler\\Scanner.l"
+return '{';
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 49 "Compiler\\Scanner.l"
-return '{';
+#line 46 "Compiler\\Scanner.l"
+return '}';
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 50 "Compiler\\Scanner.l"
-return '}';
+#line 47 "Compiler\\Scanner.l"
+return '+';
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 51 "Compiler\\Scanner.l"
-return '+';
+#line 48 "Compiler\\Scanner.l"
+return '-';
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 52 "Compiler\\Scanner.l"
-return '-';
+#line 49 "Compiler\\Scanner.l"
+return '*';
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 53 "Compiler\\Scanner.l"
-return '*';
+#line 50 "Compiler\\Scanner.l"
+return '/';
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 54 "Compiler\\Scanner.l"
-return '/';
+#line 51 "Compiler\\Scanner.l"
+return ASSIGN;
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 55 "Compiler\\Scanner.l"
-return ASSIGN;
+#line 52 "Compiler\\Scanner.l"
+return EQ;
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 56 "Compiler\\Scanner.l"
-return EQ;
+#line 53 "Compiler\\Scanner.l"
+return NEQ;
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 57 "Compiler\\Scanner.l"
-return NEQ;
+#line 54 "Compiler\\Scanner.l"
+return AND;
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 58 "Compiler\\Scanner.l"
-return AND;
+#line 55 "Compiler\\Scanner.l"
+return OR;
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 59 "Compiler\\Scanner.l"
-return OR;
+#line 56 "Compiler\\Scanner.l"
+return L;
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 60 "Compiler\\Scanner.l"
-return L;
+#line 57 "Compiler\\Scanner.l"
+return G;
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 61 "Compiler\\Scanner.l"
-return G;
+#line 58 "Compiler\\Scanner.l"
+return LEQ;
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 62 "Compiler\\Scanner.l"
-return LEQ;
-	YY_BREAK
-case 35:
-YY_RULE_SETUP
-#line 63 "Compiler\\Scanner.l"
+#line 59 "Compiler\\Scanner.l"
 return GEQ;
 	YY_BREAK
-case 36:
-/* rule 36 can match eol */
+case 35:
+/* rule 35 can match eol */
 YY_RULE_SETUP
-#line 64 "Compiler\\Scanner.l"
+#line 60 "Compiler\\Scanner.l"
 lineno++;
+	YY_BREAK
+case 36:
+YY_RULE_SETUP
+#line 61 "Compiler\\Scanner.l"
+;
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 65 "Compiler\\Scanner.l"
-;
+#line 62 "Compiler\\Scanner.l"
+printf("WTF is this char: %s", yytext);
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 66 "Compiler\\Scanner.l"
-printf("WTF is this char: %s", yytext);
-	YY_BREAK
-case 39:
-YY_RULE_SETUP
-#line 68 "Compiler\\Scanner.l"
+#line 64 "Compiler\\Scanner.l"
 ECHO;
 	YY_BREAK
-#line 1001 "lex.yy.c"
+#line 993 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -2003,6 +1995,6 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 68 "Compiler\\Scanner.l"
+#line 64 "Compiler\\Scanner.l"
 
 

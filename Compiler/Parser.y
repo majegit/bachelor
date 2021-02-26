@@ -8,6 +8,7 @@ extern PROGRAM* program;
 void yyerror (char const *s) {
    printf ("yyerror triggered by: %s, lineno: %d\n", yytext,lineno);
 }
+int yylex();
 %}
 
 %union {
@@ -33,7 +34,6 @@ void yyerror (char const *s) {
 %token <intconst> tINT
 %token <doubleconst> tDOUBLE
 %token <boolconst> tBOOLEAN
-%token <charconst> tCHAR
 %token MAIN PRINT FUNC RETURN WHILE IF ELSE L G LEQ GEQ EQ NEQ OR AND BOOLEAN CHAR DOUBLE INT ASSIGN
 
 %start program
@@ -50,19 +50,16 @@ void yyerror (char const *s) {
 %type <stmt> stmt
 %type <stmtnode> stmtcompound stmtnode
 %type <aparameter> aparameter
-%type <aparameternode> aparameternode
+%type <aparameternode> aparameternode opt_aparameternode
 %type <fparameter> fparameter
-%type <fparameternode> fparameternode
+%type <fparameternode> fparameternode opt_fparameternode
 %type <function> function
-%type <functionnode> functionnode
+%type <functionnode> functionnode opt_functionnode
 
 %%
-program : MAIN '(' ')' stmtcompound functionnode
+program : MAIN '(' ')' stmtcompound opt_functionnode
           {program = makePROGRAM($4,$5);
           printf("Great Success!");}
-        | MAIN '(' ')' stmtcompound
-          {program = makePROGRAM($4,NULL);
-           printf("Great Success!");}
 ;
 
 exp : tIDENTIFIER
@@ -70,11 +67,9 @@ exp : tIDENTIFIER
     | tINT
       {$$ = makeEXPint($1);}
     | tDOUBLE
-      {$$ = makeEXPint($1);}
+      {$$ = makeEXPdouble($1);}
     | tBOOLEAN
-      {$$ = makeEXPint($1);}
-    | tCHAR
-      {$$ = makeEXPint($1);}
+      {$$ = makeEXPbool($1);}
     | '(' exp ')'
       {$$ = $2;}
     | exp '-' exp
@@ -101,10 +96,8 @@ exp : tIDENTIFIER
       {$$ = makeEXPbinop($1,"AND",$3);}
     | exp OR exp
       {$$ = makeEXPbinop($1,"OR",$3);}
-    | tIDENTIFIER '(' aparameternode ')'
+    | tIDENTIFIER '(' opt_aparameternode ')'
       {$$ = makeEXPfun($1,$3);}
-    | tIDENTIFIER '(' ')'
-      {$$ = makeEXPfun($1,NULL);}
 ;
 
 stmt : WHILE '(' exp ')' stmtcompound
@@ -115,20 +108,16 @@ stmt : WHILE '(' exp ')' stmtcompound
        {$$ = makeSTMTifElse($3,$5,NULL);}
      | RETURN exp ';'
        {$$ = makeSTMTreturn($2);}
-     | PRINT exp ';'
-       {$$ = makeSTMTprint($2);}
+     | PRINT '(' exp ')' ';'
+       {$$ = makeSTMTprint($3);}
      | type tIDENTIFIER ';'
        {$$ = makeSTMTdecl($1,$2,NULL);}
      | type tIDENTIFIER ASSIGN exp ';'
        {$$ = makeSTMTdecl($1,$2,$4);}
      | tIDENTIFIER ASSIGN exp ';'
        {$$ = makeSTMTassign($1,$3);}
-     | type tCHAR ';'
-       {$$ = makeSTMTdecl($1,$2,NULL);}
-     | type tCHAR ASSIGN exp ';'
-       {$$ = makeSTMTdecl($1,$2,$4);}
-     | tCHAR ASSIGN exp ';'
-       {$$ = makeSTMTassign($1,$3);}
+     | exp ';'
+       {$$ = makeSTMTexp($1);}
 ;
 
 stmtcompound : '{' stmtnode '}'
@@ -141,22 +130,20 @@ stmtnode : stmt
 	   {$$ = makeSTMTNODE($1,$2);}
 ;
 
-aparameter : tIDENTIFIER
-	    {$$ = makeAPARAMETERid($1);}
-	  | tCHAR
-	    {$$ = makeAPARAMETERchar($1);}
-	  | tDOUBLE
-	    {$$ = makeAPARAMETERdouble($1);}
-	  | tBOOLEAN
-	    {$$ = makeAPARAMETERbool($1);}
-	  | tINT
-	    {$$ = makeAPARAMETERint($1);}
+aparameter : exp
+	     {$$ = makeAPARAMETER($1);}
 ;
 
 aparameternode : aparameter
 		{$$ = makeAPARAMETERNODE($1,NULL);}
 	      | aparameter ',' aparameternode
 	      	{$$ = makeAPARAMETERNODE($1,$3);}
+;
+
+opt_aparameternode :
+		     {$$ = NULL;}
+		   | aparameternode
+		     {$$ = $1;}
 ;
 
 fparameter : type tIDENTIFIER
@@ -169,16 +156,26 @@ fparameternode : fparameter
 	         {$$ = makeFPARAMETERNODE($1,$3);}
 ;
 
-function : type FUNC tIDENTIFIER '(' fparameternode ')' stmtcompound
+opt_fparameternode :
+                     {$$ = NULL;}
+                   | fparameternode
+                     {$$ = $1;}
+;
+
+function : type FUNC tIDENTIFIER '(' opt_fparameternode ')' stmtcompound
 	    {$$ = makeFUNCTION($1,$3,$5,$7);}
-	  | type FUNC tIDENTIFIER '(' ')' stmtcompound
-	    {$$ = makeFUNCTION($1,$3,NULL,$6);}
 ;
 
 functionnode : function
 	       {$$ = makeFUNCTIONNODE($1,NULL);}
 	     | function functionnode
 	       {$$ = makeFUNCTIONNODE($1,$2);}
+;
+
+opt_functionnode :
+                   {$$ = NULL;}
+                 | functionnode
+                   {$$ = $1;}
 ;
 
 type : BOOLEAN
