@@ -1,7 +1,12 @@
 #include "Tree.h"
 
 
-void symbolColletion(PROGRAM* p)
+void symbolCollection(PROGRAM* p)
 {
+
+
+
+
+
 
 }

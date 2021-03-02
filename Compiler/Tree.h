@@ -24,9 +24,9 @@ typedef struct STMT {
     int lineno;
     enum {whileK,assignK,ifElseK,returnK,printK,declK,expK} kind;
     union {
-        struct {struct EXP* guard; struct STMTNODE* body;} whileS;
+        struct {struct EXP* guard; struct STMTCOMP* body;} whileS;
         struct {char* name; struct EXP* val;} assignS;
-        struct {struct EXP* cond; struct STMTNODE* ifbody; struct STMTNODE* elsebody;} ifElseS;
+        struct {struct EXP* cond; struct STMTCOMP* ifbody; struct STMTCOMP* elsebody;} ifElseS;
         struct EXP* returnS;
         struct EXP* printS;
         struct {char* type; char* name; void* value;} declS;
@@ -34,20 +34,28 @@ typedef struct STMT {
     } val;
 } STMT;
 
-STMT* makeSTMTwhile(EXP* guard, struct STMTNODE* body);
+STMT* makeSTMTwhile(EXP* guard, struct STMTCOMP* body);
 STMT* makeSTMTassign(char* name, EXP* val);
-STMT* makeSTMTifElse(EXP* cond, struct STMTNODE* ifbody, struct STMTNODE* elsebody);
+STMT* makeSTMTifElse(EXP* cond, struct STMTCOMP* ifbody, struct STMTCOMP* elsebody);
 STMT* makeSTMTreturn(EXP* returnEXP);
 STMT* makeSTMTprint(EXP* printEXP);
 STMT* makeSTMTdecl(char* type, char* name, void* value);
 STMT* makeSTMTexp(EXP* exp);
 
 typedef struct STMTNODE {
-    STMT* stmt;
+    struct STMT* stmt;
     struct STMTNODE* next;
 } STMTNODE;
 
 STMTNODE* makeSTMTNODE(STMT* stmt, STMTNODE* stmtnode);
+
+typedef struct STMTCOMP
+{
+    struct STMTNODE* stmtnode;
+    struct SYMBOLTABLE* symbolTable;
+} STMTCOMP;
+
+STMTCOMP* makeSTMTCOMP(STMTNODE* stmtnode);
 
 typedef struct APARAMETER {
     int lineno;
@@ -83,10 +91,10 @@ typedef struct FUNCTION {
     char* returnType;
     char* name;
     FPARAMETERNODE* args;
-    STMTNODE* body;
+    STMTCOMP* body;
 } FUNCTION;
 
-FUNCTION* makeFUNCTION(char* returnType, char* name, FPARAMETERNODE* args, STMTNODE* body);
+FUNCTION* makeFUNCTION(char* returnType, char* name, FPARAMETERNODE* args, STMTCOMP* body);
 
 typedef struct FUNCTIONNODE {
     FUNCTION* current;
@@ -96,10 +104,33 @@ typedef struct FUNCTIONNODE {
 FUNCTIONNODE* makeFUNCTIONNODE(FUNCTION* current, FUNCTIONNODE* next);
 
 typedef struct PROGRAM {
-    STMTNODE* body;
+    STMTCOMP* body;
     FUNCTIONNODE* fn;
+    struct SYMBOLTABLE* symbolTable;
 } PROGRAM;
 
-PROGRAM* makePROGRAM(STMTNODE* body, FUNCTIONNODE* fn);
+PROGRAM* makePROGRAM(STMTCOMP* body, FUNCTIONNODE* fn);
+
+
+//SYMBOL COLLECTION PHASE
+
+typedef struct SYMBOL {
+    char* name;
+    char* type;
+} SYMBOL;
+
+typedef struct SYMBOLNODE {
+    SYMBOL* curr;
+    struct SYMBOLNODE* next;
+} SYMBOLNODE;
+
+typedef struct SYMBOLTABLE {
+    struct SYMBOLTABLE* par;
+    SYMBOLNODE* symbols;
+} SYMBOLTABLE;
+
+SYMBOL* lookupSymbol(char* name);
+
+void addSymbol(SYMBOL* symbol);
 
 #endif

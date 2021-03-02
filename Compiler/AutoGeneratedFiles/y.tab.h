@@ -132,9 +132,10 @@ union YYSTYPE
    FPARAMETERNODE* fparameternode;
    STMT* stmt;
    STMTNODE* stmtnode;
+   STMTCOMP* stmtcomp;
    PROGRAM* program;
 
-#line 138 "y.tab.h"
+#line 139 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

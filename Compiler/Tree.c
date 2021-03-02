@@ -69,7 +69,7 @@ EXP* makeEXPfun(char* id, APARAMETERNODE* aparameternode)
     return e;
 }
 
-STMT* makeSTMTwhile(EXP* guard, STMTNODE* body)
+STMT* makeSTMTwhile(EXP* guard, STMTCOMP* body)
 {
     STMT* s;
     s = (STMT*)malloc(sizeof(STMT));
@@ -91,7 +91,7 @@ STMT* makeSTMTassign(char* name, EXP* val)
     return s;
 }
 
-STMT* makeSTMTifElse(EXP* cond, STMTNODE* ifbody, STMTNODE* elsebody)
+STMT* makeSTMTifElse(EXP* cond, STMTCOMP* ifbody, STMTCOMP* elsebody)
 {
     STMT* s;
     s = (STMT*)malloc(sizeof(STMT));
@@ -153,6 +153,15 @@ STMTNODE* makeSTMTNODE(STMT* stmt, STMTNODE* next)
     return sn;
 }
 
+STMTCOMP* makeSTMTCOMP(STMTNODE* stmtnode)
+{
+    STMTCOMP* sc;
+    sc = (STMTCOMP*)malloc(sizeof(STMTCOMP));
+    sc->stmtnode = stmtnode;
+    sc->symbolTable = NULL;
+    return sc;
+}
+
 APARAMETER* makeAPARAMETER(EXP* exp)
 {
     APARAMETER* a;
@@ -169,7 +178,6 @@ APARAMETERNODE* makeAPARAMETERNODE(APARAMETER* p, APARAMETERNODE* next)
     an->next = next;
     return an;
 }
-
 
 FPARAMETER* makeFPARAMETER(char* type, char* name)
 {
@@ -189,7 +197,7 @@ FPARAMETERNODE* makeFPARAMETERNODE(FPARAMETER* p, FPARAMETERNODE* next)
     return fn;
 }
 
-FUNCTION* makeFUNCTION(char* returnType, char* name, FPARAMETERNODE* args, STMTNODE* body)
+FUNCTION* makeFUNCTION(char* returnType, char* name, FPARAMETERNODE* args, STMTCOMP* body)
 {
     FUNCTION* fun;
     fun = (FUNCTION*)malloc(sizeof(FUNCTION));
@@ -209,12 +217,13 @@ FUNCTIONNODE* makeFUNCTIONNODE(FUNCTION* fun, FUNCTIONNODE* next)
     return fn;
 }
 
-PROGRAM* makePROGRAM(STMTNODE* body, FUNCTIONNODE* fn)
+PROGRAM* makePROGRAM(STMTCOMP* body, FUNCTIONNODE* fn)
 {
     PROGRAM* prog;
     prog = (PROGRAM*)malloc(sizeof(PROGRAM));
     prog->body = body;
     prog->fn = fn;
+    prog->symbolTable = NULL;
     return prog;
 }
 

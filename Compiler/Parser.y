@@ -27,6 +27,7 @@ int yylex();
    FPARAMETERNODE* fparameternode;
    STMT* stmt;
    STMTNODE* stmtnode;
+   STMTCOMP* stmtcomp;
    PROGRAM* program;
 }
 
@@ -48,7 +49,8 @@ int yylex();
 %type <program> program
 %type <exp> exp
 %type <stmt> stmt
-%type <stmtnode> stmtcompound stmtnode
+%type <stmtnode> stmtnode
+%type <stmtcomp> stmtcompound
 %type <aparameter> aparameter
 %type <aparameternode> aparameternode opt_aparameternode
 %type <fparameter> fparameter
@@ -121,7 +123,7 @@ stmt : WHILE '(' exp ')' stmtcompound
 ;
 
 stmtcompound : '{' stmtnode '}'
-	       {$$ = $2;}
+	       {$$ = makeSTMTCOMP($2);}
 ;
 
 stmtnode : stmt
