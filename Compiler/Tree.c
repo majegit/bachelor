@@ -267,22 +267,36 @@ SYMBOLTABLE* makeSYMBOLTABLE(SYMBOLTABLE* par)
     st->symbols = NULL;
     return st;
 }
+SYMBOL* lookupSymbolCurrentTable(char* name, SYMBOLTABLE* st)
+{
+    SYMBOLNODE* currentNode = st->symbols;
+    while(currentNode)
+    {
+        if(strcmp(currentNode->current->name,name) == 0)
+            return currentNode->current;
+        currentNode = currentNode->next;
+    }
+    return NULL;
+}
+
 SYMBOL* lookupSymbol(char* name, SYMBOLTABLE* st)
 {
     if(st == NULL)
         return NULL;
-    SYMBOLNODE* currentNode = st->symbols;
-    while(currentNode)
-    {
-        if(strcmp(currentNode->current->name,name))
-            return currentNode->current;
-        currentNode = currentNode->next;
-    }
+    if(lookupSymbolCurrentTable(name,st))
+        return lookupSymbolCurrentTable(name,st);
     lookupSymbol(name, st->par);
 }
 
+
+
 void addSymbol(SYMBOL* symbol, SYMBOLTABLE* st)
 {
+    if(lookupSymbolCurrentTable(symbol->name, st))
+    {
+        printf("ERROR: Identifier '%s' already declared!",symbol->name);
+        exit(-1);
+    }
     SYMBOLNODE* sn = makeSYMBOLNODE(symbol, st->symbols);
     st->symbols = sn;
 }

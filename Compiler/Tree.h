@@ -137,7 +137,8 @@ typedef struct SYMBOLTABLE {
 
 SYMBOLTABLE* makeSYMBOLTABLE(SYMBOLTABLE* par);
 
-SYMBOL* lookupSymbol(char* name, SYMBOLTABLE* st);
+SYMBOL* lookupSymbolCurrentTable(char* name, SYMBOLTABLE* st); //Checks only the current table
+SYMBOL* lookupSymbol(char* name, SYMBOLTABLE* st); //Checks current table and all parent tables
 
 void addSymbol(SYMBOL* symbol, SYMBOLTABLE* st);
 

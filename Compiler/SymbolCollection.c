@@ -76,17 +76,21 @@ void scTraverseFUNCTIONNODE(FUNCTIONNODE* fn, SYMBOLTABLE* st)
 
 void scTraverseFUNCTION(FUNCTION* f, SYMBOLTABLE* st)
 {
+    //Add function name/returnType to current table
     SYMBOL* funSymbol = makeSYMBOLfunction(f->name, f->returnType);
     addSymbol(funSymbol,st);
-    SYMBOLTABLE* newTable
-    scTraverseFPARAMETERNODE(f->args, st);
-    scTraverseSTMTCOMP(f->body, st);
+
+    //Make new table
+    SYMBOLTABLE* newTable = makeSYMBOLTABLE(st);
+    scTraverseFPARAMETERNODE(f->args, newTable);
+    scTraverseSTMTCOMP(f->body, newTable);
 }
 
 void scTraverseFPARAMETERNODE(FPARAMETERNODE* fpn, SYMBOLTABLE* st)
 {
     if(fpn == NULL)
         return;
-    SYMBOL* newSymbol = makeSYMBOLvariable(fpn->current->name, fpn->current->type)
+    SYMBOL* newSymbol = makeSYMBOLvariable(fpn->current->name, fpn->current->type);
+    addSymbol(newSymbol, st);
     scTraverseFPARAMETERNODE(fpn->next, st);
 }

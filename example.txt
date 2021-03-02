@@ -15,14 +15,15 @@ main(){
         }
         i = i + 1;
     }
+    firstLetterOfAlphabet = b;
     something(7.5);
     print(i);
 }
 
-double function something(double asd ){
-    return asd*2;
+double function something(int formalInt, int formalInt2){
+    return formalInt*2;
 }
 
-double function somethingElse(double asd ){
-    return (asd - (asd / 2));
+double function somethingElse(double formalDouble ){
+    return (formalDouble - (formalDouble / 2));
 }

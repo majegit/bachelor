@@ -12,10 +12,7 @@ int main()
 
     printf("STARTING!\n");
     yyparse();
-    printf("WTF");
+    printf("\n");
     symbolCollection(program);
-    printf("WTF\n");
-    printf("%s",program->symbolTable->symbols->current->name);
-    printf("%s",program->symbolTable->symbols->next->current->name);
     return 0;
 }
