@@ -7,6 +7,7 @@ main(){
         name = name * i;
 
         if(name > 15 ){
+            double x = 7;
             i = something(name);
             i = something((3+3));
         } else {

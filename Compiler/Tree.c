@@ -1,6 +1,7 @@
 #include "Tree.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 extern int lineno;
 
@@ -122,7 +123,7 @@ STMT* makeSTMTprint(EXP* printEXP)
     s->val.printS = printEXP;
     return s;
 }
-STMT* makeSTMTdecl(char* type, char* name, void* value)
+STMT* makeSTMTdecl(char* type, char* name, EXP* value)
 {
     STMT* s;
     s = (STMT*)malloc(sizeof(STMT));
@@ -225,6 +226,65 @@ PROGRAM* makePROGRAM(STMTCOMP* body, FUNCTIONNODE* fn)
     prog->fn = fn;
     prog->symbolTable = NULL;
     return prog;
+}
+
+SYMBOL* makeSYMBOLvariable(char* name, char* type)
+{
+    SYMBOL* s;
+    s = (SYMBOL*)malloc(sizeof(SYMBOL));
+    s->name = name;
+    s->kind = variable;
+    s->type = type;
+    printf("New Variable: %s, Type: %s\n",name,type);
+    return s;
+}
+
+SYMBOL* makeSYMBOLfunction(char* name, char* type)
+{
+    SYMBOL* s;
+    s = (SYMBOL*)malloc(sizeof(SYMBOL));
+    s->name = name;
+    s->kind = function;
+    s->type = type;
+    printf("New Function: %s, ReturnType: %s\n",name,type);
+    return s;
+}
+
+SYMBOLNODE* makeSYMBOLNODE(SYMBOL* symbol, SYMBOLNODE* next)
+{
+    SYMBOLNODE* sn;
+    sn = (SYMBOLNODE*)malloc(sizeof(SYMBOLNODE));
+    sn->current = symbol;
+    sn->next = next;
+    return sn;
+}
+
+SYMBOLTABLE* makeSYMBOLTABLE(SYMBOLTABLE* par)
+{
+    SYMBOLTABLE* st;
+    st = (SYMBOLTABLE*)malloc(sizeof(SYMBOLTABLE));
+    st->par = par;
+    st->symbols = NULL;
+    return st;
+}
+SYMBOL* lookupSymbol(char* name, SYMBOLTABLE* st)
+{
+    if(st == NULL)
+        return NULL;
+    SYMBOLNODE* currentNode = st->symbols;
+    while(currentNode)
+    {
+        if(strcmp(currentNode->current->name,name))
+            return currentNode->current;
+        currentNode = currentNode->next;
+    }
+    lookupSymbol(name, st->par);
+}
+
+void addSymbol(SYMBOL* symbol, SYMBOLTABLE* st)
+{
+    SYMBOLNODE* sn = makeSYMBOLNODE(symbol, st->symbols);
+    st->symbols = sn;
 }
 
 

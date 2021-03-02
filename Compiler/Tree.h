@@ -29,7 +29,7 @@ typedef struct STMT {
         struct {struct EXP* cond; struct STMTCOMP* ifbody; struct STMTCOMP* elsebody;} ifElseS;
         struct EXP* returnS;
         struct EXP* printS;
-        struct {char* type; char* name; void* value;} declS;
+        struct {char* type; char* name; EXP* value;} declS;
         struct EXP* expS;
     } val;
 } STMT;
@@ -39,7 +39,7 @@ STMT* makeSTMTassign(char* name, EXP* val);
 STMT* makeSTMTifElse(EXP* cond, struct STMTCOMP* ifbody, struct STMTCOMP* elsebody);
 STMT* makeSTMTreturn(EXP* returnEXP);
 STMT* makeSTMTprint(EXP* printEXP);
-STMT* makeSTMTdecl(char* type, char* name, void* value);
+STMT* makeSTMTdecl(char* type, char* name, EXP* value);
 STMT* makeSTMTexp(EXP* exp);
 
 typedef struct STMTNODE {
@@ -116,21 +116,29 @@ PROGRAM* makePROGRAM(STMTCOMP* body, FUNCTIONNODE* fn);
 
 typedef struct SYMBOL {
     char* name;
+    enum {variable,function} kind;
     char* type;
 } SYMBOL;
 
+SYMBOL* makeSYMBOLvariable(char* name, char* type);
+SYMBOL* makeSYMBOLfunction(char* name, char* type);
+
 typedef struct SYMBOLNODE {
-    SYMBOL* curr;
+    SYMBOL* current;
     struct SYMBOLNODE* next;
 } SYMBOLNODE;
+
+SYMBOLNODE* makeSYMBOLNODE(SYMBOL* symbol, SYMBOLNODE* next);
 
 typedef struct SYMBOLTABLE {
     struct SYMBOLTABLE* par;
     SYMBOLNODE* symbols;
 } SYMBOLTABLE;
 
-SYMBOL* lookupSymbol(char* name);
+SYMBOLTABLE* makeSYMBOLTABLE(SYMBOLTABLE* par);
 
-void addSymbol(SYMBOL* symbol);
+SYMBOL* lookupSymbol(char* name, SYMBOLTABLE* st);
+
+void addSymbol(SYMBOL* symbol, SYMBOLTABLE* st);
 
 #endif
