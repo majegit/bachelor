@@ -2,8 +2,6 @@
 #include "Tree.h"
 #include "SCTraversal.h"
 
-
-
 void symbolCollection(PROGRAM* p)
 {
     scTraversePROGRAM(p);
@@ -20,7 +18,6 @@ void scTraverseSTMTCOMP(STMTCOMP* sc, SYMBOLTABLE* st)
 {
     scTraverseSTMTNODE(sc->stmtnode, st);
 }
-
 
 void scTraverseSTMTNODE(STMTNODE* sn, SYMBOLTABLE* st)
 {

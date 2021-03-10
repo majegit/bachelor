@@ -38,6 +38,9 @@ true|false          {
                         sprintf(yylval.stringconst,"%s",yytext);
                         return tIDENTIFIER;
                     }
+\'                  {printf("here");
+                    return '\'';
+                    }
 ,                   return ',';
 ;                   return ';';
 "("                 return '(';

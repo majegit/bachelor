@@ -118,6 +118,7 @@ typedef struct SYMBOL {
     char* name;
     enum {variable,function} kind;
     char* type;
+
 } SYMBOL;
 
 SYMBOL* makeSYMBOLvariable(char* name, char* type);
@@ -141,5 +142,8 @@ SYMBOL* lookupSymbolCurrentTable(char* name, SYMBOLTABLE* st); //Checks only the
 SYMBOL* lookupSymbol(char* name, SYMBOLTABLE* st); //Checks current table and all parent tables
 
 void addSymbol(SYMBOL* symbol, SYMBOLTABLE* st);
+
+
+
 
 #endif

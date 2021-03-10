@@ -1,6 +1,6 @@
 main(){
     int i = 1;
-    char firstLetterOfAlphabet = a;
+    char firstLetterOfAlphabet = 'a';
     double name = 1.1;
 
     while(i > 10 ){
@@ -15,7 +15,7 @@ main(){
         }
         i = i + 1;
     }
-    firstLetterOfAlphabet = b;
+    firstLetterOfAlphabet = 'b';
     something(7.5);
     print(i);
 }

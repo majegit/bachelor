@@ -72,6 +72,8 @@ exp : tIDENTIFIER
       {$$ = makeEXPdouble($1);}
     | tBOOLEAN
       {$$ = makeEXPbool($1);}
+    | '\'' tIDENTIFIER '\''
+      {$$ = makeEXPid($2);}
     | '(' exp ')'
       {$$ = $2;}
     | exp '-' exp
@@ -121,6 +123,7 @@ stmt : WHILE '(' exp ')' stmtcompound
      | exp ';'
        {$$ = makeSTMTexp($1);}
 ;
+
 
 stmtcompound : '{' stmtnode '}'
 	       {$$ = makeSTMTCOMP($2);}

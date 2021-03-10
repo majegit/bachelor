@@ -10,3 +10,12 @@ exp_functioncall : ID ( aparameternode )
 stmt : exp_functioncall ;
 
 Tillad expressions som statements?                                                      Revisit beslutning, måske fint at tjekke på typeniveau, løse ved at håndtere som seperate cases i gram.
+
+
+
+
+
+exp;
+
+
+
