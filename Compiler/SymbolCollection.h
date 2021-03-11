@@ -1,5 +1,5 @@
-#ifndef __SCTraversal_h
-#define __SCTraversal_h
+#ifndef __SymbolCollection_h
+#define __SymbolCollection_h
 #include "Tree.h"
 
 void symbolCollection(PROGRAM* p);

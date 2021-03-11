@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "Tree.h"
-#include "SCTraversal.h"
+#include "SymbolCollection.h"
 
 void symbolCollection(PROGRAM* p)
 {

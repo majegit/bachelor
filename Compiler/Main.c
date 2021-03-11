@@ -1,6 +1,6 @@
 #include "Tree.h"
 #include <stdio.h>
-#include "SCTraversal.h"
+#include "SymbolCollection.h"
 
 int lineno;
 void yyparse();

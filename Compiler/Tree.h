@@ -3,17 +3,20 @@
 
 typedef struct EXP {
     int lineno;
-    enum {idK,intK,doubleK,boolK,binopK,funK} kind;
+    enum {idK,intK,doubleK,boolK,charK,binopK,funK} kind;
     union {
         char* idE;
+        char charE;
         int intE, boolE;
         double doubleE;
         struct {struct EXP* left; struct EXP* right; char* operator;} binopE;
         struct {char* id; struct APARAMETERNODE* aparameternode;} funE;
     } val;
+    char* type;
 } EXP;
 
 EXP* makeEXPid(char* id);
+EXP* makeEXPchar(char charval);
 EXP* makeEXPint(int intval);
 EXP* makeEXPbool(int boolval);
 EXP* makeEXPdouble(double doubleval);
@@ -118,7 +121,6 @@ typedef struct SYMBOL {
     char* name;
     enum {variable,function} kind;
     char* type;
-
 } SYMBOL;
 
 SYMBOL* makeSYMBOLvariable(char* name, char* type);

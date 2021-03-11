@@ -17,7 +17,7 @@ void traverseSTMTNODE(STMTNODE* sn)
 {
     if(sn == NULL)
         return;
-    traverseSTMT(sn->current);
+    traverseSTMT(sn->stmt);
     traverseSTMTNODE(sn->next);
 }
 

@@ -26,3 +26,4 @@ We found inspiration in the python and the c languages, in c ypu explicitly decl
 'a' + 1 because "str and int are incompatible", but in c this is perfectly valid, and 'a' + 1 can be printed both as a char or an int. printf("%c %d",'a' + 1,'a' + 1); is a perfectly valid statement.
 
 
+

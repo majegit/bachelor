@@ -8,10 +8,20 @@ extern int lineno;
 EXP* makeEXPid(char* id)
 {
     EXP* e;
-    e = (EXP* )malloc(sizeof(EXP));
+    e = (EXP*)malloc(sizeof(EXP));
     e->lineno = lineno;
     e->kind = idK;
     e->val.idE = id;
+    return e;
+}
+
+EXP* makeEXPchar(char charval)
+{
+    EXP* e;
+    e = (EXP* )malloc(sizeof(EXP));
+    e->lineno = lineno;
+    e->kind = charK;
+    e->val.charE = charval;
     return e;
 }
 

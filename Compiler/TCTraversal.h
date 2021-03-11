@@ -1,58 +1,60 @@
 #include <stdio.h>
 #include "Tree.h"
 
-void traversePROGRAM(PROGRAM* prog)
+void tcTraversePROGRAM(PROGRAM* prog)
 {
-    traverseSTMTCOMP(prog->body);
-    traverseFUNCTIONNODE(prog->fn);
+    tcTraverseSTMTCOMP(prog->body);
+    tcTraverseFUNCTIONNODE(prog->fn);
 }
 
-void traverseSTMTCOMP(STMTCOMP* sc)
+void tcTraverseSTMTCOMP(STMTCOMP* sc)
 {
-    traverseSTMTNODE(sc->stmtnode);
+    tcTraverseSTMTNODE(sc->stmtnode);
 }
 
 
-void traverseSTMTNODE(STMTNODE* sn)
+void tcTraverseSTMTNODE(STMTNODE* sn)
 {
     if(sn == NULL)
         return;
-    traverseSTMT(sn->current);
-    traverseSTMTNODE(sn->next);
+    tcTraverseSTMT(sn->current);
+    tcTraverseSTMTNODE(sn->next);
 }
 
-void traverseSTMT(STMT* s)
+void tcTraverseSTMT(STMT* s)
 {
     switch(s->kind)
     {
         case whileK:
-            traverseEXP(s->val.whileS.guard);
-            traverseSTMTCOMP(s->val.whileS.body);
+            tcTraverseEXP(s->val.whileS.guard); //Must have type boolean
+            if(strcmp(s->val.whileS.guard->type, "BOOLEAN") != 0)
+                printf("The fuck is this type of the guard?");
+            tcTraverseSTMTCOMP(s->val.whileS.body);
             break;
         case assignK:
-            traverseEXP(s->val.assignS.val);
+            tcTraverseEXP(s->val.assignS.val);
             break;
         case ifElseK:
-            traverseEXP(s->val.ifElseS.cond);
-            traverseSTMTCOMP(s->val.ifElseS.ifbody);
-            traverseSTMTCOMP(s->val.ifElseS.elsebody);
+            tcTraverseEXP(s->val.ifElseS.cond);
+            tcTraverseSTMTCOMP(s->val.ifElseS.ifbody);
+            tcTraverseSTMTCOMP(s->val.ifElseS.elsebody);
             break;
         case returnK:
-            traverseEXP(s->val.returnS);
+            tcTraverseEXP(s->val.returnS);
             break;
         case printK:
-            traverseEXP(s->val.printS);
+            tcTraverseEXP(s->val.printS);
             break;
         case declK:
-            traverseEXP(s->val.declS.value);
+            tcTraverseEXP(s->val.declS.value);
             break;
         case expK:
-            traverseEXP(s->val.expS);
+            tcTraverseEXP(s->val.expS);
             break;
     }
 }
 
-void traverseEXP(EXP* e)
+void tcTraverseEXP(EXP* e)
 {
     switch(e->kind)
     {
@@ -65,40 +67,40 @@ void traverseEXP(EXP* e)
         case boolK;
             break;
         case binopK;
-            traverseEXP(e->binopE.left);
-            traverseEXP(e->binopE.right);
+            tcTraverseEXP(e->binopE.left);
+            tcTraverseEXP(e->binopE.right);
             break;
         case funK;
-            traverseAPARAMETERNODE(e->funE.aparameternode);
+            tcTraverseAPARAMETERNODE(e->funE.aparameternode);
             break;
     }
 }
-void traverseAPARAMETERNODE(APARAMETERNODE* apn)
+void tcTraverseAPARAMETERNODE(APARAMETERNODE* apn)
 {
     if(apn == NULL)
         return;
-    traverseEXP(apn->current->exp);
-    traverseAPARAMETERNODE(apn->next);
+    tcTraverseEXP(apn->current->exp);
+    tcTraverseAPARAMETERNODE(apn->next);
 }
 
-void traverseFUNCTIONNODE(FUNCTIONNODE* fn)
+void tcTraverseFUNCTIONNODE(FUNCTIONNODE* fn)
 {
     if(fn == NULL)
         return;
-    traverseFUNCTION(sc->stmtnode);
-    traverseFUNCTIONNODE(fn->next);
+    tcTraverseFUNCTION(sc->stmtnode);
+    tcTraverseFUNCTIONNODE(fn->next);
 }
 
-void traverseFUNCTION(FUNCTION* f)
+void tcTraverseFUNCTION(FUNCTION* f)
 {
-    traverseFPARAMETERNODE(f->args);
-    traverseSTMTCOMP(f->body);
+    tcTraverseFPARAMETERNODE(f->args);
+    tcTraverseSTMTCOMP(f->body);
 }
 
-void traverseFPARAMETERNODE(FPARAMETERNODE* fpn)
+void tcTraverseFPARAMETERNODE(FPARAMETERNODE* fpn)
 {
     if(fpn == NULL)
         return;
-    traverseFPARAMETERNODE(fpn->next);
+    tcTraverseFPARAMETERNODE(fpn->next);
 }
 
