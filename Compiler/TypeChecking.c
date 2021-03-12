@@ -5,7 +5,7 @@
 #include "Tree.h"
 #include <string.h>
 
-SUBTYPE BOOL,CHAR,INT,DOUBLE;
+SUBTYPE BOOL, CHAR, INT, DOUBLE;
 
 SUBTYPE BOOL = {"BOOLEAN",NULL,NULL};
 SUBTYPE CHAR = {"CHAR",NULL,NULL};
@@ -17,14 +17,14 @@ TYPESYSTEM ts = {{&BOOL,&CHAR,&DOUBLE}};
 SYMBOLTABLE* currentScope;
 FUNCTION* currentFunction;
 
-void TypeChecking(PROGRAM* p)
+void typeChecking(PROGRAM* p)
 {
-
-
+    tcTraversePROGRAM(p);
 }
 
 void tcTraversePROGRAM(PROGRAM* prog)
 {
+    printf("DEBUG: TRAVERSING PROGRAM\n");
     currentScope = prog->symbolTable;
     tcTraverseSTMTCOMP(prog->body);
     tcTraverseFUNCTIONNODE(prog->fn);
@@ -32,6 +32,7 @@ void tcTraversePROGRAM(PROGRAM* prog)
 
 void tcTraverseSTMTCOMP(STMTCOMP* sc)
 {
+    printf("DEBUG: TRAVERSING STMTCOMP\n");
     currentScope = sc->symbolTable;
     tcTraverseSTMTNODE(sc->stmtnode);
     currentScope = currentScope->par;
@@ -40,6 +41,7 @@ void tcTraverseSTMTCOMP(STMTCOMP* sc)
 
 void tcTraverseSTMTNODE(STMTNODE* sn)
 {
+    printf("DEBUG: TRAVERSING STMTNODE\n");
     if(sn == NULL)
         return;
     tcTraverseSTMT(sn->stmt);
@@ -48,6 +50,7 @@ void tcTraverseSTMTNODE(STMTNODE* sn)
 
 void tcTraverseSTMT(STMT* s)
 {
+    printf("DEBUG: TRAVERSING STMT\n");
     switch(s->kind)
     {
         case whileK:
@@ -61,17 +64,32 @@ void tcTraverseSTMT(STMT* s)
             break;
         case assignK:
             tcTraverseEXP(s->val.assignS.val);
-            SYMBOL* symbol = lookupSymbol(s->val.assignS.name,currentScope);
+            SYMBOL* symbol = lookupSymbolVar(s->val.assignS.name, currentScope);
+            printf("At assign statement\n");
             if(symbol == NULL)
             {
                 printf("ERROR: Variable not declared: %s on line: %d\n",s->val.assignS.name,s->lineno);
                 exit(0);
             }
+            printf("At assign statement2\n");
+            if(s->val.assignS.val == NULL)
+            {
+                printf("EXPRESSION IS NULL\n");
+            }
+            printf("At assign statement3\n");
+            if(symbol->type == NULL)
+                printf("it is null\n");
+            if(s->val.assignS.val->type == NULL)
+                printf("the type is null\n");
+            printf("%s\n",symbol->type);
+            printf("%s\n",s->val.assignS.val->type);
             if(strcmp(symbol->type,s->val.assignS.val->type) != 0)
             {
+                printf("yes");
                 printf("ERROR: Incompatible type, expected %s, got %s on line: %d\n",symbol->type,s->val.assignS.val->type,s->lineno);
                 exit(0);
             }
+            printf("End of assign\n");
             break;
         case ifElseK:
             tcTraverseEXP(s->val.ifElseS.cond);
@@ -118,11 +136,12 @@ void tcTraverseSTMT(STMT* s)
 
 void tcTraverseEXP(EXP* e)
 {
+    printf("DEBUG: TRAVERSING EXP\n");
     switch(e->kind)
     {
         case idK:
             {
-                SYMBOL* symbol = lookupSymbol(e->val.idE,currentScope);
+                SYMBOL* symbol = lookupSymbolVar(e->val.idE, currentScope);
                 if(symbol == NULL)
                 {
                     printf("ERROR: Variable not declared: %s on line: %d\n",e->val.idE,e->lineno);
@@ -146,23 +165,51 @@ void tcTraverseEXP(EXP* e)
         case binopK:
             tcTraverseEXP(e->val.binopE.left);
             tcTraverseEXP(e->val.binopE.right);
+            OPERATION* op = searchOperations(e->val.binopE.operator, e->val.binopE.left->type, e->val.binopE.right->type);
+            if(op == NULL)
+            {
+                printf("ERROR: Operator '%s' not defined for %s %s: %d on line: %d\n",e->val.binopE.operator,e->val.binopE.left->type,e->val.binopE.right->type,e->lineno);
+                exit(0);
+            }
+            e->type = op->returnType;
             break;
         case funK:
-            tcTraverseAPARAMETERNODE(e->val.funE.aparameternode);
-
+            {
+                SYMBOL* functionSymbol = lookupSymbolFun(e->val.funE.id, currentScope);
+                if(functionSymbol == NULL)
+                {
+                    printf("ERROR: Function does not exist: %s on line: %d\n",e->val.funE.id,e->lineno);
+                    exit(0);
+                }
+                tcTraverseAPARAMETERNODE(e->val.funE.aparameternode, functionSymbol->fpn);
+                e->type = functionSymbol->type;
+            }
             break;
     }
 }
-void tcTraverseAPARAMETERNODE(APARAMETERNODE* apn)
+
+void tcTraverseAPARAMETERNODE(APARAMETERNODE* apn, FPARAMETERNODE* fpn)
 {
-    if(apn == NULL)
+    printf("DEBUG: TRAVERSING APARAMNODE\n");
+    if(apn == NULL && fpn == NULL)
         return;
+    if(apn == NULL && fpn != NULL || apn != NULL && fpn == NULL)
+    {
+        printf("ERROR: Mismatched arguments for function call on line:\n");
+        exit(0);
+    }
     tcTraverseEXP(apn->current->exp);
-    tcTraverseAPARAMETERNODE(apn->next);
+    if(strcmp(apn->current->exp->type, fpn->current->type) != 0)
+    {
+        printf("ERROR: Mismatched arguments for function call on line: %d\n");
+        exit(0);
+    }
+    tcTraverseAPARAMETERNODE(apn->next, fpn->next);
 }
 
 void tcTraverseFUNCTIONNODE(FUNCTIONNODE* fn)
 {
+    printf("DEBUG: TRAVERSING FUNCTIONNODE\n");
     if(fn == NULL)
         return;
     tcTraverseFUNCTION(fn->current);
@@ -171,17 +218,10 @@ void tcTraverseFUNCTIONNODE(FUNCTIONNODE* fn)
 
 void tcTraverseFUNCTION(FUNCTION* f)
 {
+    printf("DEBUG: TRAVERSING FUNCTION\n");
     currentFunction = f;
-    tcTraverseFPARAMETERNODE(f->args);
     tcTraverseSTMTCOMP(f->body);
     currentFunction = NULL;
-
 }
 
-void tcTraverseFPARAMETERNODE(FPARAMETERNODE* fpn)
-{
-    if(fpn == NULL)
-        return;
-    tcTraverseFPARAMETERNODE(fpn->next);
-}
 

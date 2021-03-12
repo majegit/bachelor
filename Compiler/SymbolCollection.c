@@ -16,6 +16,7 @@ void scTraversePROGRAM(PROGRAM* prog)
 
 void scTraverseSTMTCOMP(STMTCOMP* sc, SYMBOLTABLE* st)
 {
+    sc->symbolTable = st;
     scTraverseSTMTNODE(sc->stmtnode, st);
 }
 
@@ -74,7 +75,7 @@ void scTraverseFUNCTIONNODE(FUNCTIONNODE* fn, SYMBOLTABLE* st)
 void scTraverseFUNCTION(FUNCTION* f, SYMBOLTABLE* st)
 {
     //Add function name/returnType to current table
-    SYMBOL* funSymbol = makeSYMBOLfunction(f->name, f->returnType);
+    SYMBOL* funSymbol = makeSYMBOLfunction(f->name, f->returnType, f->args);
     addSymbol(funSymbol,st);
 
     //Make new table

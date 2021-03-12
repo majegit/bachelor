@@ -1,6 +1,8 @@
 #ifndef __Operations_c
 #define __Operations_c
 #include "TypeChecking.h"
+#include <stdlib.h>
+#include <string.h>
 
 OPERATION op0 = { "+", 2, "INT",{"INT","INT"}};
 OPERATION op1 = { "+", 2, "DOUBLE",{"DOUBLE","DOUBLE"}};
@@ -35,4 +37,17 @@ OPERATION op25 = { "OR", 2, "BOOLEAN",{"BOOLEAN","BOOLEAN"}};
 OPERATION* ALL_OPS[] = { &op0, &op1, &op2, &op3, &op4, &op5, &op6, &op7, &op8, &op9, &op10, &op11, &op12, &op13,
                          &op14, &op15, &op16, &op17, &op18, &op19, &op20, &op21, &op22, &op23, &op24, &op25};
 
+OPERATION* searchOperations(char* op, char* typeLeft, char* typeRight)
+{
+    int ops = sizeof(ALL_OPS) / sizeof(OPERATION*);
+    for(int i = 0; i < ops; i++)
+    {
+        if(strcmp(ALL_OPS[i]->operator, op) == 0 && strcmp(ALL_OPS[i]->argTypes[0], typeLeft) == 0 && strcmp(ALL_OPS[i]->argTypes[1], typeRight) == 0)
+        {
+            printf("FOUND THE OPERATION: %s %s %s\n",typeLeft,op,typeRight);
+            return ALL_OPS[i];
+        }
+    }
+    return NULL;
+}
 #endif

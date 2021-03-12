@@ -1,6 +1,7 @@
 #include "Tree.h"
 #include <stdio.h>
 #include "SymbolCollection.h"
+#include "TypeChecking.h"
 
 int lineno;
 void yyparse();
@@ -14,5 +15,7 @@ int main()
     yyparse();
     printf("\n");
     symbolCollection(program);
+    printf("STARTING TYPECHECK\n");
+    typeChecking(program);
     return 0;
 }

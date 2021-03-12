@@ -21,15 +21,16 @@ typedef struct OPERATION
     char* argTypes[];
 } OPERATION;
 
+
+void typeChecking(PROGRAM* p);
 void tcTraversePROGRAM(PROGRAM* prog);
 void tcTraverseSTMTCOMP(STMTCOMP* sc);
 void tcTraverseSTMTNODE(STMTNODE* sn);
 void tcTraverseSTMT(STMT* s);
 void tcTraverseFUNCTIONNODE(FUNCTIONNODE* fn);
 void tcTraverseFUNCTION(FUNCTION* f);
-void tcTraverseFPARAMETERNODE(FPARAMETERNODE* fpn);
 void tcTraverseEXP(EXP* e);
-void tcTraverseAPARAMETERNODE(APARAMETERNODE* apn);
+void tcTraverseAPARAMETERNODE(APARAMETERNODE* apn,FPARAMETERNODE* fpn);
 
 
 

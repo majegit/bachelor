@@ -249,12 +249,13 @@ SYMBOL* makeSYMBOLvariable(char* name, char* type)
     return s;
 }
 
-SYMBOL* makeSYMBOLfunction(char* name, char* type)
+SYMBOL* makeSYMBOLfunction(char* name, char* type, FPARAMETERNODE* fpn)
 {
     SYMBOL* s;
     s = (SYMBOL*)malloc(sizeof(SYMBOL));
     s->name = name;
     s->kind = function;
+    s->fpn = fpn;
     s->type = type;
     printf("New Function: %s, ReturnType: %s\n",name,type);
     return s;
@@ -289,13 +290,30 @@ SYMBOL* lookupSymbolCurrentTable(char* name, SYMBOLTABLE* st)
     return NULL;
 }
 
-SYMBOL* lookupSymbol(char* name, SYMBOLTABLE* st)
+SYMBOL* lookupSymbolVar(char* name, SYMBOLTABLE* st)
+{
+    printf("looking up name: %s\n",name);
+    if(st == NULL)
+    {
+        printf("st is NULL\n");
+        return NULL;
+    }
+    if(lookupSymbolCurrentTable(name,st))
+        return lookupSymbolCurrentTable(name,st);
+    lookupSymbolVar(name, st->par);
+}
+
+SYMBOL* lookupSymbolFun(char* name, SYMBOLTABLE* st)
 {
     if(st == NULL)
         return NULL;
     if(lookupSymbolCurrentTable(name,st))
-        return lookupSymbolCurrentTable(name,st);
-    lookupSymbol(name, st->par);
+    {
+        SYMBOL* symbol = lookupSymbolCurrentTable(name,st);
+        if(symbol != NULL && symbol->kind == function)
+            return symbol;
+    }
+    lookupSymbolFun(name, st->par);
 }
 
 
@@ -304,7 +322,7 @@ void addSymbol(SYMBOL* symbol, SYMBOLTABLE* st)
 {
     if(lookupSymbolCurrentTable(symbol->name, st))
     {
-        printf("ERROR: Identifier '%s' already declared!",symbol->name);
+        printf("ERROR: Identifier '%s' already declared in this scope!",symbol->name);
         exit(-1);
     }
     SYMBOLNODE* sn = makeSYMBOLNODE(symbol, st->symbols);

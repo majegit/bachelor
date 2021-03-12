@@ -120,11 +120,12 @@ PROGRAM* makePROGRAM(STMTCOMP* body, FUNCTIONNODE* fn);
 typedef struct SYMBOL {
     char* name;
     enum {variable,function} kind;
+    FPARAMETERNODE* fpn;
     char* type;
 } SYMBOL;
 
 SYMBOL* makeSYMBOLvariable(char* name, char* type);
-SYMBOL* makeSYMBOLfunction(char* name, char* type);
+SYMBOL* makeSYMBOLfunction(char* name, char* type, FPARAMETERNODE* fpn);
 
 typedef struct SYMBOLNODE {
     SYMBOL* current;
@@ -141,7 +142,8 @@ typedef struct SYMBOLTABLE {
 SYMBOLTABLE* makeSYMBOLTABLE(SYMBOLTABLE* par);
 
 SYMBOL* lookupSymbolCurrentTable(char* name, SYMBOLTABLE* st); //Checks only the current table
-SYMBOL* lookupSymbol(char* name, SYMBOLTABLE* st); //Checks current table and all parent tables
+SYMBOL* lookupSymbolVar(char* name, SYMBOLTABLE* st); //Checks current table and all parent tables
+SYMBOL* lookupSymbolFun(char* name, SYMBOLTABLE* st);
 
 void addSymbol(SYMBOL* symbol, SYMBOLTABLE* st);
 
