@@ -7,21 +7,22 @@ main(){
         name = name * i;
 
         if(name > 15 ){
-            double x = 7;
-            i = something(name);
-            i = something((3+3));
+            double x = 7+3.4;
+            x = something(7,i);
+            x = somethingElse(3+3.2);
         } else {
-            i = somethingElse(name);
+            double newDouble = somethingElse(name);
         }
         i = i + 1;
     }
     firstLetterOfAlphabet = 'b';
-    something(7.5);
+    something(7,3);
     print(i);
+
 }
 
 double function something(int formalInt, int formalInt2){
-    return formalInt*2;
+    return formalInt*2+formalInt2;
 }
 
 double function somethingElse(double formalDouble ){

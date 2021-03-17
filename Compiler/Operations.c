@@ -4,6 +4,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+SUBTYPE BOOL, CHAR, INT, DOUBLE;
+
+SUBTYPE BOOL = {"BOOLEAN",NULL,NULL};
+SUBTYPE CHAR = {"CHAR",NULL,NULL};
+SUBTYPE INT = {"INT",&DOUBLE,NULL};
+SUBTYPE DOUBLE = {"DOUBLE",NULL,&INT};
+
+TYPESYSTEM ts = {{&BOOL,&CHAR,&DOUBLE}};
+
 OPERATION op0 = { "+", 2, "INT",{"INT","INT"}};
 OPERATION op1 = { "+", 2, "DOUBLE",{"DOUBLE","DOUBLE"}};
 OPERATION op2 = { "-", 2, "INT",{"INT","INT"}};
@@ -33,21 +42,65 @@ OPERATION op23 = { "EQ", 2, "BOOLEAN",{"BOOLEAN","BOOLEAN"}};
 OPERATION op24 = { "AND", 2, "BOOLEAN",{"BOOLEAN","BOOLEAN"}};
 OPERATION op25 = { "OR", 2, "BOOLEAN",{"BOOLEAN","BOOLEAN"}};
 
+OPERATION op26 = { "+", 2, "CHAR",{"CHAR","INT"}};
+
 
 OPERATION* ALL_OPS[] = { &op0, &op1, &op2, &op3, &op4, &op5, &op6, &op7, &op8, &op9, &op10, &op11, &op12, &op13,
                          &op14, &op15, &op16, &op17, &op18, &op19, &op20, &op21, &op22, &op23, &op24, &op25};
 
+const int ops = sizeof(ALL_OPS) / sizeof(OPERATION*);
+
+SUBTYPE* getSubtype(char* type)
+{
+    if(strcmp(type,"INT") == 0)
+        return &INT;
+    if(strcmp(type,"DOUBLE") == 0 )
+        return &DOUBLE;
+    if(strcmp(type,"BOOLEAN") == 0)
+        return &BOOL;
+    if(strcmp(type,"CHAR") == 0)
+        return &CHAR;
+    return NULL;
+}
+
+OPERATION* coerceRight(char* typeLeft, char* typeRight, OPERATION* op)
+{
+    if(strcmp(op->argTypes[0], typeLeft) == 0 && strcmp(op->argTypes[1], typeRight) == 0)
+        return op;
+    SUBTYPE* parent = getSubtype(typeRight)->up;
+    if(parent == NULL)
+        return NULL;
+    return coerceRight(typeLeft, parent->type, op);
+}
+
+OPERATION* coerceLeft(char* typeLeft, char* typeRight, OPERATION* op)
+{
+    if(strcmp(op->argTypes[0], typeLeft) == 0 && strcmp(op->argTypes[1], typeRight) == 0)
+        return op;
+    if(strcmp(op->argTypes[0], typeLeft) != 0) //Leftside argument is wrong
+    {
+        SUBTYPE* parent = getSubtype(typeLeft)->up;
+        if(parent != NULL)
+            return coerceLeft(parent->type,typeRight,op);
+    } else
+    {
+        return coerceRight(typeLeft,typeRight,op);
+    }
+}
+
 OPERATION* searchOperations(char* op, char* typeLeft, char* typeRight)
 {
-    int ops = sizeof(ALL_OPS) / sizeof(OPERATION*);
     for(int i = 0; i < ops; i++)
     {
-        if(strcmp(ALL_OPS[i]->operator, op) == 0 && strcmp(ALL_OPS[i]->argTypes[0], typeLeft) == 0 && strcmp(ALL_OPS[i]->argTypes[1], typeRight) == 0)
+        if(strcmp(ALL_OPS[i]->operator, op) == 0)
         {
-            printf("FOUND THE OPERATION: %s %s %s\n",typeLeft,op,typeRight);
-            return ALL_OPS[i];
+            if(coerceLeft(typeLeft, typeRight, ALL_OPS[i]) != NULL)
+                return ALL_OPS[i];
         }
     }
     return NULL;
 }
+
+
+
 #endif

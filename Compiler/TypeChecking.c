@@ -2,17 +2,7 @@
 #include <stdlib.h>
 #include "TypeChecking.h"
 #include "Operations.c"
-#include "Tree.h"
 #include <string.h>
-
-SUBTYPE BOOL, CHAR, INT, DOUBLE;
-
-SUBTYPE BOOL = {"BOOLEAN",NULL,NULL};
-SUBTYPE CHAR = {"CHAR",NULL,NULL};
-SUBTYPE INT = {"INT",&DOUBLE,NULL};
-SUBTYPE DOUBLE = {"DOUBLE",NULL,&INT};
-
-TYPESYSTEM ts = {{&BOOL,&CHAR,&DOUBLE}};
 
 SYMBOLTABLE* currentScope;
 FUNCTION* currentFunction;
@@ -24,7 +14,6 @@ void typeChecking(PROGRAM* p)
 
 void tcTraversePROGRAM(PROGRAM* prog)
 {
-    printf("DEBUG: TRAVERSING PROGRAM\n");
     currentScope = prog->symbolTable;
     tcTraverseSTMTCOMP(prog->body);
     tcTraverseFUNCTIONNODE(prog->fn);
@@ -32,7 +21,6 @@ void tcTraversePROGRAM(PROGRAM* prog)
 
 void tcTraverseSTMTCOMP(STMTCOMP* sc)
 {
-    printf("DEBUG: TRAVERSING STMTCOMP\n");
     currentScope = sc->symbolTable;
     tcTraverseSTMTNODE(sc->stmtnode);
     currentScope = currentScope->par;
@@ -41,7 +29,6 @@ void tcTraverseSTMTCOMP(STMTCOMP* sc)
 
 void tcTraverseSTMTNODE(STMTNODE* sn)
 {
-    printf("DEBUG: TRAVERSING STMTNODE\n");
     if(sn == NULL)
         return;
     tcTraverseSTMT(sn->stmt);
@@ -50,11 +37,10 @@ void tcTraverseSTMTNODE(STMTNODE* sn)
 
 void tcTraverseSTMT(STMT* s)
 {
-    printf("DEBUG: TRAVERSING STMT\n");
     switch(s->kind)
     {
         case whileK:
-            tcTraverseEXP(s->val.whileS.guard); //Must have type boolean
+            tcTraverseEXP(s->val.whileS.guard);
             if(strcmp(s->val.whileS.guard->type, "BOOLEAN") != 0)
             {
                 printf("ERROR: Incompatible type, expected BOOLEAN, got %s at line: %d.\n",s->val.whileS.guard->type,s->lineno);
@@ -65,31 +51,16 @@ void tcTraverseSTMT(STMT* s)
         case assignK:
             tcTraverseEXP(s->val.assignS.val);
             SYMBOL* symbol = lookupSymbolVar(s->val.assignS.name, currentScope);
-            printf("At assign statement\n");
             if(symbol == NULL)
             {
                 printf("ERROR: Variable not declared: %s on line: %d\n",s->val.assignS.name,s->lineno);
                 exit(0);
             }
-            printf("At assign statement2\n");
-            if(s->val.assignS.val == NULL)
-            {
-                printf("EXPRESSION IS NULL\n");
-            }
-            printf("At assign statement3\n");
-            if(symbol->type == NULL)
-                printf("it is null\n");
-            if(s->val.assignS.val->type == NULL)
-                printf("the type is null\n");
-            printf("%s\n",symbol->type);
-            printf("%s\n",s->val.assignS.val->type);
             if(strcmp(symbol->type,s->val.assignS.val->type) != 0)
             {
-                printf("yes");
                 printf("ERROR: Incompatible type, expected %s, got %s on line: %d\n",symbol->type,s->val.assignS.val->type,s->lineno);
                 exit(0);
             }
-            printf("End of assign\n");
             break;
         case ifElseK:
             tcTraverseEXP(s->val.ifElseS.cond);
@@ -136,7 +107,6 @@ void tcTraverseSTMT(STMT* s)
 
 void tcTraverseEXP(EXP* e)
 {
-    printf("DEBUG: TRAVERSING EXP\n");
     switch(e->kind)
     {
         case idK:
@@ -190,7 +160,6 @@ void tcTraverseEXP(EXP* e)
 
 void tcTraverseAPARAMETERNODE(APARAMETERNODE* apn, FPARAMETERNODE* fpn)
 {
-    printf("DEBUG: TRAVERSING APARAMNODE\n");
     if(apn == NULL && fpn == NULL)
         return;
     if(apn == NULL && fpn != NULL || apn != NULL && fpn == NULL)
@@ -209,7 +178,6 @@ void tcTraverseAPARAMETERNODE(APARAMETERNODE* apn, FPARAMETERNODE* fpn)
 
 void tcTraverseFUNCTIONNODE(FUNCTIONNODE* fn)
 {
-    printf("DEBUG: TRAVERSING FUNCTIONNODE\n");
     if(fn == NULL)
         return;
     tcTraverseFUNCTION(fn->current);
@@ -218,7 +186,6 @@ void tcTraverseFUNCTIONNODE(FUNCTIONNODE* fn)
 
 void tcTraverseFUNCTION(FUNCTION* f)
 {
-    printf("DEBUG: TRAVERSING FUNCTION\n");
     currentFunction = f;
     tcTraverseSTMTCOMP(f->body);
     currentFunction = NULL;
