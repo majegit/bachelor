@@ -1,24 +1,19 @@
 #ifndef __TypeChecking_h
 #define __TypeChecking_h
 #include "Tree.h"
-typedef struct TYPESYSTEM
-{
-    struct SUBTYPE* group[3];
-} TYPESYSTEM;
-
-typedef struct SUBTYPE
+typedef struct TYPE
 {
     char* type;
-    struct SUBTYPE* up;
-    struct SUBTYPE* down;
-} SUBTYPE;
+    struct TYPE* up;
+    struct TYPE* down;
+} TYPE;
 
 typedef struct OPERATION
 {
     char* operator;
     int argc;
-    char* returnType;
-    char* argTypes[];
+    TYPE* returnType;
+    TYPE* argTypes[];
 } OPERATION;
 
 
