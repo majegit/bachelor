@@ -13,6 +13,7 @@ typedef struct EXP {
         struct {char* id; struct APARAMETERNODE* aparameternode;} funE;
     } val;
     char* type;
+    char* coerceTo;
 } EXP;
 
 EXP* makeEXPid(char* id);

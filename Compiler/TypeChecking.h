@@ -16,6 +16,12 @@ typedef struct OPERATION
     TYPE* argTypes[];
 } OPERATION;
 
+typedef struct OPERATION_WRAPPER
+{
+    int opCount;
+    OPERATION* op;
+} OPERATION_WRAPPER;
+
 
 void typeChecking(PROGRAM* p);
 void tcTraversePROGRAM(PROGRAM* prog);

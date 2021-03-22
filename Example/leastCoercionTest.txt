@@ -1,0 +1,5 @@
+main(){
+    boolean x = true;
+    int i = (2 < 3) + 3;
+    double d = (2 < 3) + 7;
+}

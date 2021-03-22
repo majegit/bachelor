@@ -55,21 +55,30 @@ TYPE* stringToType(char* type)
         return &INT;
     if(strcmp(type,"DOUBLE") == 0 )
         return &DOUBLE;
-    if(strcmp(type,"BOOL") == 0)
+    if(strcmp(type,"BOOLEAN") == 0)
         return &BOOL;
     if(strcmp(type,"CHAR") == 0)
         return &CHAR;
     return NULL;
 }
 
-int isSubtype(TYPE* child, TYPE* parent)
+int coercionCount(TYPE* child, TYPE* parent)
 {
+    int coercionCount = 0;
     while(child != NULL)
     {
         if(child == parent)
-            return 1;
+            return coercionCount;
+        coercionCount++;
         child = child->up;
     }
+    return -1;
+}
+
+int isSubtype(TYPE* child, TYPE* parent)
+{
+    if(coercionCount(child, parent) >= 0)
+        return 1;
     return 0;
 }
 
@@ -78,39 +87,50 @@ int perfectMatch(OPERATION* operation, char* op, TYPE* left, TYPE* right)
     return strcmp(operation->operator,op) == 0 && left == operation->argTypes[0] && right == operation->argTypes[1];
 }
 
-int match(OPERATION* operation, char* op, TYPE* left, TYPE* right)
+int coercionMatch(OPERATION* operation, char* op, TYPE* left, TYPE* right)
 {
     if(strcmp(operation->operator,op) != 0)
-        return 0;
-    return isSubtype(left,operation->argTypes[0]) && isSubtype(right,operation->argTypes[1]); //Check if both arguments can be casted to the desired type
+        return -1;
+    int coercionCountLeft = coercionCount(left,operation->argTypes[0]);
+    int coercionCountRight = coercionCount(right,operation->argTypes[1]);
+    if(coercionCountLeft < 0 || coercionCountRight < 0)
+        return -1;
+    return coercionCountLeft + coercionCountRight;
 }
 
 
-OPERATION* searchOperations(char* op, char* typeLeft, char* typeRight)
+OPERATION_WRAPPER* searchOperations(char* op, char* typeLeft, char* typeRight)
 {
     TYPE* left = stringToType(typeLeft);
     TYPE* right = stringToType(typeRight);
     OPERATION* operation = NULL;
+    OPERATION_WRAPPER* operationWrapper = (OPERATION_WRAPPER*)malloc(sizeof(OPERATION_WRAPPER));
     int opCounter = 0;
-
+    int leastCoercion = -1;
     for(int i = 0; i < operations; i++)
     {
-        if(perfectMatch(ALL_OPS[i], op, left, right)) //Perfect match
-            return ALL_OPS[i];
-        if(match(ALL_OPS[i], op, left, right))
+        if(perfectMatch(ALL_OPS[i], op, left, right)) //Perfect match, no coercion required
         {
-            operation = ALL_OPS[i];
-            opCounter++;
+            operationWrapper->opCount = 1;
+            operationWrapper->op = ALL_OPS[i];
+            return operationWrapper;
+        }
+        int coercionCount = coercionMatch(ALL_OPS[i], op, left, right);
+        if(coercionCount != -1)
+        {
+            if(coercionCount == leastCoercion)
+                opCounter++;
+            else if(coercionCount < leastCoercion || leastCoercion == -1)
+            {
+                operation = ALL_OPS[i];
+                leastCoercion = coercionCount;
+                opCounter = 1;
+            }
         }
     }
-    if(opCounter == 1)
-        return operation;
-    if(opCounter > 1)
-    {
-        printf("ERROR: multiple resolutions for %s '%s' %s, on lineno: %d\n",typeLeft,op,typeRight,lineno);
-        exit(0);
-    }
-    return NULL;
+    operationWrapper->opCount = opCounter;
+    operationWrapper->op = operation;
+    return operationWrapper;
 }
 
 

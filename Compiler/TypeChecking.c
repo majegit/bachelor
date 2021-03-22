@@ -61,6 +61,8 @@ void tcTraverseSTMT(STMT* s)
                 printf("ERROR: Incompatible type, expected %s, got %s on line: %d\n",symbol->type,s->val.assignS.val->type,s->lineno);
                 exit(0);
             }
+            if(strcmp(s->val.assignS.val->type,symbol->type) != 0)
+                s->val.assignS.val->coerceTo = symbol->type;
             break;
         case ifElseK:
             tcTraverseEXP(s->val.ifElseS.cond);
@@ -79,6 +81,8 @@ void tcTraverseSTMT(STMT* s)
                 printf("ERROR: Incompatible type, expected %s, got %s at line: %d.\n",currentFunction->returnType,s->val.returnS->type,s->lineno);
                 exit(0);
             }
+            if(strcmp(s->val.returnS->type,currentFunction->returnType) != 0)
+                s->val.returnS->coerceTo = currentFunction->returnType;
             break;
         case printK:
             tcTraverseEXP(s->val.printS);
@@ -92,6 +96,8 @@ void tcTraverseSTMT(STMT* s)
                     printf("ERROR: Incompatible type, expected %s, got %s at line: %d.\n",s->val.declS.type,s->val.declS.value->type,s->lineno);
                     exit(0);
                 }
+                if(strcmp(s->val.declS.value->type,s->val.declS.type) != 0)
+                    s->val.declS.value->coerceTo = s->val.declS.type;
             }
             break;
         case expK:
@@ -135,13 +141,22 @@ void tcTraverseEXP(EXP* e)
         case binopK:
             tcTraverseEXP(e->val.binopE.left);
             tcTraverseEXP(e->val.binopE.right);
-            OPERATION* op = searchOperations(e->val.binopE.operator, e->val.binopE.left->type, e->val.binopE.right->type);
-            if(op == NULL)
+            OPERATION_WRAPPER* operationWrapper = searchOperations(e->val.binopE.operator, e->val.binopE.left->type, e->val.binopE.right->type);
+            if(operationWrapper->opCount == 0)
             {
                 printf("ERROR: Operator '%s' not defined for %s %s on line: %d\n",e->val.binopE.operator,e->val.binopE.left->type,e->val.binopE.right->type,e->lineno);
                 exit(0);
             }
-            e->type = op->returnType->type;
+            if(operationWrapper->opCount > 1)
+            {
+                printf("ERROR: multiple resolutions for %s '%s' %s, on lineno: %d\n",e->val.binopE.left->type,e->val.binopE.operator,e->val.binopE.right->type,e->lineno);
+                exit(0);
+            }
+            if(strcmp(operationWrapper->op->argTypes[0]->type, e->val.binopE.left->type) != 0) //Flag coercion for the left argument
+                e->val.binopE.left->coerceTo = operationWrapper->op->argTypes[0]->type;
+            if(strcmp(operationWrapper->op->argTypes[1]->type, e->val.binopE.right->type) != 0) //Flag coercion for the right argument
+                e->val.binopE.right->coerceTo = operationWrapper->op->argTypes[1]->type;
+            e->type = operationWrapper->op->returnType->type;
             break;
         case funK:
             {
@@ -170,9 +185,11 @@ void tcTraverseAPARAMETERNODE(APARAMETERNODE* apn, FPARAMETERNODE* fpn)
     tcTraverseEXP(apn->current->exp);
     if(!isSubtype(stringToType(apn->current->exp->type), stringToType(fpn->current->type)))
     {
-        printf("ERROR: Mismatched arguments for function call on line: %d\n");
+        printf("ERROR: Mismatched arguments for function call on line: %d\n", apn->current->exp->lineno);
         exit(0);
     }
+    if(strcmp(apn->current->exp->type,fpn->current->type) != 0)
+        apn->current->exp->coerceTo = fpn->current->type;
     tcTraverseAPARAMETERNODE(apn->next, fpn->next);
 }
 
