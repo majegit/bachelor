@@ -131,13 +131,16 @@ SYMBOL* makeSYMBOLfunction(char* name, char* type, FPARAMETERNODE* fpn);
 typedef struct SYMBOLNODE {
     SYMBOL* current;
     struct SYMBOLNODE* next;
+    int label;
 } SYMBOLNODE;
 
-SYMBOLNODE* makeSYMBOLNODE(SYMBOL* symbol, SYMBOLNODE* next);
+SYMBOLNODE* makeSYMBOLNODE(SYMBOL* symbol, SYMBOLNODE* next, int label);
 
 typedef struct SYMBOLTABLE {
     struct SYMBOLTABLE* par;
     SYMBOLNODE* symbols;
+    int symbolCount;
+    int nextLabel;
 } SYMBOLTABLE;
 
 SYMBOLTABLE* makeSYMBOLTABLE(SYMBOLTABLE* par);

@@ -1,7 +1,6 @@
-main(){
+main() {
    int a = 2+2;
    a = a+something(2);
-   print(a);
 }
 
 int function something(int formalInt){

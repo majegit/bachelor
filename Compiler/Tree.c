@@ -261,12 +261,13 @@ SYMBOL* makeSYMBOLfunction(char* name, char* type, FPARAMETERNODE* fpn)
     return s;
 }
 
-SYMBOLNODE* makeSYMBOLNODE(SYMBOL* symbol, SYMBOLNODE* next)
+SYMBOLNODE* makeSYMBOLNODE(SYMBOL* symbol, SYMBOLNODE* next, int label)
 {
     SYMBOLNODE* sn;
     sn = (SYMBOLNODE*)malloc(sizeof(SYMBOLNODE));
     sn->current = symbol;
     sn->next = next;
+    sn->label = label;
     return sn;
 }
 
@@ -276,6 +277,8 @@ SYMBOLTABLE* makeSYMBOLTABLE(SYMBOLTABLE* par)
     st = (SYMBOLTABLE*)malloc(sizeof(SYMBOLTABLE));
     st->par = par;
     st->symbols = NULL;
+    st->symbolCount = 0;
+    st->nextLabel = 8; //starts at 8
     return st;
 }
 SYMBOL* lookupSymbolCurrentTable(char* name, SYMBOLTABLE* st)
@@ -316,8 +319,6 @@ SYMBOL* lookupSymbolFun(char* name, SYMBOLTABLE* st)
     lookupSymbolFun(name, st->par);
 }
 
-
-
 void addSymbol(SYMBOL* symbol, SYMBOLTABLE* st)
 {
     if(lookupSymbolCurrentTable(symbol->name, st))
@@ -325,8 +326,20 @@ void addSymbol(SYMBOL* symbol, SYMBOLTABLE* st)
         printf("ERROR: Identifier '%s' already declared in this scope!",symbol->name);
         exit(-1);
     }
-    SYMBOLNODE* sn = makeSYMBOLNODE(symbol, st->symbols);
+    SYMBOLNODE* sn = makeSYMBOLNODE(symbol, st->symbols, st->nextLabel);
     st->symbols = sn;
+    st->symbolCount++;
+    if(symbol->kind == variable) {
+        if (strcmp(symbol->type, "BOOLEAN") == 0) {
+            st->nextLabel += 1;
+        } else if (strcmp(symbol->type, "INT") == 0) {
+            st->nextLabel += 4;
+        } else if (strcmp(symbol->type, "DOUBLE") == 0) {
+            st->nextLabel += 8;
+        } else if (strcmp(symbol->type, "CHAR") == 0) {
+            st->nextLabel += 1;
+        }
+    }
 }
 
 
