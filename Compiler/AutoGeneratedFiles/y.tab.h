@@ -115,7 +115,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 14 "Compiler\\Parser.y"
+#line 16 "Compiler\\Parser.y"
 
    int intconst;
    char* stringconst;

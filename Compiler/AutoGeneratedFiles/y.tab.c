@@ -69,9 +69,11 @@
 /* First part of user prologue.  */
 #line 1 "Compiler\\Parser.y"
 
-#include "Compiler\Tree.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "Compiler\Tree.h"
+#include "Compiler\DebugUtils.h"
+
 extern char *yytext;
 extern int lineno;
 extern PROGRAM* program;
@@ -80,7 +82,7 @@ void yyerror (char const *s) {
 }
 int yylex();
 
-#line 84 "y.tab.c"
+#line 86 "y.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -185,7 +187,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 14 "Compiler\\Parser.y"
+#line 16 "Compiler\\Parser.y"
 
    int intconst;
    char* stringconst;
@@ -205,7 +207,7 @@ union YYSTYPE
    STMTCOMP* stmtcomp;
    PROGRAM* program;
 
-#line 209 "y.tab.c"
+#line 211 "y.tab.c"
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -647,12 +649,12 @@ static const yytype_int8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    62,    62,    67,    69,    71,    73,    75,    77,    79,
-      81,    83,    85,    87,    89,    91,    93,    95,    97,    99,
-     101,   103,   107,   109,   111,   113,   115,   117,   119,   121,
-     123,   128,   132,   134,   138,   142,   144,   149,   150,   154,
-     158,   160,   165,   166,   170,   174,   176,   181,   182,   186,
-     188,   190,   192
+       0,    64,    64,    69,    71,    73,    75,    77,    79,    81,
+      83,    85,    87,    89,    91,    93,    95,    97,    99,   101,
+     103,   105,   109,   111,   113,   115,   117,   119,   121,   123,
+     125,   130,   134,   136,   140,   144,   146,   151,   152,   156,
+     160,   162,   167,   168,   172,   176,   178,   183,   184,   188,
+     190,   192,   194
 };
 #endif
 
@@ -1330,314 +1332,314 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* program: MAIN '(' ')' stmtcompound opt_functionnode  */
-#line 63 "Compiler\\Parser.y"
+#line 65 "Compiler\\Parser.y"
           {program = makePROGRAM((yyvsp[-1].stmtcomp),(yyvsp[0].functionnode));
           printf("Great Success!");}
-#line 1337 "y.tab.c"
+#line 1339 "y.tab.c"
     break;
 
   case 3: /* exp: tIDENTIFIER  */
-#line 68 "Compiler\\Parser.y"
+#line 70 "Compiler\\Parser.y"
       {(yyval.exp) = makeEXPid((yyvsp[0].stringconst));}
-#line 1343 "y.tab.c"
+#line 1345 "y.tab.c"
     break;
 
   case 4: /* exp: tINT  */
-#line 70 "Compiler\\Parser.y"
+#line 72 "Compiler\\Parser.y"
       {(yyval.exp) = makeEXPint((yyvsp[0].intconst));}
-#line 1349 "y.tab.c"
+#line 1351 "y.tab.c"
     break;
 
   case 5: /* exp: tDOUBLE  */
-#line 72 "Compiler\\Parser.y"
+#line 74 "Compiler\\Parser.y"
       {(yyval.exp) = makeEXPdouble((yyvsp[0].doubleconst));}
-#line 1355 "y.tab.c"
+#line 1357 "y.tab.c"
     break;
 
   case 6: /* exp: tBOOLEAN  */
-#line 74 "Compiler\\Parser.y"
+#line 76 "Compiler\\Parser.y"
       {(yyval.exp) = makeEXPbool((yyvsp[0].boolconst));}
-#line 1361 "y.tab.c"
+#line 1363 "y.tab.c"
     break;
 
   case 7: /* exp: '\'' tIDENTIFIER '\''  */
-#line 76 "Compiler\\Parser.y"
+#line 78 "Compiler\\Parser.y"
       {(yyval.exp) = makeEXPchar(* (yyvsp[-1].stringconst));}
-#line 1367 "y.tab.c"
+#line 1369 "y.tab.c"
     break;
 
   case 8: /* exp: '(' exp ')'  */
-#line 78 "Compiler\\Parser.y"
+#line 80 "Compiler\\Parser.y"
       {(yyval.exp) = (yyvsp[-1].exp);}
-#line 1373 "y.tab.c"
+#line 1375 "y.tab.c"
     break;
 
   case 9: /* exp: exp '-' exp  */
-#line 80 "Compiler\\Parser.y"
+#line 82 "Compiler\\Parser.y"
       {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),"-",(yyvsp[0].exp));}
-#line 1379 "y.tab.c"
+#line 1381 "y.tab.c"
     break;
 
   case 10: /* exp: exp '+' exp  */
-#line 82 "Compiler\\Parser.y"
+#line 84 "Compiler\\Parser.y"
       {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),"+",(yyvsp[0].exp));}
-#line 1385 "y.tab.c"
+#line 1387 "y.tab.c"
     break;
 
   case 11: /* exp: exp '*' exp  */
-#line 84 "Compiler\\Parser.y"
+#line 86 "Compiler\\Parser.y"
       {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),"*",(yyvsp[0].exp));}
-#line 1391 "y.tab.c"
+#line 1393 "y.tab.c"
     break;
 
   case 12: /* exp: exp '/' exp  */
-#line 86 "Compiler\\Parser.y"
+#line 88 "Compiler\\Parser.y"
       {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),"/",(yyvsp[0].exp));}
-#line 1397 "y.tab.c"
+#line 1399 "y.tab.c"
     break;
 
   case 13: /* exp: exp L exp  */
-#line 88 "Compiler\\Parser.y"
+#line 90 "Compiler\\Parser.y"
       {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),"L",(yyvsp[0].exp));}
-#line 1403 "y.tab.c"
+#line 1405 "y.tab.c"
     break;
 
   case 14: /* exp: exp G exp  */
-#line 90 "Compiler\\Parser.y"
+#line 92 "Compiler\\Parser.y"
       {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),"G",(yyvsp[0].exp));}
-#line 1409 "y.tab.c"
+#line 1411 "y.tab.c"
     break;
 
   case 15: /* exp: exp LEQ exp  */
-#line 92 "Compiler\\Parser.y"
+#line 94 "Compiler\\Parser.y"
       {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),"LEQ",(yyvsp[0].exp));}
-#line 1415 "y.tab.c"
+#line 1417 "y.tab.c"
     break;
 
   case 16: /* exp: exp GEQ exp  */
-#line 94 "Compiler\\Parser.y"
+#line 96 "Compiler\\Parser.y"
       {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),"GEQ",(yyvsp[0].exp));}
-#line 1421 "y.tab.c"
+#line 1423 "y.tab.c"
     break;
 
   case 17: /* exp: exp EQ exp  */
-#line 96 "Compiler\\Parser.y"
+#line 98 "Compiler\\Parser.y"
       {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),"EQ",(yyvsp[0].exp));}
-#line 1427 "y.tab.c"
+#line 1429 "y.tab.c"
     break;
 
   case 18: /* exp: exp NEQ exp  */
-#line 98 "Compiler\\Parser.y"
+#line 100 "Compiler\\Parser.y"
       {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),"NEQ",(yyvsp[0].exp));}
-#line 1433 "y.tab.c"
+#line 1435 "y.tab.c"
     break;
 
   case 19: /* exp: exp AND exp  */
-#line 100 "Compiler\\Parser.y"
+#line 102 "Compiler\\Parser.y"
       {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),"AND",(yyvsp[0].exp));}
-#line 1439 "y.tab.c"
+#line 1441 "y.tab.c"
     break;
 
   case 20: /* exp: exp OR exp  */
-#line 102 "Compiler\\Parser.y"
+#line 104 "Compiler\\Parser.y"
       {(yyval.exp) = makeEXPbinop((yyvsp[-2].exp),"OR",(yyvsp[0].exp));}
-#line 1445 "y.tab.c"
+#line 1447 "y.tab.c"
     break;
 
   case 21: /* exp: tIDENTIFIER '(' opt_aparameternode ')'  */
-#line 104 "Compiler\\Parser.y"
+#line 106 "Compiler\\Parser.y"
       {(yyval.exp) = makeEXPfun((yyvsp[-3].stringconst),(yyvsp[-1].aparameternode));}
-#line 1451 "y.tab.c"
+#line 1453 "y.tab.c"
     break;
 
   case 22: /* stmt: WHILE '(' exp ')' stmtcompound  */
-#line 108 "Compiler\\Parser.y"
+#line 110 "Compiler\\Parser.y"
        {(yyval.stmt) = makeSTMTwhile((yyvsp[-2].exp),(yyvsp[0].stmtcomp));}
-#line 1457 "y.tab.c"
+#line 1459 "y.tab.c"
     break;
 
   case 23: /* stmt: IF '(' exp ')' stmtcompound ELSE stmtcompound  */
-#line 110 "Compiler\\Parser.y"
+#line 112 "Compiler\\Parser.y"
        {(yyval.stmt) = makeSTMTifElse((yyvsp[-4].exp),(yyvsp[-2].stmtcomp),(yyvsp[0].stmtcomp));}
-#line 1463 "y.tab.c"
+#line 1465 "y.tab.c"
     break;
 
   case 24: /* stmt: IF '(' exp ')' stmtcompound  */
-#line 112 "Compiler\\Parser.y"
+#line 114 "Compiler\\Parser.y"
        {(yyval.stmt) = makeSTMTifElse((yyvsp[-2].exp),(yyvsp[0].stmtcomp),NULL);}
-#line 1469 "y.tab.c"
+#line 1471 "y.tab.c"
     break;
 
   case 25: /* stmt: RETURN exp ';'  */
-#line 114 "Compiler\\Parser.y"
+#line 116 "Compiler\\Parser.y"
        {(yyval.stmt) = makeSTMTreturn((yyvsp[-1].exp));}
-#line 1475 "y.tab.c"
+#line 1477 "y.tab.c"
     break;
 
   case 26: /* stmt: PRINT '(' exp ')' ';'  */
-#line 116 "Compiler\\Parser.y"
+#line 118 "Compiler\\Parser.y"
        {(yyval.stmt) = makeSTMTprint((yyvsp[-2].exp));}
-#line 1481 "y.tab.c"
+#line 1483 "y.tab.c"
     break;
 
   case 27: /* stmt: type tIDENTIFIER ';'  */
-#line 118 "Compiler\\Parser.y"
+#line 120 "Compiler\\Parser.y"
        {(yyval.stmt) = makeSTMTdecl((yyvsp[-2].stringconst),(yyvsp[-1].stringconst),NULL);}
-#line 1487 "y.tab.c"
+#line 1489 "y.tab.c"
     break;
 
   case 28: /* stmt: type tIDENTIFIER ASSIGN exp ';'  */
-#line 120 "Compiler\\Parser.y"
+#line 122 "Compiler\\Parser.y"
        {(yyval.stmt) = makeSTMTdecl((yyvsp[-4].stringconst),(yyvsp[-3].stringconst),(yyvsp[-1].exp));}
-#line 1493 "y.tab.c"
+#line 1495 "y.tab.c"
     break;
 
   case 29: /* stmt: tIDENTIFIER ASSIGN exp ';'  */
-#line 122 "Compiler\\Parser.y"
+#line 124 "Compiler\\Parser.y"
        {(yyval.stmt) = makeSTMTassign((yyvsp[-3].stringconst),(yyvsp[-1].exp));}
-#line 1499 "y.tab.c"
+#line 1501 "y.tab.c"
     break;
 
   case 30: /* stmt: exp ';'  */
-#line 124 "Compiler\\Parser.y"
+#line 126 "Compiler\\Parser.y"
        {(yyval.stmt) = makeSTMTexp((yyvsp[-1].exp));}
-#line 1505 "y.tab.c"
+#line 1507 "y.tab.c"
     break;
 
   case 31: /* stmtcompound: '{' stmtnode '}'  */
-#line 129 "Compiler\\Parser.y"
+#line 131 "Compiler\\Parser.y"
                {(yyval.stmtcomp) = makeSTMTCOMP((yyvsp[-1].stmtnode));}
-#line 1511 "y.tab.c"
+#line 1513 "y.tab.c"
     break;
 
   case 32: /* stmtnode: stmt  */
-#line 133 "Compiler\\Parser.y"
+#line 135 "Compiler\\Parser.y"
            {(yyval.stmtnode) = makeSTMTNODE((yyvsp[0].stmt),NULL);}
-#line 1517 "y.tab.c"
+#line 1519 "y.tab.c"
     break;
 
   case 33: /* stmtnode: stmt stmtnode  */
-#line 135 "Compiler\\Parser.y"
+#line 137 "Compiler\\Parser.y"
            {(yyval.stmtnode) = makeSTMTNODE((yyvsp[-1].stmt),(yyvsp[0].stmtnode));}
-#line 1523 "y.tab.c"
+#line 1525 "y.tab.c"
     break;
 
   case 34: /* aparameter: exp  */
-#line 139 "Compiler\\Parser.y"
+#line 141 "Compiler\\Parser.y"
              {(yyval.aparameter) = makeAPARAMETER((yyvsp[0].exp));}
-#line 1529 "y.tab.c"
+#line 1531 "y.tab.c"
     break;
 
   case 35: /* aparameternode: aparameter  */
-#line 143 "Compiler\\Parser.y"
+#line 145 "Compiler\\Parser.y"
                 {(yyval.aparameternode) = makeAPARAMETERNODE((yyvsp[0].aparameter),NULL);}
-#line 1535 "y.tab.c"
+#line 1537 "y.tab.c"
     break;
 
   case 36: /* aparameternode: aparameter ',' aparameternode  */
-#line 145 "Compiler\\Parser.y"
+#line 147 "Compiler\\Parser.y"
                 {(yyval.aparameternode) = makeAPARAMETERNODE((yyvsp[-2].aparameter),(yyvsp[0].aparameternode));}
-#line 1541 "y.tab.c"
+#line 1543 "y.tab.c"
     break;
 
   case 37: /* opt_aparameternode: %empty  */
-#line 149 "Compiler\\Parser.y"
+#line 151 "Compiler\\Parser.y"
                      {(yyval.aparameternode) = NULL;}
-#line 1547 "y.tab.c"
+#line 1549 "y.tab.c"
     break;
 
   case 38: /* opt_aparameternode: aparameternode  */
-#line 151 "Compiler\\Parser.y"
+#line 153 "Compiler\\Parser.y"
                      {(yyval.aparameternode) = (yyvsp[0].aparameternode);}
-#line 1553 "y.tab.c"
+#line 1555 "y.tab.c"
     break;
 
   case 39: /* fparameter: type tIDENTIFIER  */
-#line 155 "Compiler\\Parser.y"
+#line 157 "Compiler\\Parser.y"
              {(yyval.fparameter) = makeFPARAMETER((yyvsp[-1].stringconst),(yyvsp[0].stringconst));}
-#line 1559 "y.tab.c"
+#line 1561 "y.tab.c"
     break;
 
   case 40: /* fparameternode: fparameter  */
-#line 159 "Compiler\\Parser.y"
+#line 161 "Compiler\\Parser.y"
                  {(yyval.fparameternode) = makeFPARAMETERNODE((yyvsp[0].fparameter),NULL);}
-#line 1565 "y.tab.c"
+#line 1567 "y.tab.c"
     break;
 
   case 41: /* fparameternode: fparameter ',' fparameternode  */
-#line 161 "Compiler\\Parser.y"
+#line 163 "Compiler\\Parser.y"
                  {(yyval.fparameternode) = makeFPARAMETERNODE((yyvsp[-2].fparameter),(yyvsp[0].fparameternode));}
-#line 1571 "y.tab.c"
+#line 1573 "y.tab.c"
     break;
 
   case 42: /* opt_fparameternode: %empty  */
-#line 165 "Compiler\\Parser.y"
+#line 167 "Compiler\\Parser.y"
                      {(yyval.fparameternode) = NULL;}
-#line 1577 "y.tab.c"
+#line 1579 "y.tab.c"
     break;
 
   case 43: /* opt_fparameternode: fparameternode  */
-#line 167 "Compiler\\Parser.y"
+#line 169 "Compiler\\Parser.y"
                      {(yyval.fparameternode) = (yyvsp[0].fparameternode);}
-#line 1583 "y.tab.c"
+#line 1585 "y.tab.c"
     break;
 
   case 44: /* function: type FUNC tIDENTIFIER '(' opt_fparameternode ')' stmtcompound  */
-#line 171 "Compiler\\Parser.y"
+#line 173 "Compiler\\Parser.y"
            {(yyval.function) = makeFUNCTION((yyvsp[-6].stringconst),(yyvsp[-4].stringconst),(yyvsp[-2].fparameternode),(yyvsp[0].stmtcomp));}
-#line 1589 "y.tab.c"
+#line 1591 "y.tab.c"
     break;
 
   case 45: /* functionnode: function  */
-#line 175 "Compiler\\Parser.y"
+#line 177 "Compiler\\Parser.y"
                {(yyval.functionnode) = makeFUNCTIONNODE((yyvsp[0].function),NULL);}
-#line 1595 "y.tab.c"
+#line 1597 "y.tab.c"
     break;
 
   case 46: /* functionnode: function functionnode  */
-#line 177 "Compiler\\Parser.y"
+#line 179 "Compiler\\Parser.y"
                {(yyval.functionnode) = makeFUNCTIONNODE((yyvsp[-1].function),(yyvsp[0].functionnode));}
-#line 1601 "y.tab.c"
+#line 1603 "y.tab.c"
     break;
 
   case 47: /* opt_functionnode: %empty  */
-#line 181 "Compiler\\Parser.y"
+#line 183 "Compiler\\Parser.y"
                    {(yyval.functionnode) = NULL;}
-#line 1607 "y.tab.c"
+#line 1609 "y.tab.c"
     break;
 
   case 48: /* opt_functionnode: functionnode  */
-#line 183 "Compiler\\Parser.y"
+#line 185 "Compiler\\Parser.y"
                    {(yyval.functionnode) = (yyvsp[0].functionnode);}
-#line 1613 "y.tab.c"
+#line 1615 "y.tab.c"
     break;
 
   case 49: /* type: BOOLEAN  */
-#line 187 "Compiler\\Parser.y"
+#line 189 "Compiler\\Parser.y"
        {(yyval.stringconst) = "BOOLEAN";}
-#line 1619 "y.tab.c"
+#line 1621 "y.tab.c"
     break;
 
   case 50: /* type: CHAR  */
-#line 189 "Compiler\\Parser.y"
+#line 191 "Compiler\\Parser.y"
        {(yyval.stringconst) = "CHAR";}
-#line 1625 "y.tab.c"
+#line 1627 "y.tab.c"
     break;
 
   case 51: /* type: DOUBLE  */
-#line 191 "Compiler\\Parser.y"
+#line 193 "Compiler\\Parser.y"
        {(yyval.stringconst) = "DOUBLE";}
-#line 1631 "y.tab.c"
+#line 1633 "y.tab.c"
     break;
 
   case 52: /* type: INT  */
-#line 193 "Compiler\\Parser.y"
+#line 195 "Compiler\\Parser.y"
        {(yyval.stringconst) = "INT";}
-#line 1637 "y.tab.c"
+#line 1639 "y.tab.c"
     break;
 
 
-#line 1641 "y.tab.c"
+#line 1643 "y.tab.c"
 
       default: break;
     }
@@ -1831,4 +1833,4 @@ yyreturn:
   return yyresult;
 }
 
-#line 196 "Compiler\\Parser.y"
+#line 198 "Compiler\\Parser.y"

@@ -1,7 +1,9 @@
 %{
-#include "Compiler\Tree.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "Compiler\Tree.h"
+#include "Compiler\DebugUtils.h"
+
 extern char *yytext;
 extern int lineno;
 extern PROGRAM* program;

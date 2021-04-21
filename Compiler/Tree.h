@@ -123,6 +123,7 @@ typedef struct SYMBOL {
     enum {variable,function} kind;
     FPARAMETERNODE* fpn;
     char* type;
+    int offset;
 } SYMBOL;
 
 SYMBOL* makeSYMBOLvariable(char* name, char* type);
@@ -131,10 +132,9 @@ SYMBOL* makeSYMBOLfunction(char* name, char* type, FPARAMETERNODE* fpn);
 typedef struct SYMBOLNODE {
     SYMBOL* current;
     struct SYMBOLNODE* next;
-    int label;
 } SYMBOLNODE;
 
-SYMBOLNODE* makeSYMBOLNODE(SYMBOL* symbol, SYMBOLNODE* next, int label);
+SYMBOLNODE* makeSYMBOLNODE(SYMBOL* symbol, SYMBOLNODE* next);
 
 typedef struct SYMBOLTABLE {
     struct SYMBOLTABLE* par;
@@ -148,6 +148,7 @@ SYMBOLTABLE* makeSYMBOLTABLE(SYMBOLTABLE* par);
 SYMBOL* lookupSymbolCurrentTable(char* name, SYMBOLTABLE* st); //Checks only the current table
 SYMBOL* lookupSymbolVar(char* name, SYMBOLTABLE* st); //Checks current table and all parent tables
 SYMBOL* lookupSymbolFun(char* name, SYMBOLTABLE* st);
+int* staticLinkCount(char* name, SYMBOLTABLE* st);
 
 void addSymbol(SYMBOL* symbol, SYMBOLTABLE* st);
 

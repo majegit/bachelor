@@ -245,7 +245,6 @@ SYMBOL* makeSYMBOLvariable(char* name, char* type)
     s->name = name;
     s->kind = variable;
     s->type = type;
-    printf("New Variable: %s, Type: %s\n",name,type);
     return s;
 }
 
@@ -257,17 +256,15 @@ SYMBOL* makeSYMBOLfunction(char* name, char* type, FPARAMETERNODE* fpn)
     s->kind = function;
     s->fpn = fpn;
     s->type = type;
-    printf("New Function: %s, ReturnType: %s\n",name,type);
     return s;
 }
 
-SYMBOLNODE* makeSYMBOLNODE(SYMBOL* symbol, SYMBOLNODE* next, int label)
+SYMBOLNODE* makeSYMBOLNODE(SYMBOL* symbol, SYMBOLNODE* next)
 {
     SYMBOLNODE* sn;
     sn = (SYMBOLNODE*)malloc(sizeof(SYMBOLNODE));
     sn->current = symbol;
     sn->next = next;
-    sn->label = label;
     return sn;
 }
 
@@ -278,7 +275,7 @@ SYMBOLTABLE* makeSYMBOLTABLE(SYMBOLTABLE* par)
     st->par = par;
     st->symbols = NULL;
     st->symbolCount = 0;
-    st->nextLabel = 8; //starts at 8
+    st->nextLabel = 0;
     return st;
 }
 SYMBOL* lookupSymbolCurrentTable(char* name, SYMBOLTABLE* st)
@@ -319,6 +316,21 @@ SYMBOL* lookupSymbolFun(char* name, SYMBOLTABLE* st)
     lookupSymbolFun(name, st->par);
 }
 
+int* staticLinkCount(char* name, SYMBOLTABLE* st)
+{
+    SYMBOL* temp;
+    int* levelAndNextLabel = (int*)malloc(sizeof(int)*2);
+    temp = lookupSymbolCurrentTable(name,st);
+    while(temp == NULL)
+    {
+        levelAndNextLabel[0]++;
+        st = st->par;
+        temp = lookupSymbolCurrentTable(name,st);
+    }
+    levelAndNextLabel[1] = temp->offset;
+    return levelAndNextLabel;
+}
+
 void addSymbol(SYMBOL* symbol, SYMBOLTABLE* st)
 {
     if(lookupSymbolCurrentTable(symbol->name, st))
@@ -326,9 +338,6 @@ void addSymbol(SYMBOL* symbol, SYMBOLTABLE* st)
         printf("ERROR: Identifier '%s' already declared in this scope!",symbol->name);
         exit(-1);
     }
-    SYMBOLNODE* sn = makeSYMBOLNODE(symbol, st->symbols, st->nextLabel);
-    st->symbols = sn;
-    st->symbolCount++;
     if(symbol->kind == variable) {
         if (strcmp(symbol->type, "BOOLEAN") == 0) {
             st->nextLabel += 1;
@@ -340,6 +349,8 @@ void addSymbol(SYMBOL* symbol, SYMBOLTABLE* st)
             st->nextLabel += 1;
         }
     }
+    symbol->offset = st->nextLabel;
+    SYMBOLNODE* sn = makeSYMBOLNODE(symbol, st->symbols);
+    st->symbols = sn;
+    st->symbolCount++;
 }
-
-

@@ -1,6 +1,8 @@
-main(){
+main() {
     boolean y;
     int x;
     double d;
     char less;
+    x = 3;
+    x = 1 * 2 + (3+4) * (5+6);
 }
