@@ -62,8 +62,7 @@ int yylex();
 
 %%
 program : MAIN '(' ')' stmtcompound opt_functionnode
-          {program = makePROGRAM($4,$5);
-          printf("Great Success!");}
+          {program = makePROGRAM($4,$5);}
 ;
 
 exp : tIDENTIFIER

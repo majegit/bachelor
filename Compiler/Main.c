@@ -13,16 +13,14 @@ int main()
 {
     lineno = 1;
 
-    printf("STARTING!\n");
+    printf("STARTING SCANNING AND PARSING\n");
     yyparse();
-    printf("\n");
     symbolCollection(program);
     printf("STARTING TYPECHECK\n");
     typeChecking(program);
     printf("STARTING INTERMEDIATE CODE GENERATION\n");
     LL* iCode = icgTraversePROGRAM(program);
     printIC(iCode);
-    printf("AFTER PRINT IC");
     printf("STARTING CODE EMIT\n");
     return 0;
 }

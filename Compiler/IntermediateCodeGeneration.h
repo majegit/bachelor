@@ -12,6 +12,7 @@ typedef enum opKind {
     call,
     ret,
     cmp,
+    jmp,
     je,
     jne,
     jg,
@@ -70,7 +71,7 @@ typedef enum labelKind {
     endwhile_label,
     if_label,
     endif_label,
-    else_label
+    endelse_label
 } labelKind;
 
 typedef struct Mode {
@@ -87,6 +88,7 @@ typedef struct Target {
 typedef struct Operation {
     opKind opK;
     metaKind metaK; //This is only relevant if opKind is meta also
+    int metaInformation; //This is only relevant if opkind is meta also
     opSize size; //For some operations this is relevant
 } OP;
 
@@ -110,7 +112,6 @@ typedef struct LinkedList {
     LLN* last;
 } LL;
 
-LL* code;
 LL* icgTraversePROGRAM(PROGRAM* prog);
 void icgTraverseSTMTCOMP(STMTCOMP* sc);
 void icgTraverseSTMTNODE(STMTNODE* sn);
@@ -135,7 +136,15 @@ void quickAddLabel(labelKind kind, int labelNumber);
 void quickAddPush(Mode* mode, Target* target);
 void quickAddPushId(char* name);
 void quickAddPopRRT();
+void quickAddPopReg(int registerNumber);
 void quickAddMoveRBPToRSL();
+void quickAddCheckTruthValue();
+void quickAddJumpIfFalse(labelKind k, int labelNumber);
+void quickAddUnconditionalJmp(labelKind k, int labelNumber);
+void quickAddArithmeticINS(opKind k, opSize size);
+void quickAddCompareINS(char* op);
+void quickAddBooleanINS(char* op);
+void quickAddPushReg(int regNumber);
 
 int labelGenerator(labelKind kind);
 opSize getSizeOfType(char* typeName);

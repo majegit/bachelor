@@ -6,13 +6,16 @@
 
 SYMBOLTABLE* currentScope;
 
+
+LL* code;
+
 LL* icgTraversePROGRAM(PROGRAM* prog)
 {
     code = (LL*)malloc(sizeof(LL));
-    quickAddMeta(PROGRAM_PROLOGUE);
-    printf("ic main\n");
-    icgTraverseSTMTCOMP(prog->body);
+    code->first = NULL;
 
+    quickAddMeta(PROGRAM_PROLOGUE);
+    icgTraverseSTMTCOMP(prog->body);
     quickAddMeta(PROGRAM_EPILOGUE);
     icgTraverseFUNCTIONNODE(prog->fn);
     return code;
@@ -21,12 +24,9 @@ LL* icgTraversePROGRAM(PROGRAM* prog)
 void icgTraverseSTMTCOMP(STMTCOMP* sc)
 {
     currentScope = sc->symbolTable;
-
     quickAddMeta(ALLOCATE_STACK_SPACE); //When entering new scope, rbp is pushed and local variables are given space on the stack
-    printf("added meta");
-    code->last->ins->op->size = sc->symbolTable->nextLabel; //How much space is allocated is specified here
+    code->last->ins->op->metaInformation = sc->symbolTable->nextLabel; //How much space is allocated is specified here
     icgTraverseSTMTNODE(sc->stmtnode);
-
     currentScope = sc->symbolTable->par;
 }
 
@@ -41,64 +41,99 @@ void icgTraverseSTMTNODE(STMTNODE* sn)
 
 void icgTraverseSTMT(STMT* s)
 {
+    printf("stmt kind: %d\n",s->kind);
     switch(s->kind)
     {
         case whileK:
             {
-                int labelNumber = labelGenerator(while_label);     //X
-                quickAddLabel(while_label, labelNumber);           //WhileX:
-                icgTraverseEXP(s->val.whileS.guard);               //GuardX
-
-                //cmp $1, reg1
-                //jne quickAddLabel(endWhile_label, labelNumber);   endwhile_X
-
-                icgTraverseSTMTCOMP(s->val.whileS.body);
-
-
-                quickAddLabel(endwhile_label, labelNumber);    //endwhile_X:
+                int labelNumber = labelGenerator(while_label);     //Generate int X
+                quickAddLabel(while_label, labelNumber);           //while_X:
+                icgTraverseEXP(s->val.whileS.guard);                    //Guard
+                quickAddPopRRT();                                       //Move boolean to rrt
+                quickAddCheckTruthValue();                              //cmp rrt, $1
+                quickAddJumpIfFalse(endwhile_label,labelNumber);     //jne endwhile_X
+                icgTraverseSTMTCOMP(s->val.whileS.body);                //generate the code for the body of the whileloop
+                quickAddLabel(endwhile_label, labelNumber);        //endwhile_X:
             }
             break;
         case assignK:
-            icgTraverseEXP(s->val.assignS.val);
-            quickAddPopRRT();
-            quickAddMoveRBPToRSL();
+            {
+                icgTraverseEXP(s->val.assignS.val);
+                quickAddPopRRT();
+                quickAddMoveRBPToRSL();
+                int* staticLinkJumpsAndOffset = staticLinkCount(s->val.assignS.name,currentScope);
+                for(int i=0; i < staticLinkJumpsAndOffset[0]; i++)
+                    quickAddMeta(FOLLOW_STATIC_LINK);
+                Mode* modeDIR = makeMode(dir,0);
+                Mode* modeIRL = makeMode(irl,staticLinkJumpsAndOffset[1]);
 
-            int* staticLinkJumpsAndOffset = staticLinkCount(s->val.assignS.name,currentScope);
-            for(int i=0; i < staticLinkJumpsAndOffset[0]; i++)
-                quickAddMeta(FOLLOW_STATIC_LINK);
+                Target* from = makeTarget(rrt,0,0);
+                Target* to = makeTarget(rsl,0,0);
 
-            Mode* modeDIR = makeMode(dir,0);
-            Mode* modeIRL = makeMode(irl,staticLinkJumpsAndOffset[1]);
+                ARG* argFrom = makeARG(from,modeDIR);
+                ARG* argTo = makeARG(to,modeIRL);
+                ARG* args[2] = {argFrom, argTo};
 
-            Target* from = makeTarget(rrt,0,0);
-            Target* to = makeTarget(rsl,0,0);
+                OP* op = makeOP(move,0,getSizeOfId(s->val.assignS.name));
+                INS* ins = makeINS(op,args);
+                quickAddIns(ins);
 
-            ARG* argFrom = makeARG(from,modeDIR);
-            ARG* argTo = makeARG(to,modeIRL);
-            ARG* args[2] = {argFrom, argTo};
-
-            OP* op = makeOP(move,0,getSizeOfId(s->val.assignS.name));
-            INS* ins = makeINS(op,args);
-            quickAddIns(ins);
-
-            free(staticLinkJumpsAndOffset);
-            free(staticLinkJumpsAndOffset+1);
+                free(staticLinkJumpsAndOffset);
+                free(staticLinkJumpsAndOffset+1);
+            }
             break;
         case ifElseK:
             {
-                icgTraverseEXP(s->val.ifElseS.cond);
-                icgTraverseSTMTCOMP(s->val.ifElseS.ifbody);
-                icgTraverseSTMTCOMP(s->val.ifElseS.elsebody);
+                int labelNumber = labelGenerator(if_label);        //Generate int X
+
+                quickAddLabel(if_label, labelNumber);              //if_X:
+                icgTraverseEXP(s->val.ifElseS.cond);                    //Guard
+                quickAddPopRRT();                                       //Move boolean to rrt
+                quickAddCheckTruthValue();                              //cmp rrt, $1
+                quickAddJumpIfFalse(endif_label,labelNumber);        //jne endif_X
+                icgTraverseSTMTCOMP(s->val.ifElseS.ifbody);             //if-body
+                quickAddUnconditionalJmp(endelse_label,labelNumber); //jmp endelse_X
+                quickAddLabel(endif_label, labelNumber);           //endif_X:
+                icgTraverseSTMTCOMP(s->val.ifElseS.elsebody);           //else-body
+                quickAddLabel(endelse_label,labelNumber);          //endelse_X:
             }
             break;
         case returnK:
             icgTraverseEXP(s->val.returnS);
+            quickAddPopRRT();
+            quickAddMeta(CALLEE_RESTORE);
+            quickAddMeta(CALLEE_EPILOGUE);
             break;
         case printK:
-            icgTraverseEXP(s->val.printS);
+            icgTraverseEXP(s->val.printS);  //TODO: IMPLEMENT
             break;
         case declK:
-            icgTraverseEXP(s->val.declS.value);
+            {
+                if(s->val.declS.value == NULL)
+                    break;
+                icgTraverseEXP(s->val.declS.value);
+                quickAddPopRRT();
+                int* staticLinkJumpsAndOffset = staticLinkCount(s->val.declS.name,currentScope);
+                for(int i=0; i < staticLinkJumpsAndOffset[0]; i++)
+                    quickAddMeta(FOLLOW_STATIC_LINK);
+
+                Mode* modeDIR = makeMode(dir,0);
+                Mode* modeIRL = makeMode(irl,staticLinkJumpsAndOffset[1]);
+
+                Target* from = makeTarget(rrt,0,0);
+                Target* to = makeTarget(rsl,0,0);
+
+                ARG* argFrom = makeARG(from,modeDIR);
+                ARG* argTo = makeARG(to,modeIRL);
+                ARG* args[2] = {argFrom, argTo};
+
+                OP* op = makeOP(move,0,getSizeOfId(s->val.declS.name));
+                INS* ins = makeINS(op,args);
+                quickAddIns(ins);
+
+                free(staticLinkJumpsAndOffset);
+                free(staticLinkJumpsAndOffset+1);
+            }
             break;
         case expK:
             icgTraverseEXP(s->val.expS);
@@ -117,13 +152,9 @@ void icgTraverseEXP(EXP* e)
             {
                 OP* op = makeOP(push,0,0);
                 Target* target = makeTarget(imi,0,e->val.intE);
-                Mode* mode = makeMode(dir,0);
-                ARG* arg = makeARG(target,mode);
-                ARG* args[2];
-                args[0] = arg;
-                INS* ins = makeINS(op,args);
-                LLN* node = makeLLN(ins);
-                addToLL(node);
+                ARG* arg = makeARG(target,makeMode(dir,0));
+                ARG* args[2] = {arg, NULL};
+                quickAddIns(makeINS(op, args));
             }
             break;
         case doubleK:
@@ -133,30 +164,61 @@ void icgTraverseEXP(EXP* e)
             {
                 OP* op = makeOP(push, 0, 0);
                 Target* target = makeTarget(imi, 0, e->val.boolE);
-                Mode* mode = makeMode(dir, 0);
-                ARG* arg = makeARG(target, mode);
-                ARG* args[2];
-                args[0] = arg;
-                INS* ins = makeINS(op, args);
-                LLN* node = makeLLN(ins);
-                addToLL(node);
+                ARG* arg = makeARG(target, makeMode(dir, 0));
+                ARG* args[2] = {arg, NULL};
+                quickAddIns(makeINS(op, args));
             }
             break;
         case charK:
+            {
+                OP* op = makeOP(push, 0, 0);
+                Target* target = makeTarget(imi, 0, e->val.charE);
+                ARG* arg = makeARG(target, makeMode(dir, 0));
+                ARG* args[2] = {arg, NULL};
+                quickAddIns(makeINS(op, args));
+            }
             break;
         case binopK:
-            //First do left
             icgTraverseEXP(e->val.binopE.left);
-
-            //Then do right
             icgTraverseEXP(e->val.binopE.right);
+            char* op = e->val.binopE.operator;
+            if(strcmp(op,"-") == 0)
+                quickAddArithmeticINS(sub,getSizeOfType(e->type));
+            else if (strcmp(op,"+") == 0)
+                quickAddArithmeticINS(add,getSizeOfType(e->type));
+            else if (strcmp(op,"*") == 0)
+                quickAddArithmeticINS(mul,getSizeOfType(e->type));
+            else if (strcmp(op,"/") == 0)
+                quickAddArithmeticINS(divi,getSizeOfType(e->type));
+            else if (strcmp(op,"L") == 0)
+                quickAddCompareINS("L");
+            else if (strcmp(op,"G") == 0)
+                quickAddCompareINS("G");
+            else if (strcmp(op,"LEQ") == 0)
+                quickAddCompareINS("LEQ");
+            else if (strcmp(op,"GEQ") == 0)
+                quickAddCompareINS("GEQ");
+            else if (strcmp(op,"EQ") == 0)
+                quickAddCompareINS("EQ");
+            else if (strcmp(op,"NEQ") == 0)
+                quickAddCompareINS("NEQ");
+            else if (strcmp(op,"AND") == 0)
+                quickAddBooleanINS("AND");
+            else if (strcmp(op,"OR") == 0)
+                quickAddBooleanINS("OR");
+            quickAddPushReg(1);
             break;
         case funK:
-            //Generate the code for each parameter and throw it on the stack
+            //TODO: Generate the code for each parameter and throw it on the stack
             icgTraverseAPARAMETERNODE(e->val.funE.aparameternode);
             break;
     }
+    if(e->coerceTo != NULL)
+    {
+        //TODO: pop into reg 1, do the coercion, and push back onto stack
+    }
 }
+
 void icgTraverseAPARAMETERNODE(APARAMETERNODE* apn)
 {
     if(apn == NULL)
@@ -219,7 +281,6 @@ Target* makeTarget(targetKind targetK, labelKind labelK, int regNumber)
 
 OP* makeOP(opKind opK, metaKind metaK, opSize size)
 {
-    printf("mkaing op");
     OP* op = (OP*)malloc(sizeof(OP));
     op->opK = opK;
     op->metaK = metaK;
@@ -248,6 +309,7 @@ LLN* makeLLN(INS* ins)
 {
     LLN* node = (LLN*)malloc(sizeof(LLN));
     node->ins = ins;
+    node->next = NULL;
     return node;
 }
 
@@ -258,9 +320,9 @@ void quickAddIns(INS* ins)
 }
 
 void quickAddMeta(metaKind metaK) {
+    static int quickAddMeta = 0;
     OP* op = makeOP(meta,metaK,0);
-    printf("made meta?");
-    ARG* args[2] = {NULL, NULL};
+    ARG* args[2] = {NULL,NULL};
     INS* ins = makeINS(op,args);
     quickAddIns(ins);
 };
@@ -271,10 +333,8 @@ void quickAddLabel(labelKind kind, int labelNumber)
     Mode* mode = makeMode(dir,0);
     ARG* arg = makeARG(target, mode);
     OP* op = makeOP(label,0,0);
-    ARG* args[2];
-    args[0] = arg;
-    INS* ins = makeINS(op,args);
-    quickAddIns(ins);
+    ARG* args[2] = {arg, NULL};
+    quickAddIns(makeINS(op,args));
 };
 
 void quickAddPush(Mode* mode, Target* target)
@@ -320,9 +380,25 @@ void quickAddPopRRT()
     Target* rrtTarget = makeTarget(rrt,0,0);
     ARG* rrtARG = makeARG(rrtTarget,dirMode);
     OP* op = makeOP(pop,0,bits_64);
-    ARG* args[2];
-    args[0] = rrtARG;
-    INS* ins = makeINS(op,args);
+    ARG* args[2] = {rrtARG,NULL};
+    quickAddIns(makeINS(op,args));
+}
+
+void quickAddPopReg(int registerNumber)
+{
+    OP* op = makeOP(pop,0,bits_64);
+    Mode* dirMode = makeMode(dir,0);
+    Target* t = makeTarget(reg,0,registerNumber);
+    ARG* arg = makeARG(t,dirMode);
+    ARG* args[2] = {arg,NULL};
+    quickAddIns(makeINS(op,args));
+}
+
+void quickAddPushReg(int regNumber)
+{
+    Mode* direct = makeMode(dir,0);
+    Target* targetRegister = makeTarget(reg,0,regNumber);
+    quickAddPush(direct, targetRegister);
 }
 
 void quickAddMoveRBPToRSL()
@@ -339,6 +415,62 @@ void quickAddMoveRBPToRSL()
     ARG* args[2] = {rbpARG, rslARG};
     INS* ins = makeINS(op,args);
     quickAddIns(ins);
+}
+
+void quickAddCheckTruthValue()
+{
+    OP* op = makeOP(cmp,0,bits_64);
+    Mode* dirMode = makeMode(dir,0);
+
+    ARG* from = makeARG(makeTarget(rrt,0,0),dirMode);
+    ARG* to = makeARG(makeTarget(imi,0,1),dirMode);
+    ARG* args[2] = {from,to};
+
+    INS* ins = makeINS(op,args);
+    quickAddIns(ins);
+}
+
+void quickAddJumpIfFalse(labelKind k, int labelNumber)
+{
+    OP* op = makeOP(jne,0,0);
+    Mode* dirMode = makeMode(dir,0);
+    ARG* label = makeARG(makeTarget(mem,k,labelNumber),dirMode);
+    ARG* args[2] = {label,NULL};
+    quickAddIns(makeINS(op,args));
+}
+
+void quickAddUnconditionalJmp(labelKind k, int labelNumber)
+{
+    OP* op = makeOP(jmp,0,0);
+    Mode* dirMode = makeMode(dir,0);
+    ARG* label = makeARG(makeTarget(mem,k,labelNumber),dirMode);
+    ARG* args[2] = {label,NULL};
+    quickAddIns(makeINS(op,args));
+}
+
+void quickAddArithmeticINS(opKind k, opSize size)
+{
+    quickAddPopReg(2); //Right side of binop
+    quickAddPopReg(1); //Left side of binop
+
+    Mode* direct = makeMode(dir,0);
+    Target* left = makeTarget(reg,0,2);
+    Target* right = makeTarget(reg,0,1);
+    ARG* argLeft = makeARG(left, direct);
+    ARG* argRight = makeARG(right, direct);
+    ARG* args[2] = {argLeft,argRight};
+    OP* op = makeOP(k,0,size);
+    quickAddIns(makeINS(op,args));
+}
+
+void quickAddCompareINS(char* op)
+{
+
+}
+
+void quickAddBooleanINS(char* op)
+{
+
 }
 
 int whileLabelNumber = 0;

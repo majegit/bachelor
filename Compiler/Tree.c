@@ -292,15 +292,12 @@ SYMBOL* lookupSymbolCurrentTable(char* name, SYMBOLTABLE* st)
 
 SYMBOL* lookupSymbolVar(char* name, SYMBOLTABLE* st)
 {
-    printf("looking up name: %s\n",name);
     if(st == NULL)
-    {
-        printf("st is NULL\n");
         return NULL;
-    }
     if(lookupSymbolCurrentTable(name,st))
         return lookupSymbolCurrentTable(name,st);
     lookupSymbolVar(name, st->par);
+    return NULL;
 }
 
 SYMBOL* lookupSymbolFun(char* name, SYMBOLTABLE* st)
@@ -318,9 +315,8 @@ SYMBOL* lookupSymbolFun(char* name, SYMBOLTABLE* st)
 
 int* staticLinkCount(char* name, SYMBOLTABLE* st)
 {
-    SYMBOL* temp;
-    int* levelAndNextLabel = (int*)malloc(sizeof(int)*2);
-    temp = lookupSymbolCurrentTable(name,st);
+    int* levelAndNextLabel = (int*)calloc(2,sizeof(int));
+    SYMBOL* temp = lookupSymbolCurrentTable(name,st);
     while(temp == NULL)
     {
         levelAndNextLabel[0]++;

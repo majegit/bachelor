@@ -35,7 +35,7 @@ void printEXP(EXP* exp)
 
 void printIC(LL* iCode)
 {
-    while(iCode->first->next != NULL)
+    while(iCode->first != NULL)
     {
         printOP(iCode->first->ins->op);
         iCode->first = iCode->first->next;
@@ -44,12 +44,8 @@ void printIC(LL* iCode)
 
 void printOP(OP* op)
 {
+    printf("opKind: %d   ",op->opK);
     if(op->opK==meta)
-    {
-        printf("META: %d\n",op->metaK);
-    }
-    else
-    {
-        printf("%d\n",op->opK);
-    }
+        printf("META: %d",op->metaK);
+    printf("\n");
 }
