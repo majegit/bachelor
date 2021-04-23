@@ -1,5 +1,6 @@
 #ifndef __IntermediateCodeGeneration_h
 #define __IntermediateCodeGeneration_h
+#include "Tree.h"
 
 typedef enum opKind {
     move,
@@ -19,6 +20,15 @@ typedef enum opKind {
     jge,
     jl,
     jle,
+    sete,
+    setne,
+    setg,
+    setge,
+    setl,
+    setle,
+    xor,
+    and,
+    or,
     meta,
     label,
     dconst
@@ -87,9 +97,9 @@ typedef struct Target {
 
 typedef struct Operation {
     opKind opK;
-    metaKind metaK; //This is only relevant if opKind is meta also
+    metaKind metaK;      //This is only relevant if opKind is meta also
     int metaInformation; //This is only relevant if opkind is meta also
-    opSize size; //For some operations this is relevant
+    opSize size;         //For some operations this is relevant
 } OP;
 
 typedef struct Argument {
@@ -132,6 +142,7 @@ LLN* makeLLN(INS* ins);
 
 void quickAddIns(INS* ins);
 void quickAddMeta(metaKind kind);
+void quickAddMetaWithInfo(metaKind kind, int metaInformation);
 void quickAddLabel(labelKind kind, int labelNumber);
 void quickAddPush(Mode* mode, Target* target);
 void quickAddPushId(char* name);
@@ -142,9 +153,10 @@ void quickAddCheckTruthValue();
 void quickAddJumpIfFalse(labelKind k, int labelNumber);
 void quickAddUnconditionalJmp(labelKind k, int labelNumber);
 void quickAddArithmeticINS(opKind k, opSize size);
-void quickAddCompareINS(char* op);
-void quickAddBooleanINS(char* op);
+void quickAddCompareINS(opKind k, opSize size);
+void quickAddBooleanINS(opKind k);
 void quickAddPushReg(int regNumber);
+void quickAddXorReg(int src, int dest);
 
 int labelGenerator(labelKind kind);
 opSize getSizeOfType(char* typeName);

@@ -157,8 +157,8 @@ fparameter : type tIDENTIFIER
 ;
 
 fparameternode : fparameter
-                 {$$ = makeFPARAMETERNODE($1,NULL);}
-	       | fparameter ',' fparameternode
+                 {$$ = makeFPARAMETERNODE(NULL,$1);}
+	       | fparameternode ',' fparameter
 	         {$$ = makeFPARAMETERNODE($1,$3);}
 ;
 
@@ -168,8 +168,8 @@ opt_fparameternode :
                      {$$ = $1;}
 ;
 
-function : type FUNC tIDENTIFIER '(' opt_fparameternode ')' stmtcompound
-	   {$$ = makeFUNCTION($1,$3,$5,$7);}
+function : type tIDENTIFIER '(' opt_fparameternode ')' stmtcompound
+	   {$$ = makeFUNCTION($1,$2,$4,$6);}
 ;
 
 functionnode : function

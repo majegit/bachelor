@@ -5,29 +5,27 @@
 #include "IntermediateCodeGeneration.h"
 
 SYMBOLTABLE* currentScope;
-
-
-LL* code;
+LL* code = &(LL){NULL,NULL};
 
 LL* icgTraversePROGRAM(PROGRAM* prog)
 {
-    code = (LL*)malloc(sizeof(LL));
-    code->first = NULL;
-
     quickAddMeta(PROGRAM_PROLOGUE);
     icgTraverseSTMTCOMP(prog->body);
     quickAddMeta(PROGRAM_EPILOGUE);
-    icgTraverseFUNCTIONNODE(prog->fn);
+    icgTraverseFUNCTIONNODE(prog->fn); //All functions will be in the bottom of the LL
     return code;
 }
 
 void icgTraverseSTMTCOMP(STMTCOMP* sc)
 {
-    currentScope = sc->symbolTable;
-    quickAddMeta(ALLOCATE_STACK_SPACE); //When entering new scope, rbp is pushed and local variables are given space on the stack
-    code->last->ins->op->metaInformation = sc->symbolTable->nextLabel; //How much space is allocated is specified here
+    int stackSpace;
+
+    currentScope = sc->symbolTable;                                //Update pointer to current scope
+    stackSpace = sc->symbolTable->nextVariableLabel;               //Stack space needed for local variables
+    quickAddMetaWithInfo(ALLOCATE_STACK_SPACE, stackSpace);   //Push rbp and allocate stack space
     icgTraverseSTMTNODE(sc->stmtnode);
-    currentScope = sc->symbolTable->par;
+    quickAddMetaWithInfo(DEALLOCATE_STACK_SPACE, stackSpace); //Deallocate stack space and pop rbp
+    currentScope = sc->symbolTable->par;                           //Update pointer to current scope
 }
 
 
@@ -46,7 +44,7 @@ void icgTraverseSTMT(STMT* s)
     {
         case whileK:
             {
-                int labelNumber = labelGenerator(while_label);     //Generate int X
+                int labelNumber = labelGenerator(while_label);     //Generate label number X
                 quickAddLabel(while_label, labelNumber);           //while_X:
                 icgTraverseEXP(s->val.whileS.guard);                    //Guard
                 quickAddPopRRT();                                       //Move boolean to rrt
@@ -149,10 +147,12 @@ void icgTraverseEXP(EXP* e)
             quickAddPushId(e->val.idE);
             break;
         case intK:
+        case boolK:
+        case charK:
             {
-                OP* op = makeOP(push,0,0);
-                Target* target = makeTarget(imi,0,e->val.intE);
-                ARG* arg = makeARG(target,makeMode(dir,0));
+                OP* op = makeOP(push, 0, 0);
+                Target* target = makeTarget(imi, 0, e->val.charE); //e->val.charE = e->val.boolE = e->val.intE, they are all ints in an union
+                ARG* arg = makeARG(target, makeMode(dir, 0));
                 ARG* args[2] = {arg, NULL};
                 quickAddIns(makeINS(op, args));
             }
@@ -160,52 +160,37 @@ void icgTraverseEXP(EXP* e)
         case doubleK:
             //Generate double constant
             break;
-        case boolK:
-            {
-                OP* op = makeOP(push, 0, 0);
-                Target* target = makeTarget(imi, 0, e->val.boolE);
-                ARG* arg = makeARG(target, makeMode(dir, 0));
-                ARG* args[2] = {arg, NULL};
-                quickAddIns(makeINS(op, args));
-            }
-            break;
-        case charK:
-            {
-                OP* op = makeOP(push, 0, 0);
-                Target* target = makeTarget(imi, 0, e->val.charE);
-                ARG* arg = makeARG(target, makeMode(dir, 0));
-                ARG* args[2] = {arg, NULL};
-                quickAddIns(makeINS(op, args));
-            }
-            break;
         case binopK:
             icgTraverseEXP(e->val.binopE.left);
             icgTraverseEXP(e->val.binopE.right);
+
             char* op = e->val.binopE.operator;
+            opSize size = getSizeOfType(e->type);
+
             if(strcmp(op,"-") == 0)
-                quickAddArithmeticINS(sub,getSizeOfType(e->type));
+                quickAddArithmeticINS(sub,size);
             else if (strcmp(op,"+") == 0)
-                quickAddArithmeticINS(add,getSizeOfType(e->type));
+                quickAddArithmeticINS(add,size);
             else if (strcmp(op,"*") == 0)
-                quickAddArithmeticINS(mul,getSizeOfType(e->type));
+                quickAddArithmeticINS(mul,size);
             else if (strcmp(op,"/") == 0)
-                quickAddArithmeticINS(divi,getSizeOfType(e->type));
+                quickAddArithmeticINS(divi,size);
             else if (strcmp(op,"L") == 0)
-                quickAddCompareINS("L");
+                quickAddCompareINS(setl,size);
             else if (strcmp(op,"G") == 0)
-                quickAddCompareINS("G");
+                quickAddCompareINS(setg,size);
             else if (strcmp(op,"LEQ") == 0)
-                quickAddCompareINS("LEQ");
+                quickAddCompareINS(setle,size);
             else if (strcmp(op,"GEQ") == 0)
-                quickAddCompareINS("GEQ");
+                quickAddCompareINS(setge,size);
             else if (strcmp(op,"EQ") == 0)
-                quickAddCompareINS("EQ");
+                quickAddCompareINS(sete,size);
             else if (strcmp(op,"NEQ") == 0)
-                quickAddCompareINS("NEQ");
+                quickAddCompareINS(setne,size);
             else if (strcmp(op,"AND") == 0)
-                quickAddBooleanINS("AND");
+                quickAddBooleanINS(and);
             else if (strcmp(op,"OR") == 0)
-                quickAddBooleanINS("OR");
+                quickAddBooleanINS(or);
             quickAddPushReg(1);
             break;
         case funK:
@@ -237,8 +222,12 @@ void icgTraverseFUNCTIONNODE(FUNCTIONNODE* fn)
 
 void icgTraverseFUNCTION(FUNCTION* f)
 {
+    quickAddMeta(CALLEE_PROLOGUE);
+    quickAddMeta(CALLEE_SAVE);
     icgTraverseFPARAMETERNODE(f->args);
     icgTraverseSTMTCOMP(f->body);
+    quickAddMeta(CALLEE_RESTORE);
+    quickAddMeta(CALLEE_EPILOGUE); //Generate label
 }
 
 void icgTraverseFPARAMETERNODE(FPARAMETERNODE* fpn)
@@ -251,17 +240,11 @@ void icgTraverseFPARAMETERNODE(FPARAMETERNODE* fpn)
 void addToLL(LLN* newCode)
 {
     if(code->first == NULL) //First time we insert something
-    {
         code->first = newCode;
-        code->last = newCode;
-    }
     else
-    {
         code->last->next = newCode;
-        code->last = newCode;
-    }
+    code->last = newCode;
 }
-
 
 Mode* makeMode(addressingMode addressingMode, int offset) {
     Mode* mode = (Mode*)malloc(sizeof(Mode));
@@ -270,12 +253,12 @@ Mode* makeMode(addressingMode addressingMode, int offset) {
     return mode;
 }
 
-Target* makeTarget(targetKind targetK, labelKind labelK, int regNumber)
+Target* makeTarget(targetKind targetK, labelKind labelK, int additionalInfo)
 {
     Target* target = (Target*)malloc(sizeof(Target));
     target->targetK = targetK;
     target->labelK = labelK;
-    target->additionalInfo = regNumber;
+    target->additionalInfo = additionalInfo;
     return target;
 }
 
@@ -320,12 +303,18 @@ void quickAddIns(INS* ins)
 }
 
 void quickAddMeta(metaKind metaK) {
-    static int quickAddMeta = 0;
     OP* op = makeOP(meta,metaK,0);
     ARG* args[2] = {NULL,NULL};
-    INS* ins = makeINS(op,args);
-    quickAddIns(ins);
+    quickAddIns(makeINS(op,args));
 };
+
+void quickAddMetaWithInfo(metaKind metaK, int metaInformation)
+{
+    OP* op = makeOP(meta,metaK,0);
+    op->metaInformation = metaInformation;
+    ARG* args[2] = {NULL,NULL};
+    quickAddIns(makeINS(op,args));
+}
 
 void quickAddLabel(labelKind kind, int labelNumber)
 {
@@ -448,29 +437,68 @@ void quickAddUnconditionalJmp(labelKind k, int labelNumber)
     quickAddIns(makeINS(op,args));
 }
 
-void quickAddArithmeticINS(opKind k, opSize size)
+void quickAddArithmeticINS(opKind k, opSize size)  //L 'OP' R
 {
     quickAddPopReg(2); //Right side of binop
     quickAddPopReg(1); //Left side of binop
 
     Mode* direct = makeMode(dir,0);
-    Target* left = makeTarget(reg,0,2);
-    Target* right = makeTarget(reg,0,1);
-    ARG* argLeft = makeARG(left, direct);
-    ARG* argRight = makeARG(right, direct);
+    Target* rightEXP = makeTarget(reg,0,2);
+    Target* leftEXP = makeTarget(reg,0,1);
+    ARG* argRight = makeARG(rightEXP, direct);
+    ARG* argLeft = makeARG(leftEXP, direct);
     ARG* args[2] = {argLeft,argRight};
     OP* op = makeOP(k,0,size);
     quickAddIns(makeINS(op,args));
 }
 
-void quickAddCompareINS(char* op)
+void quickAddCompareINS(opKind k, opSize size)
 {
+    quickAddPopReg(2); //pop reg2  #Right side of binop
+    quickAddPopReg(1); //pop reg1  #Left side of binop
 
+    Mode* direct = makeMode(dir,0);
+    Target* rightEXP = makeTarget(reg,0,2);
+    Target* leftEXP = makeTarget(reg,0,1);
+    ARG* argRight = makeARG(rightEXP, direct);
+    ARG* argLeft = makeARG(leftEXP, direct);
+    ARG* args[2] = {argLeft,argRight};
+    OP* cmpOP = makeOP(cmp,0,size);
+    quickAddIns(makeINS(cmpOP,args)); //cmp reg1 reg2  #could be 8/32/64 bits registers
+
+    Target* resultRegister = makeTarget(reg,0,1);
+    ARG* argResultRegister = makeARG(resultRegister,direct);
+    ARG* argsSet[2] = {argResultRegister,NULL};
+    OP* setOP = makeOP(k,0,bits_8);
+    quickAddIns(makeINS(setOP,argsSet)); //setk reg1  #8 bits register
+
+    Target* immediateOne = makeTarget(imi,0,1);
+    ARG* argImmediateOne = makeARG(immediateOne,direct);
+    ARG* argsAnd[2] = {argImmediateOne,argResultRegister};
+    OP* andOP = makeOP(and,0,bits_64);
+    quickAddIns(makeINS(andOP,argsAnd)); //and $1, reg1  #64 bits register
 }
 
-void quickAddBooleanINS(char* op)
+void quickAddBooleanINS(opKind k)
 {
+    Mode* direct = makeMode(dir,0);
+    Target* rightEXP = makeTarget(reg,0,2);
+    Target* leftEXP = makeTarget(reg,0,1);
+    ARG* argRight = makeARG(rightEXP, direct);
+    ARG* argLeft = makeARG(leftEXP, direct);
+    ARG* args[2] = {argLeft,argRight};
+    OP* boolOP = makeOP(cmp,0,bits_8);
+    quickAddIns(makeINS(boolOP,args));
+}
 
+void quickAddXorReg(int src, int dest)
+{
+    Mode* direct = makeMode(dir,0);
+    ARG* srcReg = makeARG(makeTarget(reg,0,src), direct);
+    ARG* destReg = makeARG(makeTarget(reg,0,dest), direct);
+    ARG* args[2] = {srcReg,destReg};
+    OP* xorOP = makeOP(xor,0,bits_64);
+    quickAddIns(makeINS(xorOP,args));
 }
 
 int whileLabelNumber = 0;

@@ -88,7 +88,7 @@ typedef struct FPARAMETERNODE {
     struct FPARAMETERNODE* next;
 } FPARAMETERNODE;
 
-FPARAMETERNODE* makeFPARAMETERNODE(FPARAMETER* p, FPARAMETERNODE* next);
+FPARAMETERNODE* makeFPARAMETERNODE(FPARAMETERNODE* next, FPARAMETER* p);
 
 typedef struct FUNCTION {
     int lineno;
@@ -119,15 +119,16 @@ PROGRAM* makePROGRAM(STMTCOMP* body, FUNCTIONNODE* fn);
 //SYMBOL COLLECTION PHASE
 
 typedef struct SYMBOL {
+    enum {variable,formalParameter,function} kind;
     char* name;
-    enum {variable,function} kind;
-    FPARAMETERNODE* fpn;
     char* type;
-    int offset;
+    FPARAMETERNODE* fpn; //Only functions use this
+    int offset; //Only variables and formalParameters use this
 } SYMBOL;
 
 SYMBOL* makeSYMBOLvariable(char* name, char* type);
 SYMBOL* makeSYMBOLfunction(char* name, char* type, FPARAMETERNODE* fpn);
+SYMBOL* makeSYMBOLformalParameter(char* name, char* type);
 
 typedef struct SYMBOLNODE {
     SYMBOL* current;
@@ -140,7 +141,8 @@ typedef struct SYMBOLTABLE {
     struct SYMBOLTABLE* par;
     SYMBOLNODE* symbols;
     int symbolCount;
-    int nextLabel;
+    int nextVariableLabel;   //Used to determine where on the stack the local variables of a scope is
+    int nextParameterLabel;  //used to determine where on the stack the formal (actual) parameter is during a function call
 } SYMBOLTABLE;
 
 SYMBOLTABLE* makeSYMBOLTABLE(SYMBOLTABLE* par);

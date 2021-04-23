@@ -11,7 +11,6 @@
 
 %%
 print               return PRINT;
-function            return FUNC;
 return              return RETURN;
 boolean             return BOOLEAN;
 int                 return INT;

@@ -199,7 +199,7 @@ FPARAMETER* makeFPARAMETER(char* type, char* name)
     return p;
 }
 
-FPARAMETERNODE* makeFPARAMETERNODE(FPARAMETER* p, FPARAMETERNODE* next)
+FPARAMETERNODE* makeFPARAMETERNODE(FPARAMETERNODE* next, FPARAMETER* p)
 {
     FPARAMETERNODE* fn;
     fn = (FPARAMETERNODE*)malloc(sizeof(FPARAMETERNODE));
@@ -259,6 +259,16 @@ SYMBOL* makeSYMBOLfunction(char* name, char* type, FPARAMETERNODE* fpn)
     return s;
 }
 
+SYMBOL* makeSYMBOLformalParameter(char* name, char* type)
+{
+    SYMBOL* s;
+    s = (SYMBOL*)malloc(sizeof(SYMBOL));
+    s->name = name;
+    s->kind = formalParameter;
+    s->type = type;
+    return s;
+}
+
 SYMBOLNODE* makeSYMBOLNODE(SYMBOL* symbol, SYMBOLNODE* next)
 {
     SYMBOLNODE* sn;
@@ -275,7 +285,8 @@ SYMBOLTABLE* makeSYMBOLTABLE(SYMBOLTABLE* par)
     st->par = par;
     st->symbols = NULL;
     st->symbolCount = 0;
-    st->nextLabel = 0;
+    st->nextVariableLabel = 0;
+    st->nextParameterLabel = 8;
     return st;
 }
 SYMBOL* lookupSymbolCurrentTable(char* name, SYMBOLTABLE* st)
@@ -336,16 +347,21 @@ void addSymbol(SYMBOL* symbol, SYMBOLTABLE* st)
     }
     if(symbol->kind == variable) {
         if (strcmp(symbol->type, "BOOLEAN") == 0) {
-            st->nextLabel += 1;
+            st->nextVariableLabel -= 1;
         } else if (strcmp(symbol->type, "INT") == 0) {
-            st->nextLabel += 4;
+            st->nextVariableLabel -= 4;
         } else if (strcmp(symbol->type, "DOUBLE") == 0) {
-            st->nextLabel += 8;
+            st->nextVariableLabel -= 8;
         } else if (strcmp(symbol->type, "CHAR") == 0) {
-            st->nextLabel += 1;
+            st->nextVariableLabel -= 1;
         }
+        symbol->offset = st->nextVariableLabel;
     }
-    symbol->offset = st->nextLabel;
+    else if(symbol->kind == formalParameter)
+    {
+        st->nextParameterLabel -= 8;
+        symbol->offset = st->nextParameterLabel;
+    }
     SYMBOLNODE* sn = makeSYMBOLNODE(symbol, st->symbols);
     st->symbols = sn;
     st->symbolCount++;

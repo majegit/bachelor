@@ -50,7 +50,6 @@ void scTraverseSTMT(STMT* s, SYMBOLTABLE* st)
             break;
         }
         case returnK:
-            break;
         case printK:
             break;
         case declK:
@@ -88,7 +87,7 @@ void scTraverseFPARAMETERNODE(FPARAMETERNODE* fpn, SYMBOLTABLE* st)
 {
     if(fpn == NULL)
         return;
-    SYMBOL* newSymbol = makeSYMBOLvariable(fpn->current->name, fpn->current->type);
+    SYMBOL* newSymbol = makeSYMBOLformalParameter(fpn->current->name, fpn->current->type);
     addSymbol(newSymbol, st);
     scTraverseFPARAMETERNODE(fpn->next, st);
 }
