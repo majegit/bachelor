@@ -26,14 +26,15 @@ EXP* makeEXPfun(char* id, struct APARAMETERNODE* aparameternode);
 
 typedef struct STMT {
     int lineno;
-    enum {whileK,assignK,ifElseK,returnK,printK,declK,expK} kind;
+    enum {whileK,assignK,ifElseK,returnK,printK,varDeclK,funDeclK,expK} kind;
     union {
         struct {struct EXP* guard; struct STMTCOMP* body;} whileS;
         struct {char* name; struct EXP* val;} assignS;
         struct {struct EXP* cond; struct STMTCOMP* ifbody; struct STMTCOMP* elsebody;} ifElseS;
+        struct {char* type; char* name; EXP* value;} varDeclS;
+        struct FUNCTION* funDeclS;
         struct EXP* returnS;
         struct EXP* printS;
-        struct {char* type; char* name; EXP* value;} declS;
         struct EXP* expS;
     } val;
 } STMT;
@@ -43,7 +44,8 @@ STMT* makeSTMTassign(char* name, EXP* val);
 STMT* makeSTMTifElse(EXP* cond, struct STMTCOMP* ifbody, struct STMTCOMP* elsebody);
 STMT* makeSTMTreturn(EXP* returnEXP);
 STMT* makeSTMTprint(EXP* printEXP);
-STMT* makeSTMTdecl(char* type, char* name, EXP* value);
+STMT* makeSTMTvarDecl(char* type, char* name, EXP* value);
+STMT* makeSTMTfunDecl(struct FUNCTION* f);
 STMT* makeSTMTexp(EXP* exp);
 
 typedef struct STMTNODE {
@@ -96,24 +98,17 @@ typedef struct FUNCTION {
     char* name;
     FPARAMETERNODE* args;
     STMTCOMP* body;
+    struct FUNCTION* par; //Used in typechecking
 } FUNCTION;
 
 FUNCTION* makeFUNCTION(char* returnType, char* name, FPARAMETERNODE* args, STMTCOMP* body);
 
-typedef struct FUNCTIONNODE {
-    FUNCTION* current;
-    struct FUNCTIONNODE* next;
-} FUNCTIONNODE;
-
-FUNCTIONNODE* makeFUNCTIONNODE(FUNCTION* current, FUNCTIONNODE* next);
-
 typedef struct PROGRAM {
-    STMTCOMP* body;
-    FUNCTIONNODE* fn;
-    struct SYMBOLTABLE* symbolTable;
+    STMTNODE* sn;
+    struct SYMBOLTABLE* globalScope;
 } PROGRAM;
 
-PROGRAM* makePROGRAM(STMTCOMP* body, FUNCTIONNODE* fn);
+PROGRAM* makePROGRAM(STMTNODE* fn);
 
 
 //SYMBOL COLLECTION PHASE

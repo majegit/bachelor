@@ -51,6 +51,6 @@ char* convertMetaIns(INS* ins)
     if(ins->op->metaK == PROGRAM_PROLOGUE)
         return program_prologue;
     if(ins->op->metaK == ALLOCATE_STACK_SPACE)
-        return strcat("push %rbp\nsubq $" + ins->op->metaInformation+"%rsp");
+        return "YO";//strcat("push %rbp\nsubq $" + ins->op->metaInformation+"%rsp");
     return "debug";
 }

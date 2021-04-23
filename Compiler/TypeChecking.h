@@ -28,7 +28,6 @@ void tcTraversePROGRAM(PROGRAM* prog);
 void tcTraverseSTMTCOMP(STMTCOMP* sc);
 void tcTraverseSTMTNODE(STMTNODE* sn);
 void tcTraverseSTMT(STMT* s);
-void tcTraverseFUNCTIONNODE(FUNCTIONNODE* fn);
 void tcTraverseFUNCTION(FUNCTION* f);
 void tcTraverseEXP(EXP* e);
 void tcTraverseAPARAMETERNODE(APARAMETERNODE* apn,FPARAMETERNODE* fpn);

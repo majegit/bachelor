@@ -22,7 +22,6 @@ int yylex();
    char unknown;
    EXP* exp;
    FUNCTION* function;
-   FUNCTIONNODE* functionnode;
    APARAMETER* aparameter;
    APARAMETERNODE* aparameternode;
    FPARAMETER* fparameter;
@@ -37,7 +36,7 @@ int yylex();
 %token <intconst> tINT
 %token <doubleconst> tDOUBLE
 %token <boolconst> tBOOLEAN
-%token MAIN PRINT FUNC RETURN WHILE IF ELSE L G LEQ GEQ EQ NEQ OR AND BOOLEAN CHAR DOUBLE INT ASSIGN
+%token PRINT RETURN WHILE IF ELSE L G LEQ GEQ EQ NEQ OR AND BOOLEAN CHAR DOUBLE INT ASSIGN
 
 %start program
 
@@ -57,12 +56,11 @@ int yylex();
 %type <aparameternode> aparameternode opt_aparameternode
 %type <fparameter> fparameter
 %type <fparameternode> fparameternode opt_fparameternode
-%type <function> function
-%type <functionnode> functionnode opt_functionnode
+%type <function> functionDecl
 
 %%
-program : MAIN '(' ')' stmtcompound opt_functionnode
-          {program = makePROGRAM($4,$5);}
+program : stmtnode
+          {program = makePROGRAM($1);}
 ;
 
 exp : tIDENTIFIER
@@ -115,16 +113,17 @@ stmt : WHILE '(' exp ')' stmtcompound
        {$$ = makeSTMTreturn($2);}
      | PRINT '(' exp ')' ';'
        {$$ = makeSTMTprint($3);}
-     | type tIDENTIFIER ';'
-       {$$ = makeSTMTdecl($1,$2,NULL);}
-     | type tIDENTIFIER ASSIGN exp ';'
-       {$$ = makeSTMTdecl($1,$2,$4);}
      | tIDENTIFIER ASSIGN exp ';'
        {$$ = makeSTMTassign($1,$3);}
+     | type tIDENTIFIER ';'
+       {$$ = makeSTMTvarDecl($1,$2,NULL);}
+     | type tIDENTIFIER ASSIGN exp ';'
+       {$$ = makeSTMTvarDecl($1,$2,$4);}
+     | functionDecl
+       {$$ = makeSTMTfunDecl($1);}
      | exp ';'
        {$$ = makeSTMTexp($1);}
 ;
-
 
 stmtcompound : '{' stmtnode '}'
 	       {$$ = makeSTMTCOMP($2);}
@@ -168,20 +167,8 @@ opt_fparameternode :
                      {$$ = $1;}
 ;
 
-function : type tIDENTIFIER '(' opt_fparameternode ')' stmtcompound
+functionDecl : type tIDENTIFIER '(' opt_fparameternode ')' stmtcompound
 	   {$$ = makeFUNCTION($1,$2,$4,$6);}
-;
-
-functionnode : function
-	       {$$ = makeFUNCTIONNODE($1,NULL);}
-	     | function functionnode
-	       {$$ = makeFUNCTIONNODE($1,$2);}
-;
-
-opt_functionnode :
-                   {$$ = NULL;}
-                 | functionnode
-                   {$$ = $1;}
 ;
 
 type : BOOLEAN

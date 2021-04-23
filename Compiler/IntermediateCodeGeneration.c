@@ -105,7 +105,7 @@ void icgTraverseSTMT(STMT* s)
         case printK:
             icgTraverseEXP(s->val.printS);  //TODO: IMPLEMENT
             break;
-        case declK:
+        case varDeclK:
             {
                 if(s->val.declS.value == NULL)
                     break;

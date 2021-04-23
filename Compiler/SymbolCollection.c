@@ -1,6 +1,10 @@
 #include <stdio.h>
+#include <string.h>
 #include "Tree.h"
 #include "SymbolCollection.h"
+#include "Error.h"
+
+int mainFound = 0;
 
 void symbolCollection(PROGRAM* p)
 {
@@ -9,9 +13,9 @@ void symbolCollection(PROGRAM* p)
 
 void scTraversePROGRAM(PROGRAM* prog)
 {
-    prog->symbolTable = makeSYMBOLTABLE(NULL);
-    scTraverseSTMTCOMP(prog->body, prog->symbolTable);
-    scTraverseFUNCTIONNODE(prog->fn, prog->symbolTable);
+    scTraverseSTMTNODE(prog->sn, prog->globalScope);
+    if(!mainFound)
+        throwError("no main function found!");
 }
 
 void scTraverseSTMTCOMP(STMTCOMP* sc, SYMBOLTABLE* st)
@@ -39,48 +43,48 @@ void scTraverseSTMT(STMT* s, SYMBOLTABLE* st)
             scTraverseSTMTCOMP(s->val.whileS.body, newTable);
             break;
         }
-        case assignK:
-            break;
         case ifElseK:
         {
             SYMBOLTABLE* newTable = makeSYMBOLTABLE(st);
             scTraverseSTMTCOMP(s->val.ifElseS.ifbody, newTable);
+
             SYMBOLTABLE* newTable2 = makeSYMBOLTABLE(st);
             scTraverseSTMTCOMP(s->val.ifElseS.elsebody, newTable2);
             break;
         }
-        case returnK:
-        case printK:
-            break;
-        case declK:
+        case varDeclK:
         {
-            SYMBOL* newSymbol = makeSYMBOLvariable(s->val.declS.name,s->val.declS.type);
+            SYMBOL* newSymbol = makeSYMBOLvariable(s->val.varDeclS.name,s->val.varDeclS.type);
             addSymbol(newSymbol,st);
             break;
         }
-        case expK:
+        case funDeclK:
+        {
+            SYMBOL* newSymbol = makeSYMBOLfunction(s->val.funDeclS->name,s->val.funDeclS->returnType,s->val.funDeclS->args);
+            addSymbol(newSymbol,st);
+            scTraverseFUNCTION(s->val.funDeclS,st);
+            break;
+        }
+        default:
             break;
     }
 }
 
-void scTraverseFUNCTIONNODE(FUNCTIONNODE* fn, SYMBOLTABLE* st)
-{
-    if(fn == NULL)
-        return;
-    scTraverseFUNCTION(fn->current, st);
-    scTraverseFUNCTIONNODE(fn->next, st);
-}
-
 void scTraverseFUNCTION(FUNCTION* f, SYMBOLTABLE* st)
 {
-    //Add function name/returnType to current table
-    SYMBOL* funSymbol = makeSYMBOLfunction(f->name, f->returnType, f->args);
-    addSymbol(funSymbol,st);
+    //Add function name and returnType to current table
+    if(strcmp(f->name,"main\n") == 0)
+    {
+        mainFound = 1;
+        if(strcmp(f->returnType,"INT") != 0 || f->args != NULL)
+            throwError("declare main as: \"int main()\"");
+        if(st->par != NULL)
+            throwError("the main function must be in the global scope!");
+    }
 
-    //Make new table
-    SYMBOLTABLE* newTable = makeSYMBOLTABLE(st);
-    scTraverseFPARAMETERNODE(f->args, newTable);
-    scTraverseSTMTCOMP(f->body, newTable);
+    SYMBOLTABLE* newScope = makeSYMBOLTABLE(st);
+    scTraverseFPARAMETERNODE(f->args, newScope);
+    scTraverseSTMTCOMP(f->body, newScope);
 }
 
 void scTraverseFPARAMETERNODE(FPARAMETERNODE* fpn, SYMBOLTABLE* st)

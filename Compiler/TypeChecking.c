@@ -1,8 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "TypeChecking.h"
 #include "Operations.c"
-#include <string.h>
+#include "Error.h"
 
 SYMBOLTABLE* currentScope;
 FUNCTION* currentFunction;
@@ -14,9 +15,7 @@ void typeChecking(PROGRAM* p)
 
 void tcTraversePROGRAM(PROGRAM* prog)
 {
-    currentScope = prog->symbolTable;
-    tcTraverseSTMTCOMP(prog->body);
-    tcTraverseFUNCTIONNODE(prog->fn);
+    currentScope = prog->globalScope;
 }
 
 void tcTraverseSTMTCOMP(STMTCOMP* sc)
@@ -25,7 +24,6 @@ void tcTraverseSTMTCOMP(STMTCOMP* sc)
     tcTraverseSTMTNODE(sc->stmtnode);
     currentScope = currentScope->par;
 }
-
 
 void tcTraverseSTMTNODE(STMTNODE* sn)
 {
@@ -87,18 +85,20 @@ void tcTraverseSTMT(STMT* s)
         case printK:
             tcTraverseEXP(s->val.printS);
             break;
-        case declK:
-            if(s->val.declS.value != NULL)
+        case varDeclK:
+            if(s->val.varDeclS.value != NULL)
             {
-                tcTraverseEXP(s->val.declS.value);
-                if(!isSubtype(stringToType(s->val.declS.value->type),stringToType(s->val.declS.type)))
+                tcTraverseEXP(s->val.varDeclS.value);
+                if(!isSubtype(stringToType(s->val.varDeclS.value->type),stringToType(s->val.varDeclS.type)))
                 {
-                    printf("ERROR: Incompatible type, expected %s, got %s at line: %d.\n",s->val.declS.type,s->val.declS.value->type,s->lineno);
+                    printf("ERROR: Incompatible type, expected %s, got %s at line: %d.\n",s->val.varDeclS.type,s->val.varDeclS.value->type,s->lineno);
                     exit(0);
                 }
-                if(strcmp(s->val.declS.value->type,s->val.declS.type) != 0)
-                    s->val.declS.value->coerceTo = s->val.declS.type;
+                if(strcmp(s->val.varDeclS.value->type,s->val.varDeclS.type) != 0)
+                    s->val.varDeclS.value->coerceTo = s->val.varDeclS.type;
             }
+            break;
+        case funDeclK:
             break;
         case expK:
             tcTraverseEXP(s->val.expS);
@@ -125,18 +125,6 @@ void tcTraverseEXP(EXP* e)
                 }
                 e->type = symbol->type;
             }
-            break;
-        case charK:
-            e->type = "CHAR";
-            break;
-        case intK:
-            e->type = "INT";
-            break;
-        case doubleK:
-            e->type = "DOUBLE";
-            break;
-        case boolK:
-            e->type = "BOOLEAN";
             break;
         case binopK:
             tcTraverseEXP(e->val.binopE.left);
@@ -170,6 +158,8 @@ void tcTraverseEXP(EXP* e)
                 e->type = functionSymbol->type;
             }
             break;
+        default:
+            break;
     }
 }
 
@@ -193,19 +183,12 @@ void tcTraverseAPARAMETERNODE(APARAMETERNODE* apn, FPARAMETERNODE* fpn)
     tcTraverseAPARAMETERNODE(apn->next, fpn->next);
 }
 
-void tcTraverseFUNCTIONNODE(FUNCTIONNODE* fn)
-{
-    if(fn == NULL)
-        return;
-    tcTraverseFUNCTION(fn->current);
-    tcTraverseFUNCTIONNODE(fn->next);
-}
-
 void tcTraverseFUNCTION(FUNCTION* f)
 {
+    f->par = currentFunction; //Save pointer to the outer function containing f
     currentFunction = f;
     tcTraverseSTMTCOMP(f->body);
-    currentFunction = NULL;
+    currentFunction = f->par; //Restore pointer to the outer function
 }
 
 

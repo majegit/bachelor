@@ -22,6 +22,7 @@ EXP* makeEXPchar(char charval)
     e->lineno = lineno;
     e->kind = charK;
     e->val.charE = charval;
+    e->type = "CHAR";
     return e;
 }
 
@@ -32,6 +33,7 @@ EXP* makeEXPint(int intval)
     e->lineno = lineno;
     e->kind = intK;
     e->val.intE = intval;
+    e->type = "INT";
     return e;
 }
 
@@ -42,8 +44,7 @@ EXP* makeEXPbool(int boolval)
     e->lineno = lineno;
     e->kind = boolK;
     e->val.boolE = boolval;
-    if(boolval != 0 && boolval != 1)
-        printf("Error boolean value not 1 or 0, line: %d", lineno);
+    e->type = "BOOLEAN";
     return e;
 }
 
@@ -54,6 +55,7 @@ EXP* makeEXPdouble(double doubleval)
     e->lineno = lineno;
     e->kind = doubleK;
     e->val.doubleE = doubleval;
+    e->type = "DOUBLE";
     return e;
 }
 
@@ -133,15 +135,25 @@ STMT* makeSTMTprint(EXP* printEXP)
     s->val.printS = printEXP;
     return s;
 }
-STMT* makeSTMTdecl(char* type, char* name, EXP* value)
+STMT* makeSTMTvarDecl(char* type, char* name, EXP* value)
 {
     STMT* s;
     s = (STMT*)malloc(sizeof(STMT));
     s->lineno = lineno;
-    s->kind = declK;
-    s->val.declS.type = type;
-    s->val.declS.name = name;
-    s->val.declS.value = value;
+    s->kind = varDeclK;
+    s->val.varDeclS.type = type;
+    s->val.varDeclS.name = name;
+    s->val.varDeclS.value = value;
+    return s;
+}
+
+STMT* makeSTMTfunDecl(FUNCTION* f)
+{
+    STMT* s;
+    s = (STMT*)malloc(sizeof(STMT));
+    s->lineno = lineno;
+    s->kind = funDeclK;
+    s->val.funDeclS = f;
     return s;
 }
 
@@ -219,22 +231,11 @@ FUNCTION* makeFUNCTION(char* returnType, char* name, FPARAMETERNODE* args, STMTC
     return fun;
 }
 
-FUNCTIONNODE* makeFUNCTIONNODE(FUNCTION* fun, FUNCTIONNODE* next)
+PROGRAM* makePROGRAM(STMTNODE* sn)
 {
-    FUNCTIONNODE* fn;
-    fn = (FUNCTIONNODE*)malloc(sizeof(FUNCTIONNODE));
-    fn->current = fun;
-    fn->next = next;
-    return fn;
-}
-
-PROGRAM* makePROGRAM(STMTCOMP* body, FUNCTIONNODE* fn)
-{
-    PROGRAM* prog;
-    prog = (PROGRAM*)malloc(sizeof(PROGRAM));
-    prog->body = body;
-    prog->fn = fn;
-    prog->symbolTable = NULL;
+    PROGRAM* prog = (PROGRAM*)malloc(sizeof(PROGRAM));
+    prog->sn = sn;
+    prog->globalScope = makeSYMBOLTABLE(NULL);
     return prog;
 }
 

@@ -128,7 +128,6 @@ void icgTraverseSTMTNODE(STMTNODE* sn);
 void icgTraverseSTMT(STMT* s);
 void icgTraverseEXP(EXP* e);
 void icgTraverseAPARAMETERNODE(APARAMETERNODE* apn);
-void icgTraverseFUNCTIONNODE(FUNCTIONNODE* fn);
 void icgTraverseFUNCTION(FUNCTION* f);
 void icgTraverseFPARAMETERNODE(FPARAMETERNODE* fpn);
 

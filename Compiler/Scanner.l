@@ -1,5 +1,6 @@
 /*** Definitions ***/
 %{
+    #include <string.h>
     #include "Compiler\Tree.h"
     #include "y.tab.h"
     extern int lineno;
@@ -17,11 +18,10 @@ int                 return INT;
 double              return DOUBLE;
 char                return CHAR;
 while               return WHILE;
-main                return MAIN;
 if                  return IF;
 else                return ELSE;
 true|false          {
-                        yylval.boolconst = yytext == "true";
+                        yylval.boolconst = strcmp(yytext, "true") == 0;
                         return tBOOLEAN;
                     }
 [0-9]+              {
@@ -34,7 +34,7 @@ true|false          {
                     }
 [a-zA-Z][a-zA-Z0-9]* {
                         yylval.stringconst = (char *)malloc(strlen(yytext)+1);
-                        sprintf(yylval.stringconst,"%s",yytext);
+                        sprintf(yylval.stringconst,"%s\n",yytext);
                         return tIDENTIFIER;
                     }
 \'                  return '\'';
@@ -59,6 +59,6 @@ true|false          {
 \>=|=\>             return GEQ;
 \n                  lineno++;
 [ \t]               ;
-.                   printf("WTF is this char: %s", yytext);
+.                   printf("Unknown char: %s\n", yytext);
 
 %%

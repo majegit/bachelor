@@ -1,0 +1,18 @@
+int x;
+
+int myfun(int x)
+{
+    char bcd;
+    boolean b = true;
+}
+
+int g() {
+    int g() {
+        int y;
+    }
+}
+
+int main() {
+    int u;
+    u = u + 2;
+}

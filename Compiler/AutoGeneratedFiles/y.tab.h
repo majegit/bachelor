@@ -58,26 +58,24 @@ extern int yydebug;
     tINT = 259,                    /* tINT  */
     tDOUBLE = 260,                 /* tDOUBLE  */
     tBOOLEAN = 261,                /* tBOOLEAN  */
-    MAIN = 262,                    /* MAIN  */
-    PRINT = 263,                   /* PRINT  */
-    FUNC = 264,                    /* FUNC  */
-    RETURN = 265,                  /* RETURN  */
-    WHILE = 266,                   /* WHILE  */
-    IF = 267,                      /* IF  */
-    ELSE = 268,                    /* ELSE  */
-    L = 269,                       /* L  */
-    G = 270,                       /* G  */
-    LEQ = 271,                     /* LEQ  */
-    GEQ = 272,                     /* GEQ  */
-    EQ = 273,                      /* EQ  */
-    NEQ = 274,                     /* NEQ  */
-    OR = 275,                      /* OR  */
-    AND = 276,                     /* AND  */
-    BOOLEAN = 277,                 /* BOOLEAN  */
-    CHAR = 278,                    /* CHAR  */
-    DOUBLE = 279,                  /* DOUBLE  */
-    INT = 280,                     /* INT  */
-    ASSIGN = 281                   /* ASSIGN  */
+    PRINT = 262,                   /* PRINT  */
+    RETURN = 263,                  /* RETURN  */
+    WHILE = 264,                   /* WHILE  */
+    IF = 265,                      /* IF  */
+    ELSE = 266,                    /* ELSE  */
+    L = 267,                       /* L  */
+    G = 268,                       /* G  */
+    LEQ = 269,                     /* LEQ  */
+    GEQ = 270,                     /* GEQ  */
+    EQ = 271,                      /* EQ  */
+    NEQ = 272,                     /* NEQ  */
+    OR = 273,                      /* OR  */
+    AND = 274,                     /* AND  */
+    BOOLEAN = 275,                 /* BOOLEAN  */
+    CHAR = 276,                    /* CHAR  */
+    DOUBLE = 277,                  /* DOUBLE  */
+    INT = 278,                     /* INT  */
+    ASSIGN = 279                   /* ASSIGN  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -90,26 +88,24 @@ extern int yydebug;
 #define tINT 259
 #define tDOUBLE 260
 #define tBOOLEAN 261
-#define MAIN 262
-#define PRINT 263
-#define FUNC 264
-#define RETURN 265
-#define WHILE 266
-#define IF 267
-#define ELSE 268
-#define L 269
-#define G 270
-#define LEQ 271
-#define GEQ 272
-#define EQ 273
-#define NEQ 274
-#define OR 275
-#define AND 276
-#define BOOLEAN 277
-#define CHAR 278
-#define DOUBLE 279
-#define INT 280
-#define ASSIGN 281
+#define PRINT 262
+#define RETURN 263
+#define WHILE 264
+#define IF 265
+#define ELSE 266
+#define L 267
+#define G 268
+#define LEQ 269
+#define GEQ 270
+#define EQ 271
+#define NEQ 272
+#define OR 273
+#define AND 274
+#define BOOLEAN 275
+#define CHAR 276
+#define DOUBLE 277
+#define INT 278
+#define ASSIGN 279
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -125,7 +121,6 @@ union YYSTYPE
    char unknown;
    EXP* exp;
    FUNCTION* function;
-   FUNCTIONNODE* functionnode;
    APARAMETER* aparameter;
    APARAMETERNODE* aparameternode;
    FPARAMETER* fparameter;
@@ -135,7 +130,7 @@ union YYSTYPE
    STMTCOMP* stmtcomp;
    PROGRAM* program;
 
-#line 139 "y.tab.h"
+#line 134 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

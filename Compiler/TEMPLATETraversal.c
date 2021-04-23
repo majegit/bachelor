@@ -43,7 +43,7 @@ void traverseSTMT(STMT* s)
         case printK:
             traverseEXP(s->val.printS);
             break;
-        case declK:
+        case varDeclK:
             traverseEXP(s->val.declS.value);
             break;
         case expK:
