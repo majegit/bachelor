@@ -9,5 +9,6 @@ void scTraverseSTMTNODE(STMTNODE* sn, SYMBOLTABLE* st);
 void scTraverseSTMT(STMT* s, SYMBOLTABLE* st);
 void scTraverseFUNCTION(FUNCTION* f, SYMBOLTABLE* st);
 void scTraverseFPARAMETERNODE(FPARAMETERNODE* fpn, SYMBOLTABLE* st);
+void scTraverseGlobalSTMTNODE(STMTNODE* sn);
 
 #endif

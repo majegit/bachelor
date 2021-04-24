@@ -33,8 +33,8 @@ true|false          {
                         return tDOUBLE;
                     }
 [a-zA-Z][a-zA-Z0-9]* {
-                        yylval.stringconst = (char *)malloc(strlen(yytext)+1);
-                        sprintf(yylval.stringconst,"%s\n",yytext);
+                        yylval.stringconst = (char*)malloc(strlen(yytext)+1);
+                        sprintf(yylval.stringconst,"%s",yytext);
                         return tIDENTIFIER;
                     }
 \'                  return '\'';

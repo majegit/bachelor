@@ -1,0 +1,23 @@
+djaodjasodijdk
+
+int main()
+{
+    if(i==1)
+        return 1;
+    if(i==1)
+        return 1;
+    if(i==1)
+        return 1;
+}
+
+
+.type main, @function
+main:
+    push %reg1
+    push %reg2
+    push %reg3
+    push %rbp
+    addq %rsp
+
+
+

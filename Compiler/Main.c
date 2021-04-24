@@ -19,12 +19,14 @@ int main()
 
     printf("STARTING SCANNING AND PARSING\n");
     yyparse();
+    printf("STARTING SYMBOL COLLECTION\n");
     symbolCollection(program);
     printf("STARTING TYPECHECK\n");
     typeChecking(program);
-    /*printf("STARTING INTERMEDIATE CODE GENERATION\n");
-    LL* iCode = icgTraversePROGRAM(program);
+    //printf("STARTING INTERMEDIATE CODE GENERATION\n");
+    //LL* iCode = icgTraversePROGRAM(program);
     //printIC(iCode);
+    /*
     printf("STARTING CODE EMIT\n");
     emit(iCode,"test.s");
      */

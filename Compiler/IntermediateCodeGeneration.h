@@ -122,6 +122,16 @@ typedef struct LinkedList {
     LLN* last;
 } LL;
 
+typedef struct LinkedListNodeFUN {
+    FUNCTION* f;
+    struct LinkedListNodeFUN* next;
+} LLNFUN;
+
+typedef struct LLFUN {
+    LLNFUN* first;
+    LLNFUN* last;
+} LLFUN;
+
 LL* icgTraversePROGRAM(PROGRAM* prog);
 void icgTraverseSTMTCOMP(STMTCOMP* sc);
 void icgTraverseSTMTNODE(STMTNODE* sn);
@@ -132,6 +142,7 @@ void icgTraverseFUNCTION(FUNCTION* f);
 void icgTraverseFPARAMETERNODE(FPARAMETERNODE* fpn);
 
 void addToLL(LLN *moreCode);
+void addToLLFUN(LLNFUN* f);
 Mode* makeMode(addressingMode mode, int offset);
 Target* makeTarget(targetKind targetK, labelKind labelK, int additionalInfo);
 OP* makeOP(opKind opK, metaKind metaK, opSize size);
@@ -156,6 +167,8 @@ void quickAddCompareINS(opKind k, opSize size);
 void quickAddBooleanINS(opKind k);
 void quickAddPushReg(int regNumber);
 void quickAddXorReg(int src, int dest);
+
+
 
 int labelGenerator(labelKind kind);
 opSize getSizeOfType(char* typeName);

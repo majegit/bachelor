@@ -1,4 +1,14 @@
-int x;
+int x = 2;
+
+int main() {
+    int u;
+    u = u + 2;
+    int ll()
+    {
+        return 2;
+    }
+    return j();
+}
 
 int myfun(int x)
 {
@@ -6,13 +16,16 @@ int myfun(int x)
     boolean b = true;
 }
 
-int g() {
-    int g() {
-        int y;
-    }
+int j()
+{
+    return 2;
 }
 
-int main() {
-    int u;
-    u = u + 2;
+int g() {
+    return 2;
+    double x() {
+        int y;
+        return 2.2;
+    }
+    int y = g();
 }

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "Tree.h"
 #include "SymbolCollection.h"
 #include "Error.h"
@@ -13,9 +14,23 @@ void symbolCollection(PROGRAM* p)
 
 void scTraversePROGRAM(PROGRAM* prog)
 {
+    scTraverseGlobalSTMTNODE(prog->sn);
     scTraverseSTMTNODE(prog->sn, prog->globalScope);
     if(!mainFound)
         throwError("no main function found!");
+}
+
+//The global scope can only contain declarations
+void scTraverseGlobalSTMTNODE(STMTNODE* sn)
+{
+    if(sn == NULL)
+        return;
+    if(sn->stmt->kind != funDeclK && sn->stmt->kind != varDeclK)
+    {
+        printf("ERROR: the global scope can only contain declarations on line: %d",sn->stmt->lineno);
+        exit(0);
+    }
+    scTraverseGlobalSTMTNODE(sn->next);
 }
 
 void scTraverseSTMTCOMP(STMTCOMP* sc, SYMBOLTABLE* st)
@@ -34,7 +49,6 @@ void scTraverseSTMTNODE(STMTNODE* sn, SYMBOLTABLE* st)
 
 void scTraverseSTMT(STMT* s, SYMBOLTABLE* st)
 {
-
     switch(s->kind)
     {
         case whileK:
@@ -65,6 +79,36 @@ void scTraverseSTMT(STMT* s, SYMBOLTABLE* st)
             scTraverseFUNCTION(s->val.funDeclS,st);
             break;
         }
+        case assignK:
+            if(lookupSymbolVar(s->val.assignS.name, st) == NULL)
+            {
+                printf("ERROR: Variable not declared: %s on line: %d\n",s->val.assignS.name,s->lineno);
+                exit(0);
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+void scTraverseEXP(EXP* e, SYMBOLTABLE* st)
+{
+    switch(e->kind)
+    {
+        case idK:
+        {
+            SYMBOL* symbol = lookupSymbolVar(e->val.idE, st);
+            if(symbol == NULL)
+            {
+                printf("ERROR: Variable not declared: %s on line: %d\n",e->val.idE,e->lineno);
+                exit(0);
+            }
+            break;
+        }
+        case binopK:
+            scTraverseEXP(e->val.binopE.left, st);
+            scTraverseEXP(e->val.binopE.right, st);
+            break;
         default:
             break;
     }
@@ -73,7 +117,7 @@ void scTraverseSTMT(STMT* s, SYMBOLTABLE* st)
 void scTraverseFUNCTION(FUNCTION* f, SYMBOLTABLE* st)
 {
     //Add function name and returnType to current table
-    if(strcmp(f->name,"main\n") == 0)
+    if(strcmp(f->name,"main") == 0)
     {
         mainFound = 1;
         if(strcmp(f->returnType,"INT") != 0 || f->args != NULL)

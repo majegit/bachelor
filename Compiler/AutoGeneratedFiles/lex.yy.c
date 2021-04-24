@@ -852,8 +852,8 @@ case 13:
 YY_RULE_SETUP
 #line 35 "Compiler\\Scanner.l"
 {
-                        yylval.stringconst = (char *)malloc(strlen(yytext)+1);
-                        sprintf(yylval.stringconst,"%s\n",yytext);
+                        yylval.stringconst = (char*)malloc(strlen(yytext)+1);
+                        sprintf(yylval.stringconst,"%s",yytext);
                         return tIDENTIFIER;
                     }
 	YY_BREAK

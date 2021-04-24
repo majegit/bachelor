@@ -5,8 +5,8 @@
 #include "Operations.c"
 #include "Error.h"
 
-SYMBOLTABLE* currentScope;
-FUNCTION* currentFunction;
+SYMBOLTABLE* currentScope = NULL;
+FUNCTION* currentFunction = NULL;
 
 void typeChecking(PROGRAM* p)
 {
@@ -16,6 +16,7 @@ void typeChecking(PROGRAM* p)
 void tcTraversePROGRAM(PROGRAM* prog)
 {
     currentScope = prog->globalScope;
+    tcTraverseSTMTNODE(prog->sn);
 }
 
 void tcTraverseSTMTCOMP(STMTCOMP* sc)
@@ -49,11 +50,6 @@ void tcTraverseSTMT(STMT* s)
         case assignK:
             tcTraverseEXP(s->val.assignS.val);
             SYMBOL* symbol = lookupSymbolVar(s->val.assignS.name, currentScope);
-            if(symbol == NULL)
-            {
-                printf("ERROR: Variable not declared: %s on line: %d\n",s->val.assignS.name,s->lineno);
-                exit(0);
-            }
             if(!isSubtype(stringToType(s->val.assignS.val->type),stringToType(symbol->type)))
             {
                 printf("ERROR: Incompatible type, expected %s, got %s on line: %d\n",symbol->type,s->val.assignS.val->type,s->lineno);
@@ -98,8 +94,6 @@ void tcTraverseSTMT(STMT* s)
                     s->val.varDeclS.value->coerceTo = s->val.varDeclS.type;
             }
             break;
-        case funDeclK:
-            break;
         case expK:
             tcTraverseEXP(s->val.expS);
             if(s->val.expS->kind != funK)
@@ -107,6 +101,9 @@ void tcTraverseSTMT(STMT* s)
                 printf("ERROR: Expected function at line: %d.\n",s->lineno);
                 exit(0);
             }
+            break;
+        case funDeclK:
+            tcTraverseFUNCTION(s->val.funDeclS);
             break;
     }
 }
@@ -116,40 +113,35 @@ void tcTraverseEXP(EXP* e)
     switch(e->kind)
     {
         case idK:
-            {
-                SYMBOL* symbol = lookupSymbolVar(e->val.idE, currentScope);
-                if(symbol == NULL)
-                {
-                    printf("ERROR: Variable not declared: %s on line: %d\n",e->val.idE,e->lineno);
-                    exit(0);
-                }
-                e->type = symbol->type;
-            }
+        {
+            SYMBOL* symbol = lookupSymbolVar(e->val.idE, currentScope);
+            e->type = symbol->type;
             break;
+        }
         case binopK:
             tcTraverseEXP(e->val.binopE.left);
             tcTraverseEXP(e->val.binopE.right);
-            OPERATION_WRAPPER* operationWrapper = searchOperations(e->val.binopE.operator, e->val.binopE.left->type, e->val.binopE.right->type);
-            if(operationWrapper->opCount == 0)
+            OPERATION_WRAPPER* opWrapper = searchOperations(e->val.binopE.operator, e->val.binopE.left->type, e->val.binopE.right->type);
+            if(opWrapper->opCount == 0)
             {
                 printf("ERROR: Operator '%s' not defined for %s %s on line: %d\n",e->val.binopE.operator,e->val.binopE.left->type,e->val.binopE.right->type,e->lineno);
                 exit(0);
             }
-            if(operationWrapper->opCount > 1)
+            if(opWrapper->opCount > 1)
             {
                 printf("ERROR: multiple resolutions for %s '%s' %s, on lineno: %d\n",e->val.binopE.left->type,e->val.binopE.operator,e->val.binopE.right->type,e->lineno);
                 exit(0);
             }
-            if(strcmp(operationWrapper->op->argTypes[0]->type, e->val.binopE.left->type) != 0) //Flag coercion for the left argument
-                e->val.binopE.left->coerceTo = operationWrapper->op->argTypes[0]->type;
-            if(strcmp(operationWrapper->op->argTypes[1]->type, e->val.binopE.right->type) != 0) //Flag coercion for the right argument
-                e->val.binopE.right->coerceTo = operationWrapper->op->argTypes[1]->type;
-            e->type = operationWrapper->op->returnType->type;
+            if(strcmp(opWrapper->op->argTypes[0]->type, e->val.binopE.left->type) != 0) //Flag coercion for the left argument
+                e->val.binopE.left->coerceTo = opWrapper->op->argTypes[0]->type;
+            if(strcmp(opWrapper->op->argTypes[1]->type, e->val.binopE.right->type) != 0) //Flag coercion for the right argument
+                e->val.binopE.right->coerceTo = opWrapper->op->argTypes[1]->type;
+            e->type = opWrapper->op->returnType->type;
             break;
         case funK:
             {
                 SYMBOL* functionSymbol = lookupSymbolFun(e->val.funE.id, currentScope);
-                if(functionSymbol == NULL)
+                if(functionSymbol == NULL) //TODO: throw into symbol collection, (andet gennemløb)
                 {
                     printf("ERROR: Function does not exist: %s on line: %d\n",e->val.funE.id,e->lineno);
                     exit(0);
@@ -185,10 +177,11 @@ void tcTraverseAPARAMETERNODE(APARAMETERNODE* apn, FPARAMETERNODE* fpn)
 
 void tcTraverseFUNCTION(FUNCTION* f)
 {
-    f->par = currentFunction; //Save pointer to the outer function containing f
-    currentFunction = f;
+    FUNCTION* oldFun = currentFunction; //Save pointer to the outer function containing f
+    currentFunction = f; //Save pointer to the outer function containing f
+
     tcTraverseSTMTCOMP(f->body);
-    currentFunction = f->par; //Restore pointer to the outer function
+    currentFunction = oldFun;
 }
 
 

@@ -98,7 +98,6 @@ typedef struct FUNCTION {
     char* name;
     FPARAMETERNODE* args;
     STMTCOMP* body;
-    struct FUNCTION* par; //Used in typechecking
 } FUNCTION;
 
 FUNCTION* makeFUNCTION(char* returnType, char* name, FPARAMETERNODE* args, STMTCOMP* body);
@@ -119,6 +118,7 @@ typedef struct SYMBOL {
     char* type;
     FPARAMETERNODE* fpn; //Only functions use this
     int offset; //Only variables and formalParameters use this
+    char* label; //Used by functions and
 } SYMBOL;
 
 SYMBOL* makeSYMBOLvariable(char* name, char* type);
@@ -148,7 +148,11 @@ SYMBOL* lookupSymbolFun(char* name, SYMBOLTABLE* st);
 int* staticLinkCount(char* name, SYMBOLTABLE* st);
 
 void addSymbol(SYMBOL* symbol, SYMBOLTABLE* st);
+char* funLabelGenerator(char* funName);
+char* doubleLabelGenerator();
 
+//Util function
+char* concatStr(char* str1, char* str2);
 
 
 

@@ -257,6 +257,8 @@ SYMBOL* makeSYMBOLfunction(char* name, char* type, FPARAMETERNODE* fpn)
     s->kind = function;
     s->fpn = fpn;
     s->type = type;
+    s->label = funLabelGenerator(name);
+    printf("funLabel: %s\n",s->label);
     return s;
 }
 
@@ -366,4 +368,37 @@ void addSymbol(SYMBOL* symbol, SYMBOLTABLE* st)
     SYMBOLNODE* sn = makeSYMBOLNODE(symbol, st->symbols);
     st->symbols = sn;
     st->symbolCount++;
+}
+
+int funCounter = 0;
+char* funLabelGenerator(char* funName)
+{
+    if(strcmp(funName, "main") == 0)
+        return "main";
+    char* res;
+    char intAsString[20];
+    sprintf(intAsString, "%d", funCounter++);
+    res = concatStr("fun", intAsString);
+    res = concatStr(res, "_");
+    res = concatStr(res, funName);
+    return res;
+}
+
+int doubleCounter = 0;
+char* doubleLabelGenerator()
+{
+    char intAsString[20];
+    sprintf(intAsString,"%d",doubleCounter++);
+    return concatStr("doubleconst_",intAsString);
+}
+
+//Util function
+char* concatStr(char* str1, char* str2)
+{
+    size_t size = strlen(str1)+strlen(str2)+1;
+    char* newStr = (char*)malloc(size);
+    memcpy(newStr,str1,strlen(str1));
+    memcpy(newStr+strlen(str1),str2,strlen(str2));
+    newStr[size-1] = '\0';
+    return newStr;
 }

@@ -6,14 +6,29 @@
 
 SYMBOLTABLE* currentScope;
 LL* code = &(LL){NULL,NULL};
+LLFUN* funs = &(LLFUN){NULL,NULL};
 
 LL* icgTraversePROGRAM(PROGRAM* prog)
 {
     quickAddMeta(PROGRAM_PROLOGUE);
-    icgTraverseSTMTCOMP(prog->body);
+    icgTraverseSTMTNODE(prog->sn);
     quickAddMeta(PROGRAM_EPILOGUE);
-    icgTraverseFUNCTIONNODE(prog->fn); //All functions will be in the bottom of the LL
+
+    LLNFUN* currentNode = funs->first;
+    while(currentNode != NULL)
+    {
+        icgTraverseFUNCTION(currentNode->f);
+        currentNode = currentNode->next;
+    }
     return code;
+}
+
+void icgTraverseSTMTNODE(STMTNODE* sn)
+{
+    if(sn == NULL)
+        return;
+    icgTraverseSTMT(sn->stmt);
+    icgTraverseSTMTNODE(sn->next);
 }
 
 void icgTraverseSTMTCOMP(STMTCOMP* sc)
@@ -26,15 +41,6 @@ void icgTraverseSTMTCOMP(STMTCOMP* sc)
     icgTraverseSTMTNODE(sc->stmtnode);
     quickAddMetaWithInfo(DEALLOCATE_STACK_SPACE, stackSpace); //Deallocate stack space and pop rbp
     currentScope = sc->symbolTable->par;                           //Update pointer to current scope
-}
-
-
-void icgTraverseSTMTNODE(STMTNODE* sn)
-{
-    if(sn == NULL)
-        return;
-    icgTraverseSTMT(sn->stmt);
-    icgTraverseSTMTNODE(sn->next);
 }
 
 void icgTraverseSTMT(STMT* s)
@@ -136,6 +142,9 @@ void icgTraverseSTMT(STMT* s)
         case expK:
             icgTraverseEXP(s->val.expS);
             break;
+        case funDeclK:
+            quickAddToFUNLL(s->val.funDeclS);
+            break;
     }
 }
 
@@ -212,22 +221,15 @@ void icgTraverseAPARAMETERNODE(APARAMETERNODE* apn)
     icgTraverseAPARAMETERNODE(apn->next);
 }
 
-void icgTraverseFUNCTIONNODE(FUNCTIONNODE* fn)
-{
-    if(fn == NULL)
-        return;
-    icgTraverseFUNCTION(fn->current);
-    icgTraverseFUNCTIONNODE(fn->next);
-}
-
 void icgTraverseFUNCTION(FUNCTION* f)
 {
-    quickAddMeta(CALLEE_PROLOGUE);
-    quickAddMeta(CALLEE_SAVE);
-    icgTraverseFPARAMETERNODE(f->args);
-    icgTraverseSTMTCOMP(f->body);
-    quickAddMeta(CALLEE_RESTORE);
-    quickAddMeta(CALLEE_EPILOGUE); //Generate label
+    quickAddMeta(CALLEE_PROLOGUE);  //label of function  funcX_name
+    quickAddMeta(CALLEE_SAVE);      //push callee-save registers
+    icgTraverseSTMTCOMP(f->body);        //push rbp, and make space for local vars
+
+    quickAddMeta(F_END_LABEL);           //funcX_name_end
+    quickAddMeta(CALLEE_RESTORE);   //pop callee-save registers
+    quickAddMeta(CALLEE_EPILOGUE);  //ret
 }
 
 void icgTraverseFPARAMETERNODE(FPARAMETERNODE* fpn)
@@ -499,6 +501,21 @@ void quickAddXorReg(int src, int dest)
     ARG* args[2] = {srcReg,destReg};
     OP* xorOP = makeOP(xor,0,bits_64);
     quickAddIns(makeINS(xorOP,args));
+}
+
+void addToLLFUN(LLNFUN* f)
+{
+    if(funs->first == NULL) //First time we insert something
+        funs->first = f;
+    else
+        funs->last->next = f;
+    funs->last = f;
+}
+
+void quickAddToLLFUN(FUNCTION* f)
+{
+    LLNFUN* lln = malloc(sizeof(LLNFUN));
+    addToLLFUN(lln);
 }
 
 int whileLabelNumber = 0;
