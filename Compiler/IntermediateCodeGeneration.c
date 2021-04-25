@@ -7,12 +7,15 @@
 SYMBOLTABLE* currentScope;
 LL* code = &(LL){NULL,NULL};
 LLFUN* funs = &(LLFUN){NULL,NULL};
+int depth = 0;
+FUNCTION* currentFunction;
 
 LL* icgTraversePROGRAM(PROGRAM* prog)
 {
     quickAddMeta(PROGRAM_PROLOGUE);
     icgTraverseSTMTNODE(prog->sn);
-    quickAddMeta(PROGRAM_EPILOGUE);
+
+    quickAddCallFun("main");
 
     LLNFUN* currentNode = funs->first;
     while(currentNode != NULL)
@@ -20,6 +23,7 @@ LL* icgTraversePROGRAM(PROGRAM* prog)
         icgTraverseFUNCTION(currentNode->f);
         currentNode = currentNode->next;
     }
+    quickAddMeta(PROGRAM_EPILOGUE);
     return code;
 }
 
@@ -34,7 +38,7 @@ void icgTraverseSTMTNODE(STMTNODE* sn)
 void icgTraverseSTMTCOMP(STMTCOMP* sc)
 {
     int stackSpace;
-
+    depth++;
     currentScope = sc->symbolTable;                                //Update pointer to current scope
     stackSpace = sc->symbolTable->nextVariableLabel;               //Stack space needed for local variables
     quickAddMetaWithInfo(ALLOCATE_STACK_SPACE, stackSpace);   //Push rbp and allocate stack space
@@ -45,19 +49,19 @@ void icgTraverseSTMTCOMP(STMTCOMP* sc)
 
 void icgTraverseSTMT(STMT* s)
 {
-    printf("stmt kind: %d\n",s->kind);
     switch(s->kind)
     {
         case whileK:
             {
-                int labelNumber = labelGenerator(while_label);     //Generate label number X
-                quickAddLabel(while_label, labelNumber);           //while_X:
+                char* labelName = labelGenerator(while_label);     //Generate label number X
+                quickAddLabelString(while_label, labelName);       //while_X:
                 icgTraverseEXP(s->val.whileS.guard);                    //Guard
                 quickAddPopRRT();                                       //Move boolean to rrt
                 quickAddCheckTruthValue();                              //cmp rrt, $1
-                quickAddJumpIfFalse(endwhile_label,labelNumber);     //jne endwhile_X
+                labelName = concatStr("end",deepCopy(labelName));
+                quickAddJumpIfFalse(endwhile_label,labelName);     //jne endwhile_X
                 icgTraverseSTMTCOMP(s->val.whileS.body);                //generate the code for the body of the whileloop
-                quickAddLabel(endwhile_label, labelNumber);        //endwhile_X:
+                quickAddLabelString(endwhile_label, labelName);    //endwhile_X:
             }
             break;
         case assignK:
@@ -83,44 +87,47 @@ void icgTraverseSTMT(STMT* s)
                 quickAddIns(ins);
 
                 free(staticLinkJumpsAndOffset);
-                free(staticLinkJumpsAndOffset+1);
             }
             break;
         case ifElseK:
             {
-                int labelNumber = labelGenerator(if_label);        //Generate int X
-
-                quickAddLabel(if_label, labelNumber);              //if_X:
+                char* labelName = labelGenerator(if_label);        //Generate if_X label
+                quickAddLabelString(if_label, labelName);          //if_X:
                 icgTraverseEXP(s->val.ifElseS.cond);                    //Guard
                 quickAddPopRRT();                                       //Move boolean to rrt
                 quickAddCheckTruthValue();                              //cmp rrt, $1
-                quickAddJumpIfFalse(endif_label,labelNumber);        //jne endif_X
+                labelName = concatStr("end",labelName);             //Generate endif_X label
+                quickAddJumpIfFalse(endif_label,labelName);          //jne endif_X
                 icgTraverseSTMTCOMP(s->val.ifElseS.ifbody);             //if-body
-                quickAddUnconditionalJmp(endelse_label,labelNumber); //jmp endelse_X
-                quickAddLabel(endif_label, labelNumber);           //endif_X:
-                icgTraverseSTMTCOMP(s->val.ifElseS.elsebody);           //else-body
-                quickAddLabel(endelse_label,labelNumber);          //endelse_X:
+                char* endelseLabel = concatStr("endelse",deepCopy(labelName+5)); //Generate endelse_X
+                quickAddUnconditionalJmp(endelse_label,endelseLabel); //jmp endelse_X
+                quickAddLabelString(endif_label, labelName);        //endif_X:
+                icgTraverseSTMTCOMP(s->val.ifElseS.elsebody);            //else-body
+                quickAddLabelString(endelse_label,endelseLabel);    //endelse_X:
             }
             break;
         case returnK:
             icgTraverseEXP(s->val.returnS);
             quickAddPopRRT();
-            quickAddMeta(CALLEE_RESTORE);
-            quickAddMeta(CALLEE_EPILOGUE);
+            quickAddMoveRBPToRSL();
+            for(int i = 0; i < depth; i++)
+                quickAddMeta(FOLLOW_STATIC_LINK);
+            quickAddMoveRSLToRBP();
+            SYMBOL* funSymbol = lookupSymbolFun(currentFunction->name,currentScope);
+            quickAddUnconditionalJmp(endfunction_label,funSymbol->label);
             break;
         case printK:
             icgTraverseEXP(s->val.printS);  //TODO: IMPLEMENT
             break;
         case varDeclK:
             {
-                if(s->val.declS.value == NULL)
+                if(s->val.varDeclS.value == NULL)
                     break;
-                icgTraverseEXP(s->val.declS.value);
+                icgTraverseEXP(s->val.varDeclS.value);
                 quickAddPopRRT();
-                int* staticLinkJumpsAndOffset = staticLinkCount(s->val.declS.name,currentScope);
+                int* staticLinkJumpsAndOffset = staticLinkCount(s->val.varDeclS.name,currentScope);
                 for(int i=0; i < staticLinkJumpsAndOffset[0]; i++)
                     quickAddMeta(FOLLOW_STATIC_LINK);
-
                 Mode* modeDIR = makeMode(dir,0);
                 Mode* modeIRL = makeMode(irl,staticLinkJumpsAndOffset[1]);
 
@@ -131,19 +138,18 @@ void icgTraverseSTMT(STMT* s)
                 ARG* argTo = makeARG(to,modeIRL);
                 ARG* args[2] = {argFrom, argTo};
 
-                OP* op = makeOP(move,0,getSizeOfId(s->val.declS.name));
+                OP* op = makeOP(move,0,getSizeOfId(s->val.varDeclS.name));
                 INS* ins = makeINS(op,args);
                 quickAddIns(ins);
 
                 free(staticLinkJumpsAndOffset);
-                free(staticLinkJumpsAndOffset+1);
             }
             break;
         case expK:
             icgTraverseEXP(s->val.expS);
             break;
         case funDeclK:
-            quickAddToFUNLL(s->val.funDeclS);
+            addToLLFUN(s->val.funDeclS);
             break;
     }
 }
@@ -167,7 +173,7 @@ void icgTraverseEXP(EXP* e)
             }
             break;
         case doubleK:
-            //Generate double constant
+            //TODO: add doubles
             break;
         case binopK:
             icgTraverseEXP(e->val.binopE.left);
@@ -203,9 +209,12 @@ void icgTraverseEXP(EXP* e)
             quickAddPushReg(1);
             break;
         case funK:
-            //TODO: Generate the code for each parameter and throw it on the stack
+        {
             icgTraverseAPARAMETERNODE(e->val.funE.aparameternode);
+            SYMBOL* funSymbol = lookupSymbolFun(e->val.funE.id,currentScope);
+            quickAddCallFun(funSymbol->label);
             break;
+        }
     }
     if(e->coerceTo != NULL)
     {
@@ -223,13 +232,20 @@ void icgTraverseAPARAMETERNODE(APARAMETERNODE* apn)
 
 void icgTraverseFUNCTION(FUNCTION* f)
 {
-    quickAddMeta(CALLEE_PROLOGUE);  //label of function  funcX_name
-    quickAddMeta(CALLEE_SAVE);      //push callee-save registers
-    icgTraverseSTMTCOMP(f->body);        //push rbp, and make space for local vars
+    depth = 0;
+    currentFunction = f;
 
-    quickAddMeta(F_END_LABEL);           //funcX_name_end
-    quickAddMeta(CALLEE_RESTORE);   //pop callee-save registers
-    quickAddMeta(CALLEE_EPILOGUE);  //ret
+    char* funLabel = lookupSymbolFun(f->name,f->body->symbolTable)->label;   //funLabel = funX_<function name>
+    quickAddMetaString(FUNCTION_DECLARATION,funLabel);  //.type funX_<function name>, @function
+    quickAddLabelString(function_label,funLabel);  //funX_<function name>
+    quickAddMeta(CALLEE_PROLOGUE);                 //unused
+    quickAddMeta(CALLEE_SAVE);                     //Push callee save registers
+    icgTraverseSTMTCOMP(f->body);                       //push rbp, and allocate space for local vars is done in here
+    quickAddLabelString(function_label,funLabel);  //endfunX_<function name>
+    quickAddMeta(CALLEE_RESTORE);                  //Pop callee save registers
+    quickAddMeta(CALLEE_EPILOGUE);                 //ret
+    currentFunction = NULL;
+    depth = 0;
 }
 
 void icgTraverseFPARAMETERNODE(FPARAMETERNODE* fpn)
@@ -242,7 +258,10 @@ void icgTraverseFPARAMETERNODE(FPARAMETERNODE* fpn)
 void addToLL(LLN* newCode)
 {
     if(code->first == NULL) //First time we insert something
+    {
         code->first = newCode;
+        code->first->next = NULL;
+    }
     else
         code->last->next = newCode;
     code->last = newCode;
@@ -318,6 +337,14 @@ void quickAddMetaWithInfo(metaKind metaK, int metaInformation)
     quickAddIns(makeINS(op,args));
 }
 
+void quickAddMetaString(metaKind metaK, char* str)
+{
+    OP* op = makeOP(meta,metaK,0);
+    op->metaString = str;
+    ARG* args[2] = {NULL,NULL};
+    quickAddIns(makeINS(op,args));
+}
+
 void quickAddLabel(labelKind kind, int labelNumber)
 {
     Target* target = makeTarget(mem,kind,labelNumber);
@@ -327,6 +354,17 @@ void quickAddLabel(labelKind kind, int labelNumber)
     ARG* args[2] = {arg, NULL};
     quickAddIns(makeINS(op,args));
 };
+
+void quickAddLabelString(labelKind kind, char* name)
+{
+    Target* target = makeTarget(mem,kind,0);
+    target->labelName = name;
+    Mode* mode = makeMode(dir,0);
+    ARG* arg = makeARG(target, mode);
+    OP* op = makeOP(label,0,0);
+    ARG* args[2] = {arg, NULL};
+    quickAddIns(makeINS(op,args));
+}
 
 void quickAddPush(Mode* mode, Target* target)
 {
@@ -408,6 +446,22 @@ void quickAddMoveRBPToRSL()
     quickAddIns(ins);
 }
 
+void quickAddMoveRSLToRBP()
+{
+    Mode* dirMode = makeMode(dir,0);
+
+    Target* rbpTarget = makeTarget(rbp,0,0);
+    ARG* rbpARG = makeARG(rbpTarget,dirMode);
+
+    Target* rslTarget = makeTarget(rsl,0,0);
+    ARG* rslARG = makeARG(rslTarget,dirMode);
+
+    OP* op = makeOP(move,0,bits_64);
+    ARG* args[2] = {rslARG,rbpARG};
+    INS* ins = makeINS(op,args);
+    quickAddIns(ins);
+}
+
 void quickAddCheckTruthValue()
 {
     OP* op = makeOP(cmp,0,bits_64);
@@ -421,20 +475,24 @@ void quickAddCheckTruthValue()
     quickAddIns(ins);
 }
 
-void quickAddJumpIfFalse(labelKind k, int labelNumber)
+void quickAddJumpIfFalse(labelKind k, char* labelName)
 {
     OP* op = makeOP(jne,0,0);
     Mode* dirMode = makeMode(dir,0);
-    ARG* label = makeARG(makeTarget(mem,k,labelNumber),dirMode);
+    Target* target = makeTarget(mem,k,0);
+    target->labelName = labelName;
+    ARG* label = makeARG(target,dirMode);
     ARG* args[2] = {label,NULL};
     quickAddIns(makeINS(op,args));
 }
 
-void quickAddUnconditionalJmp(labelKind k, int labelNumber)
+void quickAddUnconditionalJmp(labelKind k, char* labelName)
 {
     OP* op = makeOP(jmp,0,0);
     Mode* dirMode = makeMode(dir,0);
-    ARG* label = makeARG(makeTarget(mem,k,labelNumber),dirMode);
+    Target* target = makeTarget(mem,k,0);
+    target->labelName = labelName;
+    ARG* label = makeARG(target,dirMode);
     ARG* args[2] = {label,NULL};
     quickAddIns(makeINS(op,args));
 }
@@ -493,6 +551,17 @@ void quickAddBooleanINS(opKind k)
     quickAddIns(makeINS(boolOP,args));
 }
 
+void quickAddCallFun(char* funLabel)
+{
+    Mode* direct = makeMode(dir,0);
+    OP* callOP = makeOP(call,0,0);
+    Target* funTarget = makeTarget(mem,0,0);
+    funTarget->labelName = funLabel;
+    ARG* funARG = makeARG(funTarget, direct);
+    ARG* args[2] = {funARG,NULL};
+    quickAddIns(makeINS(callOP,args));
+}
+
 void quickAddXorReg(int src, int dest)
 {
     Mode* direct = makeMode(dir,0);
@@ -503,29 +572,39 @@ void quickAddXorReg(int src, int dest)
     quickAddIns(makeINS(xorOP,args));
 }
 
-void addToLLFUN(LLNFUN* f)
+void addToLLFUN(FUNCTION* f)
 {
+    //Makes a node containing f
+    LLNFUN* node = (LLNFUN*)malloc(sizeof(LLNFUN));
+    node->f = f;
+
+
     if(funs->first == NULL) //First time we insert something
-        funs->first = f;
+    {
+        funs->first = node;
+        funs->first->next = NULL;
+    }
     else
-        funs->last->next = f;
-    funs->last = f;
+        funs->last->next = node;
+    funs->last = node;
 }
 
-void quickAddToLLFUN(FUNCTION* f)
-{
-    LLNFUN* lln = malloc(sizeof(LLNFUN));
-    addToLLFUN(lln);
-}
-
-int whileLabelNumber = 0;
-int ifLabelNumber = 0;
-int labelGenerator(labelKind kind) {
+int whileCounter = 0;
+int ifCounter = 0;
+char* labelGenerator(labelKind kind) {
+    char* res;
+    char intAsString[20];
     if(kind == while_label)
-        return whileLabelNumber++;
+    {
+        sprintf(intAsString, "%d", whileCounter++);
+        res = concatStr("while_",intAsString);
+    }
     if(kind == if_label)
-        return ifLabelNumber++;
-    return 0;
+    {
+        sprintf(intAsString, "%d", ifCounter++);
+        res = concatStr("if_",intAsString);
+    }
+    return res;
 }
 
 opSize getSizeOfType(char* typeName)

@@ -35,10 +35,11 @@ void printEXP(EXP* exp)
 
 void printIC(LL* iCode)
 {
-    while(iCode->first != NULL)
+    LLN* node = iCode->first;
+    while(node != NULL)
     {
-        printOP(iCode->first->ins->op);
-        iCode->first = iCode->first->next;
+        printOP(node->ins->op);
+        node = node->next;
     }
 }
 

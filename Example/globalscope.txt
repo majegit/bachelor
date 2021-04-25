@@ -1,31 +1,8 @@
-int x = 2;
+int x;
 
-int main() {
-    int u;
-    u = u + 2;
-    int ll()
-    {
-        return 2;
-    }
-    return j();
-}
-
-int myfun(int x)
+int main()
 {
-    char bcd;
-    boolean b = true;
-}
-
-int j()
-{
-    return 2;
-}
-
-int g() {
-    return 2;
-    double x() {
-        int y;
-        return 2.2;
-    }
-    int y = g();
+    int y;
+    y = 2;
+    y = 2 + 2;
 }

@@ -1,7 +1,8 @@
-#include "Tree.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "Tree.h"
+#include "Error.h"
 
 extern int lineno;
 
@@ -380,7 +381,7 @@ char* funLabelGenerator(char* funName)
     sprintf(intAsString, "%d", funCounter++);
     res = concatStr("fun", intAsString);
     res = concatStr(res, "_");
-    res = concatStr(res, funName);
+    res = concatStr(res, deepCopy(funName)); //Don't want funName to be freed here
     return res;
 }
 
@@ -395,10 +396,28 @@ char* doubleLabelGenerator()
 //Util function
 char* concatStr(char* str1, char* str2)
 {
-    size_t size = strlen(str1)+strlen(str2)+1;
-    char* newStr = (char*)malloc(size);
-    memcpy(newStr,str1,strlen(str1));
-    memcpy(newStr+strlen(str1),str2,strlen(str2));
-    newStr[size-1] = '\0';
-    return newStr;
+    //Get sizes of strings and new memory to be allocated
+    size_t len1 = strlen(str1);
+    size_t len2 = strlen(str2);
+    size_t size = len1+len2+1;
+
+    //Allocate enough memory to hold both strings
+    char* res = (char*)malloc(size);
+    memcpy(res,str1,len1);
+    memcpy(res+len1,str2,len2);
+    res[size-1] = '\0';
+
+    //Free old strings
+    free(str1);
+    free(str2);
+
+    return res;
+}
+
+//Copies a string into a new memory location and returns a pointer to it
+char* deepCopy(char* str)
+{
+    char* res = (char*)malloc(strlen(str)+1);
+    memcpy(res,str,strlen(str)+1);
+    return res;
 }

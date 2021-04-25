@@ -3,34 +3,34 @@
 #include "Tree.h"
 
 typedef enum opKind {
-    move,
+    move,  //0
     push,
     pop,
     add,
     sub,
-    mul,
+    mul,   //5
     divi,
     call,
     ret,
     cmp,
-    jmp,
+    jmp,   //10
     je,
     jne,
     jg,
     jge,
-    jl,
+    jl,     //15
     jle,
     sete,
     setne,
     setg,
-    setge,
+    setge,   //20
     setl,
     setle,
     xor,
     and,
-    or,
+    or,     //25
     meta,
-    label,
+    label,  //27
     dconst
 } opKind;
 
@@ -57,21 +57,22 @@ typedef enum targetKind {
 } targetKind;
 
 typedef enum metaKind {
-    PROGRAM_PROLOGUE,
+    PROGRAM_PROLOGUE,         //0
     PROGRAM_EPILOGUE,
     MAIN_CALLEE_SAVE,
     MAIN_CALLEE_RESTORE,
-    CALLEE_PROLOGUE,
-    CALLEE_EPILOGUE,
+    FUNCTION_DECLARATION,
+    CALLEE_PROLOGUE,          //5
     CALLEE_SAVE,
     CALLEE_RESTORE,
+    CALLEE_EPILOGUE,
     CALLER_PROLOGUE,
-    CALLER_EPILOGUE,
+    CALLER_EPILOGUE,          //10
     CALLER_SAVE,
     CALLER_RESTORE,
     CALL_PRINTF,
     ALLOCATE_STACK_SPACE,
-    DEALLOCATE_STACK_SPACE,
+    DEALLOCATE_STACK_SPACE,   //15
     REVERSE_PUSH_ARGUMENTS,
     FOLLOW_STATIC_LINK
 } metaKind;
@@ -81,7 +82,9 @@ typedef enum labelKind {
     endwhile_label,
     if_label,
     endif_label,
-    endelse_label
+    endelse_label,
+    function_label,
+    endfunction_label
 } labelKind;
 
 typedef struct Mode {
@@ -91,15 +94,17 @@ typedef struct Mode {
 
 typedef struct Target {
     targetKind targetK;
-    labelKind labelK;
-    int additionalInfo;
+    int additionalInfo;  //This is used to determine register number or label number
+    labelKind labelK;    //This is relevant if target kind is label
+    char* labelName;     //This is relevant if target kind is label
 } Target;
 
 typedef struct Operation {
     opKind opK;
     metaKind metaK;      //This is only relevant if opKind is meta also
     int metaInformation; //This is only relevant if opkind is meta also
-    opSize size;         //For some operations this is relevant
+    char* metaString;    //This is only relevant if opkind is meta also
+    opSize size;         //For many operations this is relevant
 } OP;
 
 typedef struct Argument {
@@ -142,9 +147,9 @@ void icgTraverseFUNCTION(FUNCTION* f);
 void icgTraverseFPARAMETERNODE(FPARAMETERNODE* fpn);
 
 void addToLL(LLN *moreCode);
-void addToLLFUN(LLNFUN* f);
+void addToLLFUN(FUNCTION* f);
 Mode* makeMode(addressingMode mode, int offset);
-Target* makeTarget(targetKind targetK, labelKind labelK, int additionalInfo);
+Target* makeTarget(targetKind targetK, labelKind labelK, int labelNumber);
 OP* makeOP(opKind opK, metaKind metaK, opSize size);
 ARG* makeARG(Target* target, Mode* mode);
 INS* makeINS(OP* op, ARG** args);
@@ -153,24 +158,28 @@ LLN* makeLLN(INS* ins);
 void quickAddIns(INS* ins);
 void quickAddMeta(metaKind kind);
 void quickAddMetaWithInfo(metaKind kind, int metaInformation);
+void quickAddMetaString(metaKind metaK, char* str);
 void quickAddLabel(labelKind kind, int labelNumber);
+void quickAddLabelString(labelKind kind, char* label);
 void quickAddPush(Mode* mode, Target* target);
 void quickAddPushId(char* name);
 void quickAddPopRRT();
 void quickAddPopReg(int registerNumber);
 void quickAddMoveRBPToRSL();
+void quickAddMoveRSLToRBP();
 void quickAddCheckTruthValue();
-void quickAddJumpIfFalse(labelKind k, int labelNumber);
-void quickAddUnconditionalJmp(labelKind k, int labelNumber);
+void quickAddJumpIfFalse(labelKind k, char* labelName);
+void quickAddUnconditionalJmp(labelKind k, char* labelString);
 void quickAddArithmeticINS(opKind k, opSize size);
 void quickAddCompareINS(opKind k, opSize size);
 void quickAddBooleanINS(opKind k);
 void quickAddPushReg(int regNumber);
+void quickAddCallFun(char* funLabel);
 void quickAddXorReg(int src, int dest);
 
 
 
-int labelGenerator(labelKind kind);
+char* labelGenerator(labelKind kind);
 opSize getSizeOfType(char* typeName);
 opSize getSizeOfId(char* idName);
 

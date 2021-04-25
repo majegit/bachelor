@@ -151,8 +151,9 @@ void addSymbol(SYMBOL* symbol, SYMBOLTABLE* st);
 char* funLabelGenerator(char* funName);
 char* doubleLabelGenerator();
 
-//Util function
+//Util functions
 char* concatStr(char* str1, char* str2);
+char* deepCopy(char* str);
 
 
 
