@@ -14,8 +14,8 @@ void symbolCollection(PROGRAM* p)
 
 void scTraversePROGRAM(PROGRAM* prog)
 {
-    scTraverseGlobalSTMTNODE(prog->sn);
-    scTraverseSTMTNODE(prog->sn, prog->globalScope);
+    scTraverseGlobalSTMTNODE(prog->sc->stmtnode);
+    scTraverseSTMTCOMP(prog->sc, prog->globalScope);
     if(!mainFound)
         throwError("no main function found!");
 }

@@ -1,8 +1,6 @@
-int x;
+int x = 2;
 
 int main()
 {
     int y;
-    y = 2;
-    y = 2 + 2;
 }

@@ -235,7 +235,7 @@ FUNCTION* makeFUNCTION(char* returnType, char* name, FPARAMETERNODE* args, STMTC
 PROGRAM* makePROGRAM(STMTNODE* sn)
 {
     PROGRAM* prog = (PROGRAM*)malloc(sizeof(PROGRAM));
-    prog->sn = sn;
+    prog->sc = makeSTMTCOMP(sn);
     prog->globalScope = makeSYMBOLTABLE(NULL);
     return prog;
 }
@@ -377,11 +377,11 @@ char* funLabelGenerator(char* funName)
     if(strcmp(funName, "main") == 0)
         return "main";
     char* res;
-    char intAsString[20];
-    sprintf(intAsString, "%d", funCounter++);
-    res = concatStr("fun", intAsString);
-    res = concatStr(res, "_");
-    res = concatStr(res, deepCopy(funName)); //Don't want funName to be freed here
+    char intString[20];
+    sprintf(intString, "%d", funCounter++);
+    res = concatStr("fun", intString);
+    res = concatStrFree(res, "_");
+    res = concatStrFree(res, funName);
     return res;
 }
 
@@ -393,8 +393,8 @@ char* doubleLabelGenerator()
     return concatStr("doubleconst_",intAsString);
 }
 
-//Util function
-char* concatStr(char* str1, char* str2)
+//Util function, it does NOT free the input strings
+char* concatStr(const char* str1, const char* str2)
 {
     //Get sizes of strings and new memory to be allocated
     size_t len1 = strlen(str1);
@@ -406,16 +406,27 @@ char* concatStr(char* str1, char* str2)
     memcpy(res,str1,len1);
     memcpy(res+len1,str2,len2);
     res[size-1] = '\0';
+    return res;
+}
 
-    //Free old strings
+//Frees the first string after making the concatenation
+char* concatStrFree(char* str1, const char* str2)
+{
+    char* res = concatStr(str1,str2);
+    free(str1);
+    return res;
+}
+
+char* concatStrFreeFree(char* str1, char* str2)
+{
+    char* res = concatStr(str1,str2);
     free(str1);
     free(str2);
-
     return res;
 }
 
 //Copies a string into a new memory location and returns a pointer to it
-char* deepCopy(char* str)
+char* deepCopy(const char* str)
 {
     char* res = (char*)malloc(strlen(str)+1);
     memcpy(res,str,strlen(str)+1);

@@ -16,7 +16,7 @@ void typeChecking(PROGRAM* p)
 void tcTraversePROGRAM(PROGRAM* prog)
 {
     currentScope = prog->globalScope;
-    tcTraverseSTMTNODE(prog->sn);
+    tcTraverseSTMTCOMP(prog->sc);
 }
 
 void tcTraverseSTMTCOMP(STMTCOMP* sc)

@@ -103,7 +103,7 @@ typedef struct FUNCTION {
 FUNCTION* makeFUNCTION(char* returnType, char* name, FPARAMETERNODE* args, STMTCOMP* body);
 
 typedef struct PROGRAM {
-    STMTNODE* sn;
+    STMTCOMP* sc;
     struct SYMBOLTABLE* globalScope;
 } PROGRAM;
 
@@ -152,8 +152,10 @@ char* funLabelGenerator(char* funName);
 char* doubleLabelGenerator();
 
 //Util functions
-char* concatStr(char* str1, char* str2);
-char* deepCopy(char* str);
+char* concatStr(const char* str1, const char* str2);
+char* concatStrFree(char* str1, const char* str2);
+char* concatStrFreeFree(char* str1, char* str2);
+char* deepCopy(const char* str);
 
 
 

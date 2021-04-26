@@ -1,10 +1,17 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "IntermediateCodeGeneration.h"
 #include "Emit.h"
 
+
+const char* indentation = "    ";
+
 const char* raxVariants[] = {"%al","%eax","%rax"};
+const char* rbxVariants[] = {"%bl","%ebl","%rbx"};
+const char* rcxVariants[] = {"%cl","%ecl","%rcx"};
 const char* rbpVariants[] = {"%bpl","%ebp","%rbp"};
 const char* rdiVariants[] = {"%dil","%edi","%rdi"};
+const char* rspVariants[] = {"%sl", "%esl","%rsp"};
 
 const char* sizeModifier[] = {"b","l","q"};
 
@@ -17,16 +24,16 @@ const char* callee_save = "";
 const char* callee_restore = "";
 const char* callee_epilogue = "ret\n";
 
-
 char* asmCode = "";
 
 void emit(LL* code, const char* outputFileName)
 {
     LLN* node = code->first;
+    int i = 0;
     while(node != NULL)
     {
         char* newAsmCode = convertInsToAsm(node->ins);
-        asmCode = concatStr(asmCode,newAsmCode);
+        asmCode = concatStrFreeFree(asmCode,newAsmCode);
         node = node->next;
     }
 
@@ -40,43 +47,47 @@ void emit(LL* code, const char* outputFileName)
 
 char* convertInsToAsm(INS* ins)
 {
-    char* res;
+    char* res = "";
     switch(ins->op->opK)
     {
         case move:
         {
-            res = "mov";
-            res = concatStr(res,sizeModifier[ins->op->size]);
-            res = concatStr(res," ");
-            res = concatStr(res, convertTarget(ins->args[0]->target,ins->op->size));
-            res = concatStr(res, ", ");
-            res = concatStr(res, convertTarget(ins->args[1]->target,ins->op->size));
-            res = concatStr(res, "\n");
+            res = concatStr(res,indentation);
+            res = concatStrFree(res,"mov");
+            res = concatStrFree(res,sizeModifier[ins->op->size]);
+            res = concatStrFree(res," ");
+            res = concatStrFreeFree(res, convertTarget(ins->args[0]->target,ins->args[0]->mode));
+            res = concatStrFree(res, ", ");
+            res = concatStrFreeFree(res, convertTarget(ins->args[1]->target,ins->args[1]->mode));
+            res = concatStrFree(res, "\n");
             break;
         }
         case push:
         {
-            res = "push ";
-            res = concatStr(res,convertTarget(ins->args[0]->target,ins->op->size));
-            res = concatStr(res,"\n");
+            res = concatStr(res,indentation);
+            res = concatStrFree(res,"push ");
+            res = concatStrFreeFree(res,convertTarget(ins->args[0]->target,ins->args[0]->mode));
+            res = concatStrFree(res,"\n");
             break;
         }
         case pop:
         {
-            res = "pop ";
-            res = concatStr(res,convertTarget(ins->args[0]->target,ins->op->size));
-            res = concatStr(res,"\n");
+            res = concatStr(res,indentation);
+            res = concatStrFree(res,"pop ");
+            res = concatStrFreeFree(res,convertTarget(ins->args[0]->target,ins->args[0]->mode));
+            res = concatStrFree(res,"\n");
             break;
         }
         case add:
         {
-            res = "add";
-            res = concatStr(res,sizeModifier[ins->op->size]);
-            res = concatStr(res," ");
-            res = concatStr(res, convertTarget(ins->args[0]->target,ins->op->size));
-            res = concatStr(res, ", ");
-            res = concatStr(res, convertTarget(ins->args[1]->target,ins->op->size));
-            res = concatStr(res, "\n");
+            res = concatStr(res,indentation);
+            res = concatStrFree(res,"add");
+            res = concatStrFree(res,sizeModifier[ins->op->size]);
+            res = concatStrFree(res," ");
+            res = concatStrFreeFree(res, convertTarget(ins->args[0]->target,ins->args[0]->mode));
+            res = concatStrFree(res, ", ");
+            res = concatStrFreeFree(res, convertTarget(ins->args[1]->target,ins->args[1]->mode));
+            res = concatStrFree(res, "\n");
             break;
         }
         case sub:
@@ -86,9 +97,10 @@ char* convertInsToAsm(INS* ins)
             break;
         case call:
         {
-            res = "call ";
-            res = concatStr(res,ins->args[0]->target->labelName);
-            res = concatStr(res,"\n");
+            res = concatStr(res,indentation);
+            res = concatStrFree(res,"call ");
+            res = concatStrFree(res,ins->args[0]->target->labelName);
+            res = concatStrFree(res,"\n");
             break;
         }
         case meta:
@@ -112,101 +124,128 @@ char* convertMetaIns(INS* ins)
 {
     char* res;
     if(ins->op->metaK == PROGRAM_PROLOGUE)
-        return program_prologue;
+        return deepCopy(program_prologue);
     if(ins->op->metaK == PROGRAM_EPILOGUE)
-        return program_epilogue;
+        return deepCopy(program_epilogue);
     if(ins->op->metaK == MAIN_CALLEE_SAVE)
-        return main_callee_save;
+        return deepCopy(main_callee_save);
     if(ins->op->metaK == MAIN_CALLEE_RESTORE)
-        return main_callee_restore;
+        return deepCopy(main_callee_restore);
     if(ins->op->metaK == FUNCTION_DECLARATION)
         return meta_function_declaration(ins);
     if(ins->op->metaK == ALLOCATE_STACK_SPACE)
     {
-        char intAsString[20];
-        sprintf(intAsString,"%d",ins->op->metaInformation);
-        res = "push %rbp\naddq $";
-        res = concatStr(res,intAsString);
-        res = concatStr(res,", %rsp\n");
+        char stackSpace[20];
+        sprintf(stackSpace,"%d",ins->op->metaInformation);
+        res = concatStr(indentation,"push %rbp\n");
+        char* aux = concatStr(indentation,"addq $");
+        res = concatStrFree(res,aux);
+        free(aux);
+        res = concatStrFree(res,stackSpace);
+        res = concatStrFree(res,", %rsp\n");
         return res;
     }
     if(ins->op->metaK == DEALLOCATE_STACK_SPACE)
     {
-        char intAsString[20];
-        sprintf(intAsString,"%d",ins->op->metaInformation);
-        res = "subq $";
-        res = concatStr(res,intAsString);
-        res = concatStr(res,"\npop %rbp\n");
+        char stackSpace[20];
+        sprintf(stackSpace,"%d",ins->op->metaInformation);
+        res = concatStr(indentation,"subq $");
+        res = concatStrFree(res,stackSpace);
+        res = concatStrFree(res, ", %rsp");
+        res = concatStrFree(res,"\n");
+        char* aux = concatStr(indentation,"pop %rbp\n");
+        res = concatStrFree(res,aux);
+        free(aux);
         return res;
     }
     if(ins->op->metaK == CALLEE_PROLOGUE)
-        return callee_prologue;
+        return deepCopy(callee_prologue);
     if(ins->op->metaK == CALLEE_SAVE)
-        return callee_save;
+        return deepCopy(callee_save);
     if(ins->op->metaK == CALLEE_RESTORE)
-        return callee_restore;
+        return deepCopy(callee_restore);
     if(ins->op->metaK == CALLEE_EPILOGUE)
-        return callee_epilogue;
+        return concatStr(indentation,callee_epilogue);
     printf("debugMETA: %d\n",ins->op->metaK);
-    return "debugMETA\n";
+    return deepCopy("debugMETA\n");
 }
 
 char* meta_function_declaration(INS* ins)
 {
-    char* res;
-    res = "\n.type ";
-    res = concatStr(res,deepCopy(ins->op->metaString));
-    res = concatStr(res,", @function\n");
+    char* res = "\n.type ";
+    res = concatStrFree(res,ins->op->metaString);
+    res = concatStrFree(res,", @function\n");
     return res;
 }
 
-char* convertTarget(Target* t, opSize modifier)
+char* convertTarget(Target* t, Mode* m)
 {
-    char* res;
+    char* res = "";
+    opSize modifier = t->size;
     switch(t->targetK)
     {
         case imi:
         {
+            char intString[20];
+            sprintf(intString,"%d",t->additionalInfo);
             res = "$";
-            char intAsString[20];
-            sprintf(intAsString,"%d",t->additionalInfo);
-            res = concatStr(res,intAsString);
+            res = concatStr(res,intString);
             break;
         }
         case mem:
         {
-            res = t->labelName;
+            res = deepCopy(t->labelName);
             break;
         }
         case rbp:
         {
-            res = rbpVariants[modifier];
+            printf("In here with mod: %d\n",modifier);
+            res = deepCopy(rbpVariants[modifier]);
             break;
         }
         case rsp:
         {
-            res = "%rsp";
+            res = deepCopy(rspVariants[modifier]);
             break;
         }
         case rrt:
         {
-            res = raxVariants[modifier];
+            res = deepCopy(raxVariants[modifier]);
             break;
         }
         case rsl:
         {
-            res = rdiVariants[modifier];
+            res = deepCopy(rdiVariants[modifier]);
             break;
         }
         case reg:
         {
             if(t->additionalInfo == 1)
-                res = "%rbx";
+                res = deepCopy("%rbx");
             else if(t->additionalInfo == 2)
-                res = "%rcx";
+                res = deepCopy("%rcx");
             else
-                res = "NOT_A_REG";
+                res = deepCopy("NOT_A_REG");
         }
     }
-    return res;
+    if(m->mode == dir)
+        return res;
+    if(m->mode == ind)
+    {
+        res = concatStrFreeFree("(",res);
+        res = concatStrFree(res,")");
+        return res;
+    }
+    if(m->mode == irl)
+    {
+        char offset[20];
+        sprintf(offset,"%d",m->offset);
+        res = concatStrFree("(",res);
+        res = concatStrFree(res,")");
+        char* aux = concatStr(offset,res);
+        free(res);
+        res = aux;
+        return res;
+    }
+    return deepCopy("debug!!\n");
 }
