@@ -66,7 +66,8 @@ void tcTraverseSTMT(STMT* s)
                 exit(0);
             }
             tcTraverseSTMTCOMP(s->val.ifElseS.ifbody);
-            tcTraverseSTMTCOMP(s->val.ifElseS.elsebody);
+            if(s->val.ifElseS.elsebody != NULL)
+                tcTraverseSTMTCOMP(s->val.ifElseS.elsebody);
             break;
         case returnK:
             tcTraverseEXP(s->val.returnS);

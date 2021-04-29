@@ -259,7 +259,6 @@ SYMBOL* makeSYMBOLfunction(char* name, char* type, FPARAMETERNODE* fpn)
     s->fpn = fpn;
     s->type = type;
     s->label = funLabelGenerator(name);
-    printf("funLabel: %s\n",s->label);
     return s;
 }
 
@@ -309,10 +308,10 @@ SYMBOL* lookupSymbolVar(char* name, SYMBOLTABLE* st)
 {
     if(st == NULL)
         return NULL;
-    if(lookupSymbolCurrentTable(name,st))
-        return lookupSymbolCurrentTable(name,st);
-    lookupSymbolVar(name, st->par);
-    return NULL;
+    SYMBOL* s = lookupSymbolCurrentTable(name,st);
+    if(s != NULL)
+        return s;
+    return lookupSymbolVar(name, st->par);
 }
 
 SYMBOL* lookupSymbolFun(char* name, SYMBOLTABLE* st)
@@ -363,7 +362,7 @@ void addSymbol(SYMBOL* symbol, SYMBOLTABLE* st)
     }
     else if(symbol->kind == formalParameter)
     {
-        st->nextParameterLabel -= 8;
+        st->nextParameterLabel += 8;
         symbol->offset = st->nextParameterLabel;
     }
     SYMBOLNODE* sn = makeSYMBOLNODE(symbol, st->symbols);
@@ -431,4 +430,14 @@ char* deepCopy(const char* str)
     char* res = (char*)malloc(strlen(str)+1);
     memcpy(res,str,strlen(str)+1);
     return res;
+}
+
+void printSYMBOLTABLE(SYMBOLTABLE* st)
+{
+    SYMBOLNODE* currentNode = st->symbols;
+    while(currentNode != NULL)
+    {
+        printf("VARIABLE IN TABLE: %s\n",currentNode->current->name);
+        currentNode = currentNode->next;
+    }
 }

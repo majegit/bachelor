@@ -145,7 +145,6 @@ void icgTraverseSTMT(STMT* s);
 void icgTraverseEXP(EXP* e);
 void icgTraverseAPARAMETERNODE(APARAMETERNODE* apn);
 void icgTraverseFUNCTION(FUNCTION* f);
-void icgTraverseFPARAMETERNODE(FPARAMETERNODE* fpn);
 
 void addToLL(LLN *moreCode);
 void addToLLFUN(FUNCTION* f);
@@ -191,6 +190,10 @@ void quickAddCompareINS(opKind k, opSize size);
 void quickAddBooleanINS(opKind k);
 void quickAddPushReg(int regNumber);
 void quickAddCallFun(char* funLabel);
+void quickAddPushRSP();
+void quickAddMoveRBPToRSP();
+void quickAddPopRBP();
+void quickAddPushRRT();
 
 
 //Other

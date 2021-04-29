@@ -14,7 +14,7 @@ void symbolCollection(PROGRAM* p)
 
 void scTraversePROGRAM(PROGRAM* prog)
 {
-    scTraverseGlobalSTMTNODE(prog->sc->stmtnode);
+    scTraverseGlobalSTMTNODE(prog->sc->stmtnode); //Just checks that there only are declarations in global scope
     scTraverseSTMTCOMP(prog->sc, prog->globalScope);
     if(!mainFound)
         throwError("no main function found!");
@@ -62,8 +62,11 @@ void scTraverseSTMT(STMT* s, SYMBOLTABLE* st)
             SYMBOLTABLE* newTable = makeSYMBOLTABLE(st);
             scTraverseSTMTCOMP(s->val.ifElseS.ifbody, newTable);
 
-            SYMBOLTABLE* newTable2 = makeSYMBOLTABLE(st);
-            scTraverseSTMTCOMP(s->val.ifElseS.elsebody, newTable2);
+            if(s->val.ifElseS.elsebody != NULL)
+            {
+                SYMBOLTABLE* newTable2 = makeSYMBOLTABLE(st);
+                scTraverseSTMTCOMP(s->val.ifElseS.elsebody, newTable2);
+            }
             break;
         }
         case varDeclK:

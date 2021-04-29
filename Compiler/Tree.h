@@ -157,6 +157,9 @@ char* concatStrFree(char* str1, const char* str2);
 char* concatStrFreeFree(char* str1, char* str2);
 char* deepCopy(const char* str);
 
+//Print functions
+void printSYMBOLTABLE(SYMBOLTABLE* st);
+
 
 
 #endif

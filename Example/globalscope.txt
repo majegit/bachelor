@@ -2,5 +2,17 @@ int x = 2;
 
 int main()
 {
-    int y;
+    int c;
+    c = h(x);
+    return c;
 }
+
+int h(int x)
+{
+    int h(int x)
+    {
+        return x + 2;
+    }
+    return h(x);
+}
+

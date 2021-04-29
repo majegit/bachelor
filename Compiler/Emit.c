@@ -7,8 +7,8 @@
 const char* indentation = "    ";
 
 const char* raxVariants[] = {"%al","%eax","%rax"};
-const char* rbxVariants[] = {"%bl","%ebl","%rbx"};
-const char* rcxVariants[] = {"%cl","%ecl","%rcx"};
+const char* rbxVariants[] = {"%bl","%ebx","%rbx"};
+const char* rcxVariants[] = {"%cl","%ecx","%rcx"};
 const char* rbpVariants[] = {"%bpl","%ebp","%rbp"};
 const char* rdiVariants[] = {"%dil","%edi","%rdi"};
 const char* rspVariants[] = {"%sl", "%esl","%rsp"};
@@ -16,13 +16,14 @@ const char* rspVariants[] = {"%sl", "%esl","%rsp"};
 const char* sizeModifier[] = {"b","l","q"};
 
 const char* program_prologue = ".section .data\n.section .text\n.global _start\n_start:\n";
-const char* program_epilogue = "";
+const char* program_epilogue = "movq %rax, %rdi\nmovq $60, %rax\nsyscall\n\n";
 const char* main_callee_save = "";
 const char* main_callee_restore = "";
 const char* callee_prologue = "";
 const char* callee_save = "";
 const char* callee_restore = "";
 const char* callee_epilogue = "ret\n";
+const char* follow_static_link = "movq (%rdi), %rdi\n";
 
 char* asmCode = "";
 
@@ -34,6 +35,7 @@ void emit(LL* code, const char* outputFileName)
     {
         char* newAsmCode = convertInsToAsm(node->ins);
         asmCode = concatStrFreeFree(asmCode,newAsmCode);
+        //printf("CURRENT ASMCODE:\n%s\n",asmCode);
         node = node->next;
     }
 
@@ -97,9 +99,57 @@ char* convertInsToAsm(INS* ins)
             break;
         case call:
         {
-            res = concatStr(res,indentation);
-            res = concatStrFree(res,"call ");
+            res = concatStr(indentation,"call ");
             res = concatStrFree(res,ins->args[0]->target->labelName);
+            res = concatStrFree(res,"\n");
+            break;
+        }
+        case cmp:
+        {
+            res = concatStr(indentation,"cmp ");
+            res = concatStrFree(res,convertTarget(ins->args[1]->target,ins->args[1]->mode));
+            res = concatStrFree(res,", ");
+            res = concatStrFree(res,convertTarget(ins->args[0]->target,ins->args[0]->mode));
+            res = concatStrFree(res,"\n");
+            break;
+        }
+        case jmp:
+        {
+            res = concatStr(indentation,"jmp ");
+            res = concatStrFree(res,ins->args[0]->target->labelName);
+            res = concatStrFree(res,"\n");
+            break;
+        }
+        case jne:
+        {
+            res = concatStr(indentation,"jne ");
+            res = concatStrFree(res,ins->args[0]->target->labelName);
+            res = concatStrFree(res,"\n");
+            break;
+        }
+        case setl:
+        {
+            res = concatStr(indentation,res);
+            res = concatStrFree(res, "setl ");
+            res = concatStrFree(res,convertTarget(ins->args[0]->target,ins->args[0]->mode));
+            res = concatStrFree(res,"\n");
+            break;
+        }
+        case setle:
+        {
+            res = concatStr(indentation,res);
+            res = concatStrFree(res, "setle ");
+            res = concatStrFree(res,convertTarget(ins->args[0]->target,ins->args[0]->mode));
+            res = concatStrFree(res,"\n");
+            break;
+        }
+        case and:
+        {
+            res = concatStr(indentation,res);
+            res = concatStrFree(res, "and ");
+            res = concatStrFree(res,convertTarget(ins->args[0]->target,ins->args[0]->mode));
+            res = concatStrFree(res,", ");
+            res = concatStrFree(res,convertTarget(ins->args[1]->target,ins->args[1]->mode));
             res = concatStrFree(res,"\n");
             break;
         }
@@ -114,6 +164,7 @@ char* convertInsToAsm(INS* ins)
             break;
         }
         default:
+            printf("DEBUG OPKIND: %d",ins->op->opK);
             res = "debugINS\n";
             break;
     }
@@ -137,10 +188,11 @@ char* convertMetaIns(INS* ins)
     {
         char stackSpace[20];
         sprintf(stackSpace,"%d",ins->op->metaInformation);
-        res = concatStr(indentation,"push %rbp\n");
-        char* aux = concatStr(indentation,"addq $");
-        res = concatStrFree(res,aux);
-        free(aux);
+        res = concatStr(indentation,"push %rbp\t #ALLOCATE STACK SPACE\n");
+        res = concatStrFree(res,indentation);
+        res = concatStr(res,"movq %rsp, %rbp\n");
+        res = concatStrFree(res,indentation);
+        res = concatStrFree(res,"addq $");
         res = concatStrFree(res,stackSpace);
         res = concatStrFree(res,", %rsp\n");
         return res;
@@ -166,6 +218,8 @@ char* convertMetaIns(INS* ins)
         return deepCopy(callee_restore);
     if(ins->op->metaK == CALLEE_EPILOGUE)
         return concatStr(indentation,callee_epilogue);
+    if(ins->op->metaK == FOLLOW_STATIC_LINK)
+        return concatStr(indentation,follow_static_link);
     printf("debugMETA: %d\n",ins->op->metaK);
     return deepCopy("debugMETA\n");
 }
@@ -199,7 +253,6 @@ char* convertTarget(Target* t, Mode* m)
         }
         case rbp:
         {
-            printf("In here with mod: %d\n",modifier);
             res = deepCopy(rbpVariants[modifier]);
             break;
         }
@@ -221,9 +274,9 @@ char* convertTarget(Target* t, Mode* m)
         case reg:
         {
             if(t->additionalInfo == 1)
-                res = deepCopy("%rbx");
+                res = deepCopy(rbxVariants[modifier]);
             else if(t->additionalInfo == 2)
-                res = deepCopy("%rcx");
+                res = deepCopy(rcxVariants[modifier]);
             else
                 res = deepCopy("NOT_A_REG");
         }

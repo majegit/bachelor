@@ -13,11 +13,9 @@ FUNCTION* currentFunction;
 LL* icgTraversePROGRAM(PROGRAM* prog)
 {
     quickAddMeta(PROGRAM_PROLOGUE);
-    currentScope = prog->sc->symbolTable;                          //Update pointer to current scope
-    int stackSpace = currentScope->nextVariableLabel;              //Stack space needed for local variables
-    //movq %rsp, %rbp
-    //subq stackSpace, %rsp
-    //quickAddMetaWithInfo(ALLOCATE_STACK_SPACE, stackSpace);   //Push rbp and allocate stack space
+    currentScope = prog->sc->symbolTable;                          //Update pointer to start at global scope
+    int stackSpace = currentScope->nextVariableLabel;              //Stack space needed in global scope
+    quickAddMetaWithInfo(ALLOCATE_STACK_SPACE, stackSpace);   //Push rbp and allocate stack space
     icgTraverseSTMTNODE(prog->sc->stmtnode);
     quickAddCallFun("main");
     quickAddMeta(PROGRAM_EPILOGUE);
@@ -28,7 +26,6 @@ LL* icgTraversePROGRAM(PROGRAM* prog)
         icgTraverseFUNCTION(currentNode->f);
         currentNode = currentNode->next;
     }
-    quickAddMeta(PROGRAM_EPILOGUE);
     return code;
 }
 
@@ -79,6 +76,7 @@ void icgTraverseSTMT(STMT* s)
                 quickAddMoveRBPToRSL();
 
                 int* staticLinkJumpsAndOffset = staticLinkCount(s->val.assignS.name,currentScope);
+                printSYMBOLTABLE(currentScope->par);
                 for(int i=0; i < staticLinkJumpsAndOffset[0]; i++)
                     quickAddMeta(FOLLOW_STATIC_LINK);
 
@@ -100,30 +98,45 @@ void icgTraverseSTMT(STMT* s)
             break;
         case ifElseK:
             {
+                int elsePart = s->val.ifElseS.elsebody != NULL;           //Check if there is an else part
                 char* labelName = labelGenerator(if_label);        //Generate if_X label
+
                 quickAddLabelString(if_label, labelName);          //if_X:
                 icgTraverseEXP(s->val.ifElseS.cond);                    //Guard
+                printf("AFTER EXP\n");
                 quickAddPopRRT();                                       //Move boolean to rrt
                 quickAddCheckTruthValue();                              //cmp rrt, $1
                 labelName = concatStr("end",labelName);             //Generate endif_X label
                 quickAddJumpIfFalse(endif_label,labelName);          //jne endif_X
                 icgTraverseSTMTCOMP(s->val.ifElseS.ifbody);             //if-body
-                char* endelseLabel = concatStr("endelse",labelName+5); //Generate endelse_X
-                quickAddUnconditionalJmp(endelse_label,endelseLabel); //jmp endelse_X
+
+                char* endelseLabel = "";
+                if(elsePart)
+                {
+                    endelseLabel = concatStr("endelse",labelName+5);//Generate endelse_X
+                    quickAddUnconditionalJmp(endelse_label,endelseLabel); //jmp endelse_X
+                }
                 quickAddLabelString(endif_label, labelName);        //endif_X:
-                icgTraverseSTMTCOMP(s->val.ifElseS.elsebody);            //else-body
-                quickAddLabelString(endelse_label,endelseLabel);    //endelse_X:
+                if(elsePart)
+                {
+                    icgTraverseSTMTCOMP(s->val.ifElseS.elsebody);        //else-body
+                    quickAddLabelString(endelse_label,endelseLabel);//endelse_X:
+                }
             }
             break;
         case returnK:
             icgTraverseEXP(s->val.returnS);
-            quickAddPopRRT();
-            quickAddMoveRBPToRSL();
-            for(int i = 0; i < depth; i++)
-                quickAddMeta(FOLLOW_STATIC_LINK);
-            quickAddMoveRSLToRBP();
             SYMBOL* funSymbol = lookupSymbolFun(currentFunction->name,currentScope);
-            quickAddUnconditionalJmp(endfunction_label,funSymbol->label);
+            if(depth != 0)
+            {
+                quickAddMoveRBPToRSL();
+                for(int i = 0; i<depth; i++)
+                    quickAddMeta(FOLLOW_STATIC_LINK);
+                quickAddMoveRSLToRBP();
+            }
+
+            char* endLabel = concatStr("end",funSymbol->label);
+            quickAddUnconditionalJmp(endfunction_label,endLabel);
             break;
         case printK:
             icgTraverseEXP(s->val.printS);  //TODO: IMPLEMENT
@@ -134,6 +147,7 @@ void icgTraverseSTMT(STMT* s)
                     break;
                 icgTraverseEXP(s->val.varDeclS.value);
                 quickAddPopRRT();
+                quickAddMoveRBPToRSL();
 
                 int* staticLinkJumpsAndOffset = staticLinkCount(s->val.varDeclS.name,currentScope);
                 for(int i=0; i < staticLinkJumpsAndOffset[0]; i++)
@@ -171,14 +185,20 @@ void icgTraverseEXP(EXP* e)
             quickAddPushId(e->val.idE);
             break;
         case intK:
+        {
+            Target* target = makeTargetIMI(e->val.intE); //e->val.charE = e->val.boolE = e->val.intE, they are all ints in an union
+            ARG* arg = makeARG(target, makeMode(dir));
+            ARG* args[2] = {arg, NULL};
+            OP* op = makeOP(push, bits_32);
+            quickAddIns(makeINS(op, args));
+        }
         case boolK:
         case charK:
             {
-                printf("Pushing immediate: %d\n",e->val.charE);
-                Target* target = makeTargetIMI(e->val.charE); //e->val.charE = e->val.boolE = e->val.intE, they are all ints in an union
+                Target* target = makeTargetIMI(e->val.charE); //e->val.charE = e->val.boolE, they are both ints in an union
                 ARG* arg = makeARG(target, makeMode(dir));
                 ARG* args[2] = {arg, NULL};
-                OP* op = makeOP(push, bits_64);
+                OP* op = makeOP(push, bits_8);
                 quickAddIns(makeINS(op, args));
             }
             break;
@@ -223,6 +243,7 @@ void icgTraverseEXP(EXP* e)
             icgTraverseAPARAMETERNODE(e->val.funE.aparameternode);
             SYMBOL* funSymbol = lookupSymbolFun(e->val.funE.id,currentScope);
             quickAddCallFun(funSymbol->label);
+            quickAddPushRRT();
             break;
         }
     }
@@ -245,26 +266,29 @@ void icgTraverseFUNCTION(FUNCTION* f)
     depth = 0;
     currentFunction = f;
 
-    char* funLabel = lookupSymbolFun(f->name,f->body->symbolTable)->label;   //funLabel = funX_<function name>
-    quickAddMetaString(FUNCTION_DECLARATION,funLabel);  //.type funX_<function name>, @function
-    quickAddLabelString(function_label,funLabel);    //funX_<function name>
-    quickAddMeta(CALLEE_PROLOGUE);                   //unused
-    quickAddMeta(CALLEE_SAVE);                       //Push callee save registers
-    icgTraverseSTMTCOMP(f->body);                         //push rbp, and allocate space for local vars is done in here
+
+    char* funLabel = lookupSymbolFun(f->name,f->body->symbolTable->par)->label;//funLabel = funX_<function name>
+    quickAddMetaString(FUNCTION_DECLARATION,funLabel); //.type funX_<function name>, @function
+    quickAddLabelString(function_label,funLabel);       //funX_<function name>
+    currentScope = f->body->symbolTable;                     //update currentScope
+    int stackSpace = currentScope->nextVariableLabel;
+
+    quickAddMeta(CALLEE_PROLOGUE);                      //Possibly nothing
+    quickAddMetaWithInfo(ALLOCATE_STACK_SPACE,stackSpace);
+    quickAddMeta(CALLEE_SAVE);                          //Push callee save registers
+
+    icgTraverseSTMTNODE(f->body->stmtnode);                  //Traverse contents of function
+
     char* endfunLabel = concatStr("end",funLabel);
     quickAddLabelString(endfunction_label,endfunLabel); //endfunX_<function name>
+    quickAddPopRRT();
+    quickAddMoveRBPToRSP();
+    quickAddPopRBP();
     quickAddMeta(CALLEE_RESTORE);                       //Pop callee save registers
     quickAddMeta(CALLEE_EPILOGUE);                      //ret
 
     currentFunction = NULL;
     depth = 0;
-}
-
-void icgTraverseFPARAMETERNODE(FPARAMETERNODE* fpn)
-{
-    if(fpn == NULL)
-        return;
-    icgTraverseFPARAMETERNODE(fpn->next);
 }
 
 void addToLL(LLN* newCode)
@@ -311,10 +335,10 @@ Target* makeTargetLabel(labelKind k, char* name)
     return t;
 }
 
-Target* makeTargetReg(opSize s, int reg)
+Target* makeTargetReg(opSize s, int regNumber)
 {
     Target* t = makeTarget(reg,s);
-    t->additionalInfo = reg;
+    t->additionalInfo = regNumber;
     return t;
 }
 
@@ -493,8 +517,8 @@ void quickAddMoveRSLToRBP()
 
 void quickAddCheckTruthValue()
 {
-    ARG* from = makeARG(makeTarget(rrt,bits_64),makeMode(dir));
-    ARG* to = makeARG(makeTargetIMI(1),makeMode(dir));
+    ARG* from = makeARG(makeTargetIMI(1),makeMode(dir));
+    ARG* to = makeARG(makeTarget(rrt,bits_64),makeMode(dir));
     ARG* args[2] = {from,to};
     OP* op = makeOP(cmp,bits_64);
     quickAddIns(makeINS(op,args));
@@ -529,7 +553,7 @@ void quickAddArithmeticINS(opKind k, opSize size)  //L 'OP' R
     Target* leftEXP = makeTargetReg(size,1);
     ARG* argLeft = makeARG(leftEXP, makeMode(dir));
 
-    ARG* args[2] = {argLeft,argRight};
+    ARG* args[2] = {argRight,argLeft};
 
     OP* op = makeOP(k,size);
     quickAddIns(makeINS(op,args));
@@ -546,7 +570,7 @@ void quickAddCompareINS(opKind k, opSize size)
     Target* leftEXP = makeTargetReg(size,1);
     ARG* argLeft = makeARG(leftEXP, makeMode(dir));
 
-    ARG* args[2] = {argLeft,argRight};
+    ARG* args[2] = {argRight,argLeft};
 
     OP* cmpOP = makeOP(cmp,size);
     quickAddIns(makeINS(cmpOP,args));
@@ -570,7 +594,7 @@ void quickAddBooleanINS(opKind k)
 
     Target* leftEXP = makeTargetReg(bits_8,1);
     ARG* argLeft = makeARG(leftEXP, makeMode(dir));
-    ARG* args[2] = {argLeft,argRight};
+    ARG* args[2] = {argRight,argLeft};
 
     OP* boolOP = makeOP(cmp,bits_8);
     quickAddIns(makeINS(boolOP,args));
@@ -586,13 +610,50 @@ void quickAddCallFun(char* funLabel)
     quickAddIns(makeINS(callOP,args));
 }
 
+void quickAddPushRSP()
+{
+    Target* t = makeTarget(rsp,bits_64);
+    ARG* arg = makeARG(t,makeMode(dir));
+    OP* op = makeOP(push, bits_64);
+    ARG* args[2] = {arg,NULL};
+    quickAddIns(makeINS(op,args));
+}
+
+void quickAddMoveRBPToRSP()
+{
+    Target* from = makeTarget(rbp,bits_64);
+    ARG* argFrom = makeARG(from,makeMode(dir));
+    Target* to = makeTarget(rsp,bits_64);
+    ARG* argTo = makeARG(to,makeMode(dir));
+    OP* op = makeOP(move, bits_64);
+    ARG* args[2] = {argFrom, argTo};
+    quickAddIns(makeINS(op,args));
+}
+
+void quickAddPopRBP()
+{
+    Target* t = makeTarget(rbp,bits_64);
+    ARG* arg = makeARG(t,makeMode(dir));
+    OP* op = makeOP(pop, bits_64);
+    ARG* args[2] = {arg, NULL};
+    quickAddIns(makeINS(op,args));
+}
+
+void quickAddPushRRT()
+{
+    Target* t = makeTarget(rrt,bits_64);
+    ARG* arg = makeARG(t,makeMode(dir));
+    OP* op = makeOP(push, bits_64);
+    ARG* args[2] = {arg, NULL};
+    quickAddIns(makeINS(op,args));
+}
+
 void addToLLFUN(FUNCTION* f)
 {
     //Make a node containing f
     LLNFUN* node = (LLNFUN*)malloc(sizeof(LLNFUN));
     node->f = f;
     node->next = NULL;
-
 
     //Add node to LL
     if(funs->first == NULL) //First time we insert something
@@ -622,7 +683,6 @@ char* labelGenerator(labelKind kind) {
 
 opSize getSizeOfType(char* typeName)
 {
-    printf("typename: %s\n",typeName);
     if (strcmp(typeName, "BOOLEAN") == 0)
         return bits_8;
     if (strcmp(typeName, "INT") == 0)
