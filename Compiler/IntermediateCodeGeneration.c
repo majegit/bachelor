@@ -139,7 +139,9 @@ void icgTraverseSTMT(STMT* s)
             quickAddUnconditionalJmp(endfunction_label,endLabel);
             break;
         case printK:
-            icgTraverseEXP(s->val.printS);  //TODO: IMPLEMENT
+            icgTraverseEXP(s->val.printS);  //TODO: DOUBLES
+            quickAddPopRRT();
+            quickAddPrint(s->val.printS->type);
             break;
         case varDeclK:
             {
@@ -191,6 +193,7 @@ void icgTraverseEXP(EXP* e)
             ARG* args[2] = {arg, NULL};
             OP* op = makeOP(push, bits_32);
             quickAddIns(makeINS(op, args));
+            break;
         }
         case boolK:
         case charK:
@@ -265,7 +268,6 @@ void icgTraverseFUNCTION(FUNCTION* f)
 {
     depth = 0;
     currentFunction = f;
-
 
     char* funLabel = lookupSymbolFun(f->name,f->body->symbolTable->par)->label;//funLabel = funX_<function name>
     quickAddMetaString(FUNCTION_DECLARATION,funLabel); //.type funX_<function name>, @function
@@ -648,6 +650,15 @@ void quickAddPushRRT()
     quickAddIns(makeINS(op,args));
 }
 
+void quickAddPrint()
+{
+    Target* t = makeTarget(rrt,bits_64);
+    ARG* arg = makeARG(t,makeMode(dir));
+    OP* op = makeOP(push, bits_64);
+    ARG* args[2] = {arg, NULL};
+    quickAddIns(makeINS(op,args));
+}
+
 void addToLLFUN(FUNCTION* f)
 {
     //Make a node containing f
@@ -699,4 +710,5 @@ opSize getSizeOfId(char* idName)
     SYMBOL* id = lookupSymbolVar(idName,currentScope);
     return getSizeOfType(id->type);
 }
+
 

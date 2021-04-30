@@ -16,7 +16,7 @@ const char* rspVariants[] = {"%sl", "%esl","%rsp"};
 const char* sizeModifier[] = {"b","l","q"};
 
 const char* program_prologue = ".section .data\n.section .text\n.global _start\n_start:\n";
-const char* program_epilogue = "movq %rax, %rdi\nmovq $60, %rax\nsyscall\n\n";
+const char* program_epilogue = "    movq %rax, %rdi\n    movq $60, %rax\n    syscall\n\n";
 const char* main_callee_save = "";
 const char* main_callee_restore = "";
 const char* callee_prologue = "";
@@ -93,7 +93,21 @@ char* convertInsToAsm(INS* ins)
             break;
         }
         case sub:
+        {
+            res = concatStr(res,indentation);
+            res = concatStrFree(res,"sub");
+            res = concatStrFree(res,sizeModifier[ins->op->size]);
+            res = concatStrFree(res," ");
+            res = concatStrFreeFree(res, convertTarget(ins->args[0]->target,ins->args[0]->mode));
+            res = concatStrFree(res, ", ");
+            res = concatStrFreeFree(res, convertTarget(ins->args[1]->target,ins->args[1]->mode));
+            res = concatStrFree(res, "\n");
+            break;
+        }
         case mul:
+        {
+            break;
+        }
         case divi:
             res = "debugDIVI\n";
             break;

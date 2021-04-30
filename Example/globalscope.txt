@@ -1,18 +1,11 @@
-int x = 2;
+int x = 3;
 
 int main()
 {
     int c;
-    c = h(x);
-    return c;
-}
-
-int h(int x)
-{
-    int h(int x)
-    {
-        return x + 2;
-    }
-    return h(x);
+    c = 2 - x;
+    int y = 3 * 2;
+    int d = 4/2;
+    return 3;
 }
 

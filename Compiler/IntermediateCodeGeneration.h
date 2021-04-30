@@ -74,7 +74,8 @@ typedef enum metaKind {
     ALLOCATE_STACK_SPACE,
     DEALLOCATE_STACK_SPACE,   //15
     REVERSE_PUSH_ARGUMENTS,
-    FOLLOW_STATIC_LINK
+    FOLLOW_STATIC_LINK,
+    PRINT_VAR
 } metaKind;
 
 typedef enum labelKind {
@@ -194,6 +195,7 @@ void quickAddPushRSP();
 void quickAddMoveRBPToRSP();
 void quickAddPopRBP();
 void quickAddPushRRT();
+void quickAddPrint();
 
 
 //Other
