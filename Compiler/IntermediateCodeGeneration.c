@@ -5,7 +5,7 @@
 #include "IntermediateCodeGeneration.h"
 
 SYMBOLTABLE* currentScope;
-LL* code = &(LL){NULL,NULL};
+LL* code = &(LL){NULL,NULL,0,0,0,0};
 LLFUN* funs = &(LLFUN){NULL,NULL};
 int depth = 0;
 FUNCTION* currentFunction;
@@ -134,15 +134,35 @@ void icgTraverseSTMT(STMT* s)
                     quickAddMeta(FOLLOW_STATIC_LINK);
                 quickAddMoveRSLToRBP();
             }
-
             char* endLabel = concatStr("end",funSymbol->label);
             quickAddUnconditionalJmp(endfunction_label,endLabel);
             break;
         case printK:
+        {
+            opSize typeSize = getSizeOfType(s->val.printS->type);
             icgTraverseEXP(s->val.printS);  //TODO: DOUBLES
-            quickAddPushRRT();
-            quickAddPrint(s->val.printS->type);
+
+            char* printFun = concatStr("print",s->val.printS->type);
+            if(strcmp(s->val.printS->type,"BOOLEAN") == 0)
+                code->pFlagBOOLEAN = 1;
+            if(strcmp(s->val.printS->type,"CHAR") == 0)
+                code->pFlagCHAR = 1;
+            if(strcmp(s->val.printS->type,"INT") == 0)
+                code->pFlagINT = 1;
+            if(strcmp(s->val.printS->type,"DOUBLE") == 0)
+                code->pFlagDOUBLE = 1;
+
+            quickAddCallFun(printFun);
+
+            Target* t = makeTarget(rsp,bits_64);
+            ARG* rsp = makeARG(t,makeMode(dir));
+            Target* imiT = makeTargetIMI(getIntFromopSize(typeSize));
+            ARG* imiArg = makeARG(imiT,makeMode(dir));
+            ARG* args[2] = {imiArg,rsp};
+            OP* op = makeOP(add, bits_64);
+            quickAddIns(makeINS(op,args));
             break;
+        }
         case varDeclK:
             {
                 if(s->val.varDeclS.value == NULL)
@@ -213,7 +233,7 @@ void icgTraverseEXP(EXP* e)
             icgTraverseEXP(e->val.binopE.right);
 
             char* op = e->val.binopE.operator;
-            opSize size = getSizeOfType(e->type);
+            opSize size = getSizeOfType(e->val.binopE.right->type);
 
             if(strcmp(op,"-") == 0)
                 quickAddArithmeticINS(sub,size);
@@ -239,7 +259,7 @@ void icgTraverseEXP(EXP* e)
                 quickAddBooleanINS(and);
             else if (strcmp(op,"OR") == 0)
                 quickAddBooleanINS(or);
-            quickAddPushReg(1);
+            quickAddPushReg(1,getSizeOfType(e->type));
             break;
         case funK:
         {
@@ -483,10 +503,10 @@ void quickAddPopReg(opSize size, int registerNumber)
     quickAddIns(makeINS(op,args));
 }
 
-void quickAddPushReg(int regNumber)
+void quickAddPushReg(int regNumber, opSize size)
 {
-    Target* t = makeTargetReg(bits_64,regNumber);
-    quickAddPush(bits_64,t,makeMode(dir));
+    Target* t = makeTargetReg(size,regNumber);
+    quickAddPush(size,t,makeMode(dir));
 }
 
 void quickAddMoveRBPToRSL()
@@ -563,14 +583,14 @@ void quickAddArithmeticINS(opKind k, opSize size)  //L 'OP' R
 
 void quickAddCompareINS(opKind k, opSize size)
 {
-    quickAddPopReg(size, 2); //pop reg2  #Right side of binop
-    quickAddPopReg(size, 1); //pop reg1  #Left side of binop
+    quickAddPopReg(size, 1); //pop reg2  #Right side of binop
+    quickAddPopReg(size, 2); //pop reg1  #Left side of binop
 
-    Target* rightEXP = makeTargetReg(size,2);
-    ARG* argRight = makeARG(rightEXP, makeMode(dir));
+    Target* tLeft = makeTargetReg(size,2);
+    ARG* argLeft = makeARG(tLeft, makeMode(dir));
 
-    Target* leftEXP = makeTargetReg(size,1);
-    ARG* argLeft = makeARG(leftEXP, makeMode(dir));
+    Target* tRight = makeTargetReg(size,1);
+    ARG* argRight = makeARG(tRight, makeMode(dir));
 
     ARG* args[2] = {argRight,argLeft};
 
@@ -581,12 +601,7 @@ void quickAddCompareINS(opKind k, opSize size)
     ARG* arg = makeARG(resultRegister,makeMode(dir));
     ARG* argsSet[2] = {arg,NULL};
     OP* setOP = makeOP(k,bits_8);
-    quickAddIns(makeINS(setOP,argsSet)); //set<k> reg1  #8 bits register
-
-    ARG* argIMI = makeARG(makeTargetIMI(1),makeMode(dir));
-    ARG* argsAnd[2] = {argIMI,arg};
-    OP* andOP = makeOP(and,bits_64);
-    quickAddIns(makeINS(andOP,argsAnd)); //and $1, reg1  #64 bits register
+    quickAddIns(makeINS(setOP,argsSet)); //set<k> reg2  #8 bits register
 }
 
 void quickAddBooleanINS(opKind k)
@@ -650,15 +665,6 @@ void quickAddPushRRT()
     quickAddIns(makeINS(op,args));
 }
 
-void quickAddPrint()
-{
-    Target* t = makeTarget(rrt,bits_64);
-    ARG* arg = makeARG(t,makeMode(dir));
-    OP* op = makeOP(push, bits_64);
-    ARG* args[2] = {arg, NULL};
-    quickAddIns(makeINS(op,args));
-}
-
 void addToLLFUN(FUNCTION* f)
 {
     //Make a node containing f
@@ -690,6 +696,21 @@ char* labelGenerator(labelKind kind) {
         res = concatStr("if_",intString);
     }
     return res;
+}
+
+int getIntFromopSize(opSize size)
+{
+    switch(size)
+    {
+        case bits_8:
+            return 1;
+        case bits_32:
+            return 4;
+        case bits_64:
+            return 8;
+        default:
+            return 0;
+    }
 }
 
 opSize getSizeOfType(char* typeName)

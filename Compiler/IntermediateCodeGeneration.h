@@ -74,8 +74,7 @@ typedef enum metaKind {
     ALLOCATE_STACK_SPACE,
     DEALLOCATE_STACK_SPACE,   //15
     REVERSE_PUSH_ARGUMENTS,
-    FOLLOW_STATIC_LINK,
-    PRINT_VAR
+    FOLLOW_STATIC_LINK
 } metaKind;
 
 typedef enum labelKind {
@@ -127,6 +126,10 @@ typedef struct LinkedListNode {
 typedef struct LinkedList {
     LLN* first;
     LLN* last;
+    int pFlagCHAR;
+    int pFlagBOOLEAN;
+    int pFlagINT;
+    int pFlagDOUBLE;
 } LL;
 
 typedef struct LinkedListNodeFUN {
@@ -189,19 +192,19 @@ void quickAddUnconditionalJmp(labelKind k, char* labelString);
 void quickAddArithmeticINS(opKind k, opSize size);
 void quickAddCompareINS(opKind k, opSize size);
 void quickAddBooleanINS(opKind k);
-void quickAddPushReg(int regNumber);
+void quickAddPushReg(int regNumber,opSize size);
 void quickAddCallFun(char* funLabel);
 void quickAddPushRSP();
 void quickAddMoveRBPToRSP();
 void quickAddPopRBP();
 void quickAddPushRRT();
-void quickAddPrint();
 
 
 //Other
 char* labelGenerator(labelKind kind);
 opSize getSizeOfType(char* typeName);
 opSize getSizeOfId(char* idName);
+int getIntFromopSize(opSize size);
 
 
 #endif

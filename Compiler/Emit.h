@@ -9,6 +9,10 @@ char* convertMetaIns(INS* ins);
 char* meta_function_declaration(INS* ins);
 char* convertTarget(Target* t, Mode* m);
 
+const char* printCHAR;
+const char* printBOOLEAN;
+const char* printINT;
+
 #endif
 
 

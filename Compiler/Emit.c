@@ -3,7 +3,6 @@
 #include "IntermediateCodeGeneration.h"
 #include "Emit.h"
 
-
 const char* indentation = "    ";
 
 const char* raxVariants[] = {"%al","%eax","%rax"};
@@ -26,6 +25,7 @@ const char* callee_restore = "";
 const char* callee_epilogue = "ret\n";
 const char* follow_static_link = "movq (%rdi), %rdi\n";
 
+
 char* asmCode = "";
 
 void emit(LL* code, const char* outputFileName)
@@ -39,6 +39,14 @@ void emit(LL* code, const char* outputFileName)
         //printf("CURRENT ASMCODE:\n%s\n",asmCode);
         node = node->next;
     }
+    if(code->pFlagBOOLEAN)
+        asmCode = concatStrFree(asmCode,printBOOLEAN);
+    if(code->pFlagCHAR)
+        asmCode = concatStrFree(asmCode,printCHAR);
+    if(code->pFlagINT)
+        asmCode = concatStrFree(asmCode,printINT);
+    if(code->pFlagDOUBLE)
+        asmCode = concatStrFree(asmCode,"DOUBLE DEBUG\n");
 
     printf("\n---ASMCODE BELOW---\n\n%s",asmCode);
 
@@ -84,16 +92,39 @@ char* convertInsToAsm(INS* ins)
                 res = concatStrFree(res, sizeModifier[ins->op->size]);
                 res = concatStrFree(res, " ");
                 res = concatStrFreeFree(res, convertTarget(ins->args[0]->target, ins->args[0]->mode));
+                res = concatStrFree(res, ", ");
+                res = concatStrFree(res,raxVariants[ins->op->size]);
+                res = concatStrFree(res, "\n");
+                res = concatStrFree(res, indentation);
+                res = concatStrFree(res,"mov");
+                res = concatStrFree(res,sizeModifier[ins->op->size]);
+                res = concatStrFree(res, " ");
+                res = concatStrFree(res,raxVariants[ins->op->size]);
                 res = concatStrFree(res, ", (%rsp)\n");
             }
             break;
         }
         case pop:
         {
-            res = concatStr(res,indentation);
-            res = concatStrFree(res,"pop ");
-            res = concatStrFreeFree(res,convertTarget(ins->args[0]->target,ins->args[0]->mode));
-            res = concatStrFree(res,"\n");
+            res = concatStr(indentation, res);
+            if(ins->op->size == bits_64)
+            {
+                res = concatStrFree(res,"pop ");
+                res = concatStrFreeFree(res,convertTarget(ins->args[0]->target,ins->args[0]->mode));
+                res = concatStrFree(res,"\n");
+            }
+            else
+            {
+                res = concatStrFree(res,"mov");
+                res = concatStrFree(res, sizeModifier[ins->op->size]);
+                res = concatStrFree(res, " (%rsp), ");
+                res = concatStrFreeFree(res, convertTarget(ins->args[0]->target, ins->args[0]->mode));
+                res = concatStrFree(res, "\n");
+                res = concatStrFree(res, indentation);
+                res = concatStrFree(res, "addq $");
+                res = concatStrFree(res, sizeModifier2[ins->op->size]);
+                res = concatStrFree(res, ", %rsp\n");
+            }
             break;
         }
         case add:
@@ -137,9 +168,9 @@ char* convertInsToAsm(INS* ins)
         case cmp:
         {
             res = concatStr(indentation,"cmp ");
-            res = concatStrFree(res,convertTarget(ins->args[1]->target,ins->args[1]->mode));
-            res = concatStrFree(res,", ");
             res = concatStrFree(res,convertTarget(ins->args[0]->target,ins->args[0]->mode));
+            res = concatStrFree(res,", ");
+            res = concatStrFree(res,convertTarget(ins->args[1]->target,ins->args[1]->mode));
             res = concatStrFree(res,"\n");
             break;
         }
@@ -154,6 +185,38 @@ char* convertInsToAsm(INS* ins)
         {
             res = concatStr(indentation,"jne ");
             res = concatStrFree(res,ins->args[0]->target->labelName);
+            res = concatStrFree(res,"\n");
+            break;
+        }
+        case sete:
+        {
+            res = concatStr(indentation,res);
+            res = concatStrFree(res, "sete ");
+            res = concatStrFree(res,convertTarget(ins->args[0]->target,ins->args[0]->mode));
+            res = concatStrFree(res,"\n");
+            break;
+        }
+        case setne:
+        {
+            res = concatStr(indentation,res);
+            res = concatStrFree(res, "setne ");
+            res = concatStrFree(res,convertTarget(ins->args[0]->target,ins->args[0]->mode));
+            res = concatStrFree(res,"\n");
+            break;
+        }
+        case setg:
+        {
+            res = concatStr(indentation,res);
+            res = concatStrFree(res, "setg ");
+            res = concatStrFree(res,convertTarget(ins->args[0]->target,ins->args[0]->mode));
+            res = concatStrFree(res,"\n");
+            break;
+        }
+        case setge:
+        {
+            res = concatStr(indentation,res);
+            res = concatStrFree(res, "setge ");
+            res = concatStrFree(res,convertTarget(ins->args[0]->target,ins->args[0]->mode));
             res = concatStrFree(res,"\n");
             break;
         }
@@ -332,3 +395,87 @@ char* convertTarget(Target* t, Mode* m)
     }
     return deepCopy("debug!!\n");
 }
+
+const char* printCHAR = "\n.type printCHAR, @function\n"
+                        "printCHAR:\n"
+                        "    movq $1, %rax\n"
+                        "    movq $1, %rdi\n"
+                        "    movq $1, %rdx\n"
+                        "    push 8(%rsp)\n"
+                        "    movq %rsp, %rsi\n"
+                        "    syscall\n"
+                        "    addq $8, %rsp\n"
+                        "    push $10\n"
+                        "    movq %rsp, %rsi\n"
+                        "    syscall\n"
+                        "    addq $8, %rsp\n"
+                        "    ret\n";
+
+const char* printBOOLEAN = "\n.type printBOOLEAN, @function\n"
+                           "printBOOLEAN:\n"
+                           "    movq $1, %rax\n"
+                           "    movq $1, %rdi\n"
+                           "    cmpb $1, 8(%rsp)\n"
+                           "    je printBOOLEANtrue\n"
+                           "    movq $0x00000a65736c6166, %rbx\n"
+                           "    push %rbx\n"
+                           "    movq $6, %rdx\n"
+                           "    jmp printBOOLEANend\n"
+                           "printBOOLEANtrue:\n"
+                           "    movq $0x0000000a65757274, %rbx\n"
+                           "    push %rbx\n"
+                           "    movq $5, %rdx\n"
+                           "printBOOLEANend:\n"
+                           "    movq %rsp, %rsi\n"
+                           "    syscall\n"
+                           "    addq $8, %rsp\n"
+                           "    ret\n";
+
+const char* printINT = "\n.type printINT, @function\n"
+                       "printINT:\n"
+                       "    xor %rax, %rax\n"
+                       "    xor %rdx, %rdx\n"
+                       "    movq $1, %r10 #Always print newline\n"
+                       "    xor %r11, %r11\n"
+                       "    movq $10, %r12\n"
+                       "    movl 8(%rsp), %eax\n"
+                       "    push $10 #newline\n"
+                       "    cmpl $0, %eax\n"
+                       "    jg printINTpushDecimals\n"
+                       "    je printINTzero\n"
+                       "    movq $1, %r11\n"
+                       "    cltq\n"
+                       "    neg %rax\n"
+                       "    jmp printINTpushDecimals\n"
+                       "printINTzero:\n"
+                       "    push $48\n"
+                       "    inc %r10\n"
+                       "    jmp printINTprint\n"
+                       "printINTpushDecimals:\n"
+                       "    cmpl $0, %eax\n"
+                       "    je printINTmaybeNeg\n"
+                       "    idivl %r12d\n"
+                       "    addq $48, %rdx\n"
+                       "    push %rdx\n"
+                       "    movq $0, %rdx\n"
+                       "    inc %r10\n"
+                       "    jmp printINTpushDecimals\n"
+                       "printINTmaybeNeg:\n"
+                       "    cmp $1, %r11\n"
+                       "    jne printINTprint\n"
+                       "    push $45\n"
+                       "    inc %r10\n"
+                       "printINTprint:\n"
+                       "    cmp $0, %r10\n"
+                       "    je printINTend\n"
+                       "    movq $1, %rax\n"
+                       "    movq $1, %rdi\n"
+                       "    movq %rsp, %rsi\n"
+                       "    movq $1, %rdx\n"
+                       "    syscall\n"
+                       "    dec %r10\n"
+                       "    addq $8, %rsp\n"
+                       "    jmp printINTprint\n"
+                       "printINTend:\n"
+                       "    ret\n";
+

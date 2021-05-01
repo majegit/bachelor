@@ -25,5 +25,12 @@ HOWEVER, for this construction "print(exp);" we will never know what the type of
 We found inspiration in the python and the c languages, in c ypu explicitly declare the type of your expression(s), and in python it would infer the type. But in python you would not be able to print
 'a' + 1 because "str and int are incompatible", but in c this is perfectly valid, and 'a' + 1 can be printed both as a char or an int. printf("%c %d",'a' + 1,'a' + 1); is a perfectly valid statement.
 
+Double memory reference illegal, so the pushl and pushb opcodes are long:
+    movl -4(%rdi), %eax #Push
+    movl %eax, (%rsp)
+    movl (%rsp), %eax #Push
+
+
+
 
 

@@ -1,11 +1,14 @@
-int x = 3;
-
 int main()
 {
-    int c = 3 + 4;
-    c = c - 2;
-    c = c * 3;
-    c = c / 2;
-    return c;
+    boolean t = 1 < 2; #Compare does not work in asm
+    print(t);
+    print(false);
+    print(true);
+    int x = 5;
+    int y = 8;
+    t = y >= x;
+    print(t);
+    print(x);
+    print(y);
 }
 

@@ -53,12 +53,14 @@ void scTraverseSTMT(STMT* s, SYMBOLTABLE* st)
     {
         case whileK:
         {
+            scTraverseEXP(s->val.whileS.guard,st);
             SYMBOLTABLE* newTable = makeSYMBOLTABLE(st);
             scTraverseSTMTCOMP(s->val.whileS.body, newTable);
             break;
         }
         case ifElseK:
         {
+            scTraverseEXP(s->val.ifElseS.cond,st);
             SYMBOLTABLE* newTable = makeSYMBOLTABLE(st);
             scTraverseSTMTCOMP(s->val.ifElseS.ifbody, newTable);
 
@@ -71,6 +73,8 @@ void scTraverseSTMT(STMT* s, SYMBOLTABLE* st)
         }
         case varDeclK:
         {
+            if(s->val.varDeclS.value != NULL)
+                scTraverseEXP(s->val.varDeclS.value,st);
             SYMBOL* newSymbol = makeSYMBOLvariable(s->val.varDeclS.name,s->val.varDeclS.type);
             addSymbol(newSymbol,st);
             break;
@@ -83,11 +87,20 @@ void scTraverseSTMT(STMT* s, SYMBOLTABLE* st)
             break;
         }
         case assignK:
+        {
             if(lookupSymbolVar(s->val.assignS.name, st) == NULL)
             {
                 printf("ERROR: Variable not declared: %s on line: %d\n",s->val.assignS.name,s->lineno);
                 exit(0);
             }
+            scTraverseEXP(s->val.assignS.val,st);
+            break;
+        }
+        case printK:
+            scTraverseEXP(s->val.printS,st);
+            break;
+        case returnK:
+            scTraverseEXP(s->val.returnS,st);
             break;
         default:
             break;
