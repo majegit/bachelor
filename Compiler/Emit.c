@@ -13,7 +13,8 @@ const char* rbpVariants[] = {"%bpl","%ebp","%rbp"};
 const char* rdiVariants[] = {"%dil","%edi","%rdi"};
 const char* rspVariants[] = {"%sl", "%esl","%rsp"};
 
-const char* sizeModifier[] = {"b","l","q"};
+const char* sizeModifier[]  = {"b","l","q"};
+const char* sizeModifier2[] = {"1","4","8"};
 
 const char* program_prologue = ".section .data\n.section .text\n.global _start\n_start:\n";
 const char* program_epilogue = "    movq %rax, %rdi\n    movq $60, %rax\n    syscall\n\n";
@@ -66,10 +67,25 @@ char* convertInsToAsm(INS* ins)
         }
         case push:
         {
-            res = concatStr(res,indentation);
-            res = concatStrFree(res,"push ");
-            res = concatStrFreeFree(res,convertTarget(ins->args[0]->target,ins->args[0]->mode));
-            res = concatStrFree(res,"\n");
+            res = concatStr(indentation, res);
+            if(ins->op->size == bits_64)
+            {
+                res = concatStrFree(res,"push ");
+                res = concatStrFreeFree(res,convertTarget(ins->args[0]->target,ins->args[0]->mode));
+                res = concatStrFree(res,"\n");
+            }
+            else
+            {
+                res = concatStrFree(res, "subq $");
+                res = concatStrFree(res, sizeModifier2[ins->op->size]);
+                res = concatStrFree(res, ", %rsp\n");
+                res = concatStrFree(res, indentation);
+                res = concatStrFree(res, "mov");
+                res = concatStrFree(res, sizeModifier[ins->op->size]);
+                res = concatStrFree(res, " ");
+                res = concatStrFreeFree(res, convertTarget(ins->args[0]->target, ins->args[0]->mode));
+                res = concatStrFree(res, ", (%rsp)\n");
+            }
             break;
         }
         case pop:

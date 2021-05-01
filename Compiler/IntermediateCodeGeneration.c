@@ -57,12 +57,13 @@ void icgTraverseSTMT(STMT* s)
     {
         case whileK:
             {
-                char* labelName = labelGenerator(while_label);     //Generate label number X
+                char* labelName = labelGenerator(while_label);     //Generate start label
+                char* endlabelName = concatStr("end",labelName);    //Make end label
+
                 quickAddLabelString(while_label, labelName);       //while_X:
                 icgTraverseEXP(s->val.whileS.guard);                    //Guard
-                quickAddPopRRT();                                       //Move boolean to rrt
+                quickAddPopRRT(bits_8);                             //Move boolean to rrt
                 quickAddCheckTruthValue();                              //cmp rrt, $1
-                char* endlabelName = concatStr("end",labelName);
                 quickAddJumpIfFalse(endwhile_label,endlabelName);    //jne endwhile_X
                 icgTraverseSTMTCOMP(s->val.whileS.body);                //generate the code for the body of the whileloop
                 quickAddLabelString(endwhile_label, endlabelName); //endwhile_X:
@@ -72,7 +73,7 @@ void icgTraverseSTMT(STMT* s)
             {
                 icgTraverseEXP(s->val.assignS.val);
 
-                quickAddPopRRT();
+                quickAddPopRRT(getSizeOfType(s->val.assignS.val->type));
                 quickAddMoveRBPToRSL();
 
                 int* staticLinkJumpsAndOffset = staticLinkCount(s->val.assignS.name,currentScope);
@@ -103,8 +104,7 @@ void icgTraverseSTMT(STMT* s)
 
                 quickAddLabelString(if_label, labelName);          //if_X:
                 icgTraverseEXP(s->val.ifElseS.cond);                    //Guard
-                printf("AFTER EXP\n");
-                quickAddPopRRT();                                       //Move boolean to rrt
+                quickAddPopRRT(bits_8);                             //Move boolean to rrt
                 quickAddCheckTruthValue();                              //cmp rrt, $1
                 labelName = concatStr("end",labelName);             //Generate endif_X label
                 quickAddJumpIfFalse(endif_label,labelName);          //jne endif_X
@@ -140,7 +140,7 @@ void icgTraverseSTMT(STMT* s)
             break;
         case printK:
             icgTraverseEXP(s->val.printS);  //TODO: DOUBLES
-            quickAddPopRRT();
+            quickAddPushRRT();
             quickAddPrint(s->val.printS->type);
             break;
         case varDeclK:
@@ -148,7 +148,7 @@ void icgTraverseSTMT(STMT* s)
                 if(s->val.varDeclS.value == NULL)
                     break;
                 icgTraverseEXP(s->val.varDeclS.value);
-                quickAddPopRRT();
+                quickAddPopRRT(getSizeOfType(s->val.varDeclS.type));
                 quickAddMoveRBPToRSL();
 
                 int* staticLinkJumpsAndOffset = staticLinkCount(s->val.varDeclS.name,currentScope);
@@ -283,7 +283,7 @@ void icgTraverseFUNCTION(FUNCTION* f)
 
     char* endfunLabel = concatStr("end",funLabel);
     quickAddLabelString(endfunction_label,endfunLabel); //endfunX_<function name>
-    quickAddPopRRT();
+    quickAddPopRRT(getSizeOfType(f->returnType));
     quickAddMoveRBPToRSP();
     quickAddPopRBP();
     quickAddMeta(CALLEE_RESTORE);                       //Pop callee save registers
@@ -432,11 +432,11 @@ void quickAddLabelString(labelKind kind, char* name)
     quickAddIns(makeINS(op,args));
 }
 
-void quickAddPush(Target* target, Mode* mode)
+void quickAddPush(opSize size, Target* target, Mode* mode)
 {
     ARG* arg = makeARG(target, mode);
     ARG* args[2] = {arg,NULL};
-    OP* op = makeOP(push,bits_64);
+    OP* op = makeOP(push,size);
     quickAddIns(makeINS(op, args));
 }
 
@@ -459,34 +459,34 @@ void quickAddPushId(char* name)
 
     Mode* m = makeModeIRL(staticLinkJumpsAndOffset[1]);
     Target* t = makeTarget(rsl,bits_64);
-    quickAddPush(t,m);
+    quickAddPush(getSizeOfId(name),t,m);
 
     free(staticLinkJumpsAndOffset); //Free malloc'ed memory
 }
 
-void quickAddPopRRT()
+void quickAddPopRRT(opSize size)
 {
-    Target* t = makeTarget(rrt,bits_64);
+    Target* t = makeTarget(rrt,size);
     ARG* arg = makeARG(t,makeMode(dir));
     ARG* args[2] = {arg,NULL};
-    OP* op = makeOP(pop,bits_64);
+    OP* op = makeOP(pop,size);
     quickAddIns(makeINS(op,args));
 }
 
 //Pop into a register
-void quickAddPopReg(int registerNumber)
+void quickAddPopReg(opSize size, int registerNumber)
 {
-    Target* t = makeTargetReg(bits_64,registerNumber);
+    Target* t = makeTargetReg(size,registerNumber);
     ARG* arg = makeARG(t,makeMode(dir));
     ARG* args[2] = {arg,NULL};
-    OP* op = makeOP(pop,bits_64);
+    OP* op = makeOP(pop,size);
     quickAddIns(makeINS(op,args));
 }
 
 void quickAddPushReg(int regNumber)
 {
     Target* t = makeTargetReg(bits_64,regNumber);
-    quickAddPush(t,makeMode(dir));
+    quickAddPush(bits_64,t,makeMode(dir));
 }
 
 void quickAddMoveRBPToRSL()
@@ -546,8 +546,8 @@ void quickAddUnconditionalJmp(labelKind k, char* labelName)
 
 void quickAddArithmeticINS(opKind k, opSize size)  //L 'OP' R
 {
-    quickAddPopReg(2); //Right side of binop
-    quickAddPopReg(1); //Left side of binop
+    quickAddPopReg(size,2); //Right side of binop
+    quickAddPopReg(size,1); //Left side of binop
 
     Target* rightEXP = makeTargetReg(size,2);
     ARG* argRight = makeARG(rightEXP, makeMode(dir));
@@ -563,8 +563,8 @@ void quickAddArithmeticINS(opKind k, opSize size)  //L 'OP' R
 
 void quickAddCompareINS(opKind k, opSize size)
 {
-    quickAddPopReg(2); //pop reg2  #Right side of binop
-    quickAddPopReg(1); //pop reg1  #Left side of binop
+    quickAddPopReg(size, 2); //pop reg2  #Right side of binop
+    quickAddPopReg(size, 1); //pop reg1  #Left side of binop
 
     Target* rightEXP = makeTargetReg(size,2);
     ARG* argRight = makeARG(rightEXP, makeMode(dir));

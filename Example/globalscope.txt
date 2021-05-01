@@ -2,10 +2,10 @@ int x = 3;
 
 int main()
 {
-    int c;
-    c = 2 - x;
-    int y = 3 * 2;
-    int d = 4/2;
-    return 3;
+    int c = 3 + 4;
+    c = c - 2;
+    c = c * 3;
+    c = c / 2;
+    return c;
 }
 
