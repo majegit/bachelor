@@ -145,6 +145,14 @@ void scTraverseFUNCTION(FUNCTION* f, SYMBOLTABLE* st)
     SYMBOLTABLE* newScope = makeSYMBOLTABLE(st);
     scTraverseFPARAMETERNODE(f->args, newScope);
     scTraverseSTMTCOMP(f->body, newScope);
+
+    //Check if all branches of computation ends with a return stmt
+    if(allBranchesReturn(f->body->stmtnode) == 0)
+    {
+        char* errorMsg = concatStr("not all branches of function \"",f->name);
+        errorMsg = concatStrFree(errorMsg,"\" return a value");
+        throwErrorLine(errorMsg,f->lineno);
+    }
 }
 
 void scTraverseFPARAMETERNODE(FPARAMETERNODE* fpn, SYMBOLTABLE* st)
@@ -155,3 +163,32 @@ void scTraverseFPARAMETERNODE(FPARAMETERNODE* fpn, SYMBOLTABLE* st)
     addSymbol(newSymbol, st);
     scTraverseFPARAMETERNODE(fpn->next, st);
 }
+
+int allBranchesReturn(STMTNODE* sn)
+{
+    int alwaysReturn = 0;
+    while(sn != NULL && alwaysReturn == 0)
+    {
+        STMT* this = sn->stmt;
+        if(this->kind == returnK)
+            alwaysReturn = 1;
+        else if(this->kind == whileK && guardAlwaysTrue(this->val.whileS.guard))
+            alwaysReturn = allBranchesReturn(this->val.whileS.body->stmtnode);
+        else if(this->kind == ifElseK && guardAlwaysTrue(this->val.ifElseS.cond))
+            alwaysReturn = allBranchesReturn(this->val.ifElseS.ifbody->stmtnode);
+        else if(this->kind == ifElseK && this->val.ifElseS.elsebody != NULL)
+            alwaysReturn = allBranchesReturn(this->val.ifElseS.ifbody->stmtnode) && allBranchesReturn(this->val.ifElseS.elsebody->stmtnode);
+        sn = sn->next;
+    }
+    if(sn != NULL)
+        throwErrorLine("unreachable code",sn->stmt->lineno);
+    return alwaysReturn;
+}
+
+int guardAlwaysTrue(EXP* e)
+{
+    if(e->kind == boolK && e->val.boolE == 1)
+        return 1;
+    return 0;
+}
+

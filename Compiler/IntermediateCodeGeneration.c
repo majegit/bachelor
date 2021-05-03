@@ -12,12 +12,14 @@ FUNCTION* currentFunction;
 
 LL* icgTraversePROGRAM(PROGRAM* prog)
 {
+    currentScope = prog->sc->symbolTable;                          //Update pointer to global scope
     quickAddMeta(PROGRAM_PROLOGUE);
-    currentScope = prog->sc->symbolTable;                          //Update pointer to start at global scope
-    int stackSpace = currentScope->nextVariableLabel;              //Stack space needed in global scope
-    quickAddMetaWithInfo(ALLOCATE_STACK_SPACE, stackSpace);   //Push rbp and allocate stack space
+
+    int globalStackSpace = currentScope->nextVariableLabel;              //Stack space needed in global scope
+    quickAddMetaWithInfo(ALLOCATE_STACK_SPACE, globalStackSpace);   //Push rbp and allocate stack space
     icgTraverseSTMTNODE(prog->sc->stmtnode);
     quickAddCallFun("main");
+
     quickAddMeta(PROGRAM_EPILOGUE);
 
     LLNFUN* currentNode = funs->first;
@@ -39,13 +41,13 @@ void icgTraverseSTMTNODE(STMTNODE* sn)
 
 void icgTraverseSTMTCOMP(STMTCOMP* sc)
 {
-    currentScope = sc->symbolTable;
-    int stackSpace = currentScope->nextVariableLabel;  //Stack space needed for local variables
     depth++;
+    currentScope = sc->symbolTable;
 
-    quickAddMetaWithInfo(ALLOCATE_STACK_SPACE, stackSpace);   //Push rbp and allocate stack space
+    int compStackSpace = currentScope->nextVariableLabel;  //Stack space needed for local variables
+    quickAddMetaWithInfo(ALLOCATE_STACK_SPACE, compStackSpace);   //Push rbp and allocate stack space
     icgTraverseSTMTNODE(sc->stmtnode);
-    quickAddMetaWithInfo(DEALLOCATE_STACK_SPACE, stackSpace); //Deallocate stack space and pop rbp
+    quickAddMetaWithInfo(DEALLOCATE_STACK_SPACE, compStackSpace); //Deallocate stack space and pop rbp
 
     depth--;
     currentScope = sc->symbolTable->par;                           //Update pointer to current scope
@@ -71,20 +73,21 @@ void icgTraverseSTMT(STMT* s)
             break;
         case assignK:
             {
-                icgTraverseEXP(s->val.assignS.val);
+                EXP* e = s->val.assignS.val;
+                icgTraverseEXP(e);
+                int* varDepthAndOffset = staticLinkCount(s->val.assignS.name,currentScope);
 
                 quickAddPopRRT(getSizeOfType(s->val.assignS.val->type));
                 quickAddMoveRBPToRSL();
 
-                int* staticLinkJumpsAndOffset = staticLinkCount(s->val.assignS.name,currentScope);
                 printSYMBOLTABLE(currentScope->par);
-                for(int i=0; i < staticLinkJumpsAndOffset[0]; i++)
+                for(int i=0; i < varDepthAndOffset[0]; i++)
                     quickAddMeta(FOLLOW_STATIC_LINK);
 
                 Target* from = makeTarget(rrt,getSizeOfId(s->val.assignS.name));
                 ARG* argFrom = makeARG(from,makeMode(dir));
 
-                Mode* modeIRL = makeModeIRL(staticLinkJumpsAndOffset[1]);
+                Mode* modeIRL = makeModeIRL(varDepthAndOffset[1]);
                 Target* to = makeTarget(rsl,bits_64);
                 ARG* argTo = makeARG(to,modeIRL);
 
@@ -94,7 +97,7 @@ void icgTraverseSTMT(STMT* s)
 
                 quickAddIns(makeINS(op,args));
 
-                free(staticLinkJumpsAndOffset); //Free malloc'ed memory
+                free(varDepthAndOffset); //Free malloc'ed memory
             }
             break;
         case ifElseK:
@@ -730,6 +733,30 @@ opSize getSizeOfId(char* idName)
 {
     SYMBOL* id = lookupSymbolVar(idName,currentScope);
     return getSizeOfType(id->type);
+}
+
+int isCompareOp(char* operator)
+{
+    return 1;
+    //if(strcmp(operator,"-"))
+}
+
+int isArithmeticOp(char* operator)
+{
+    if(strcmp(operator,"+"))
+        return 1;
+    if(strcmp(operator,"-"))
+        return 1;
+    if(strcmp(operator,"*"))
+        return 1;
+    if(strcmp(operator,"/"))
+        return 1;
+    return 0;
+}
+
+int isBooleanOp(char* operator)
+{
+
 }
 
 

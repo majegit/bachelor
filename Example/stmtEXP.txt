@@ -1,0 +1,13 @@
+int h()
+{
+    return 3;
+}
+
+int main()
+{
+    if(true)
+    {
+        return 3;
+    }
+    print(3);
+}

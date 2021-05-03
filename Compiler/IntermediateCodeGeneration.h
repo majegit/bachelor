@@ -177,6 +177,7 @@ LLN* makeLLN(INS* ins);
 void quickAddIns(INS* ins);
 void quickAddMeta(metaKind kind);
 void quickAddMetaWithInfo(metaKind kind, int metaInformation);
+
 void quickAddMetaString(metaKind metaK, char* str);
 void quickAddLabelString(labelKind kind, char* label);
 void quickAddPush(opSize size, Target* target, Mode* mode);
@@ -205,6 +206,12 @@ char* labelGenerator(labelKind kind);
 opSize getSizeOfType(char* typeName);
 opSize getSizeOfId(char* idName);
 int getIntFromopSize(opSize size);
+
+
+//Check if an operator is a compare/arithmetic/boolean operator
+int isCompareOp(char* operator);
+int isArithmeticOp(char* operator);
+int isBooleanOp(char* operator);
 
 
 #endif

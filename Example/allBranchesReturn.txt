@@ -1,0 +1,33 @@
+int simple()
+{
+    return 3;
+}
+
+int g()
+{
+    while(true) #This loop is always entered and it always returns, so this is acceptable
+    {
+        return 4;
+    }
+}
+
+int h()
+{
+    if(true) #This branch is always taken and it contains a return value so this is acceptable
+    {
+        return 3;
+    }
+}
+
+int main()
+{
+    #Both branches return, so this is acceptable
+    if(4 < 3)
+    {
+        return 3;
+    }
+    else
+    {
+        return 4;
+    }
+}

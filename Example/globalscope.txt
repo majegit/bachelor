@@ -1,14 +1,21 @@
 int main()
 {
-    boolean t = 1 < 2; #Compare does not work in asm
+    boolean t = 1 < 2; #Compare works in asm
     print(t);
     print(false);
     print(true);
+    int o = h();
     int x = 5;
     int y = 8;
     t = y >= x;
     print(t);
     print(x);
     print(y);
+}
+
+int h()
+{
+
+    return 3;
 }
 
