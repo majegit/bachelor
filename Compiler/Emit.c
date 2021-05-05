@@ -26,30 +26,29 @@ const char* callee_epilogue = "ret\n";
 const char* follow_static_link = "movq (%rdi), %rdi\n";
 
 
-char* asmCode = "";
+FILE* fp;
+char* aux;
+
 
 void emit(LL* code, const char* outputFileName)
 {
     //Print the asmcode to a file
-    FILE* fp = fopen(outputFileName,"w");
-
+    fp = fopen(outputFileName,"w");
+    
     LLN* node = code->first;
-    int i = 0;
     while(node != NULL)
     {
-        char* newAsmCode = convertInsToAsm(node->ins);
-        asmCode = concatStrFreeFree(asmCode,newAsmCode);
-        //printf("CURRENT ASMCODE:\n%s\n",asmCode);
+        convertInsToAsm(node->ins);
         node = node->next;
     }
     if(code->pFlagBOOLEAN)
-        asmCode = concatStrFree(asmCode,printBOOLEAN);
+        fputs(printBOOLEAN,fp);
     if(code->pFlagCHAR)
-        asmCode = concatStrFree(asmCode,printCHAR);
+        fputs(printCHAR,fp);
     if(code->pFlagINT)
-        asmCode = concatStrFree(asmCode,printINT);
+        fputs(printINT,fp);
     if(code->pFlagDOUBLE)
-        asmCode = concatStrFree(asmCode,"DOUBLE PRINT DEBUG\n");
+        fputs("DOUBLE DEBUG\n",fp);
 
     fclose(fp);
 }
@@ -61,245 +60,302 @@ char* convertInsToAsm(INS* ins)
     {
         case move:
         {
-            res = concatStr(res,indentation);
-            res = concatStrFree(res,"mov");
-            res = concatStrFree(res,sizeModifier[ins->op->size]);
-            res = concatStrFree(res," ");
-            res = concatStrFreeFree(res, convertTarget(ins->args[0]->target,ins->args[0]->mode));
-            res = concatStrFree(res, ", ");
-            res = concatStrFreeFree(res, convertTarget(ins->args[1]->target,ins->args[1]->mode));
-            res = concatStrFree(res, "\n");
+            fputs(indentation,fp);
+            fputs("mov",fp);
+            fputs(sizeModifier[ins->op->size],fp);
+            fputs(" ",fp);
+            aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+            fputs(aux,fp);
+            free(aux);
+            fputs(", ",fp);
+            aux = convertTarget(ins->args[1]->target,ins->args[1]->mode);
+            fputs(aux,fp);
+            free(aux);
+            fputs("\n",fp);
             break;
         }
         case push:
         {
-            res = concatStr(indentation, res);
+            fputs(indentation,fp);
             if(ins->op->size == bits_64)
             {
-                res = concatStrFree(res,"push ");
-                res = concatStrFreeFree(res,convertTarget(ins->args[0]->target,ins->args[0]->mode));
-                res = concatStrFree(res,"\n");
+                fputs("push ",fp);
+                aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+                fputs(aux,fp);
+                free(aux);
+                fputs("\n",fp);
             }
             else
             {
-                res = concatStrFree(res, "subq $");
-                res = concatStrFree(res, sizeModifier2[ins->op->size]);
-                res = concatStrFree(res, ", %rsp\n");
-                res = concatStrFree(res, indentation);
-                res = concatStrFree(res, "mov");
-                res = concatStrFree(res, sizeModifier[ins->op->size]);
-                res = concatStrFree(res, " ");
-                res = concatStrFreeFree(res, convertTarget(ins->args[0]->target, ins->args[0]->mode));
-                res = concatStrFree(res, ", ");
-                res = concatStrFree(res,raxVariants[ins->op->size]);
-                res = concatStrFree(res, "\n");
-                res = concatStrFree(res, indentation);
-                res = concatStrFree(res,"mov");
-                res = concatStrFree(res,sizeModifier[ins->op->size]);
-                res = concatStrFree(res, " ");
-                res = concatStrFree(res,raxVariants[ins->op->size]);
-                res = concatStrFree(res, ", (%rsp)\n");
+                fputs("subq $",fp);
+                fputs(sizeModifier2[ins->op->size],fp);
+                fputs(", %rsp\n",fp);
+                fputs(indentation,fp);
+                fputs("mov",fp);
+                fputs(sizeModifier[ins->op->size],fp);
+                fputs(" ",fp);
+                aux = convertTarget(ins->args[0]->target, ins->args[0]->mode);
+                fputs(aux, fp);
+                free(aux);
+                fputs(", ",fp);
+                fputs(raxVariants[ins->op->size],fp);
+                fputs("\n",fp);
+                fputs(indentation,fp);
+                fputs("mov",fp);
+                fputs(sizeModifier[ins->op->size],fp);
+                fputs(" ",fp);
+                fputs(raxVariants[ins->op->size],fp);
+                fputs(", (%rsp)\n",fp);
             }
             break;
         }
         case pop:
         {
-            res = concatStr(indentation, res);
+            fputs(indentation,fp);
             if(ins->op->size == bits_64)
             {
-                res = concatStrFree(res,"pop ");
-                res = concatStrFreeFree(res,convertTarget(ins->args[0]->target,ins->args[0]->mode));
-                res = concatStrFree(res,"\n");
+                fputs("pop ",fp);
+                aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+                fputs(aux,fp);
+                free(aux);
+                fputs("\n",fp);
             }
             else
             {
-                res = concatStrFree(res,"mov");
-                res = concatStrFree(res, sizeModifier[ins->op->size]);
-                res = concatStrFree(res, " (%rsp), ");
-                res = concatStrFreeFree(res, convertTarget(ins->args[0]->target, ins->args[0]->mode));
-                res = concatStrFree(res, "\n");
-                res = concatStrFree(res, indentation);
-                res = concatStrFree(res, "addq $");
-                res = concatStrFree(res, sizeModifier2[ins->op->size]);
-                res = concatStrFree(res, ", %rsp\n");
+                fputs("mov",fp);
+                fputs(sizeModifier[ins->op->size],fp);
+                fputs(" (%rsp), ",fp);
+                aux = convertTarget(ins->args[0]->target, ins->args[0]->mode);
+                fputs(aux,fp);
+                free(aux);
+                fputs("\n",fp);
+                fputs(indentation,fp);
+                fputs("addq $",fp);
+                fputs(sizeModifier2[ins->op->size],fp);
+                fputs(", %rsp\n",fp);
             }
             break;
         }
         case add:
         {
-            res = concatStr(res,indentation);
-            res = concatStrFree(res,"add");
-            res = concatStrFree(res,sizeModifier[ins->op->size]);
-            res = concatStrFree(res," ");
-            res = concatStrFreeFree(res, convertTarget(ins->args[0]->target,ins->args[0]->mode));
-            res = concatStrFree(res, ", ");
-            res = concatStrFreeFree(res, convertTarget(ins->args[1]->target,ins->args[1]->mode));
-            res = concatStrFree(res, "\n");
+            fputs(indentation,fp);
+            fputs("add",fp);
+            fputs(sizeModifier[ins->op->size],fp);
+            fputs(" ",fp);
+            aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+            fputs(aux,fp);
+            free(aux);
+            fputs(", ",fp);
+            aux = convertTarget(ins->args[1]->target,ins->args[1]->mode);
+            fputs(aux,fp);
+            free(aux);
+            fputs("\n",fp);
             break;
         }
         case sub:
         {
-            res = concatStr(res,indentation);
-            res = concatStrFree(res,"sub");
-            res = concatStrFree(res,sizeModifier[ins->op->size]);
-            res = concatStrFree(res," ");
-            res = concatStrFreeFree(res, convertTarget(ins->args[0]->target,ins->args[0]->mode));
-            res = concatStrFree(res, ", ");
-            res = concatStrFreeFree(res, convertTarget(ins->args[1]->target,ins->args[1]->mode));
-            res = concatStrFree(res, "\n");
+            fputs(indentation,fp);
+            fputs("sub",fp);
+            fputs(sizeModifier[ins->op->size],fp);
+            fputs(" ",fp);
+            aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+            fputs(aux,fp);
+            free(aux);
+            fputs(", ",fp);
+            aux = convertTarget(ins->args[1]->target,ins->args[1]->mode);
+            fputs(aux,fp);
+            fputs("\n",fp);
             break;
         }
         case mul:
         {
-            res = concatStr(indentation,res);
-            res = concatStrFree(res,"imul ");
-            res = concatStrFreeFree(res, convertTarget(ins->args[0]->target,ins->args[0]->mode));
-            res = concatStrFree(res, ", ");
-            res = concatStrFreeFree(res, convertTarget(ins->args[1]->target,ins->args[1]->mode));
-            res = concatStrFree(res, "\n");
+            fputs(indentation,fp);
+            fputs("imul ",fp);
+            aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+            fputs(aux,fp);
+            free(aux);
+            fputs(", ",fp);
+            aux = convertTarget(ins->args[1]->target,ins->args[1]->mode);
+            fputs(aux, fp);
+            free(aux);
+            fputs("\n",fp);
             break;
         }
         case divi:
-            res = concatStr(res,indentation);
-            res = concatStrFree(res,"mov");
-            res = concatStrFree(res,sizeModifier[ins->args[1]->target->size]);
-            res = concatStrFree(res," ");
-            res = concatStrFree(res,convertTarget(ins->args[1]->target,ins->args[1]->mode));
-            res = concatStrFree(res,", ");
-            res = concatStrFree(res,raxVariants[ins->args[0]->target->size]);
-            res = concatStrFree(res,"\n");
+            fputs(indentation,fp);
+            fputs("mov",fp);
+            fputs(sizeModifier[ins->args[1]->target->size],fp);
+            fputs(" ",fp);
+            aux = convertTarget(ins->args[1]->target,ins->args[1]->mode);
+            fputs(aux,fp);
+            free(aux);
+            fputs(", ",fp);
+            fputs(raxVariants[ins->args[0]->target->size],fp);
+            fputs("\n",fp);
             if(ins->args[0]->target->size == bits_32) //Convert long (32bits) to quad (64bits)
             {
-                res = concatStrFree(res, indentation);
-                res = concatStrFree(res,"cltq\n");
-                res = concatStrFree(res,indentation);
-                res = concatStrFree(res,"movq %rax, %rdx\n");
-                res = concatStrFree(res,indentation);
-                res = concatStrFree(res,"shr $32, %rdx\n");
+                fputs(indentation,fp);
+                fputs("cltq\n",fp);
+                fputs(indentation,fp);
+                fputs("movq %rax, %rdx\n",fp);
+                fputs(indentation,fp);
+                fputs("shr $32, %rdx\n",fp);
             }
             else
             {
-                res = concatStrFree(res,indentation);
-                res = concatStrFree(res,"cqto\n");
+                fputs(indentation,fp);
+                fputs("cqto\n",fp);
             }
-            res = concatStrFree(res, indentation);
-            res = concatStrFree(res,"idiv ");
-            res = concatStrFree(res,convertTarget(ins->args[0]->target,ins->args[0]->mode));
-            res = concatStrFree(res,"\n");
-            res = concatStrFree(res, indentation);
-            res = concatStrFree(res, "movq %rax, %rbx\n");
+            fputs(indentation,fp);
+            fputs("idiv ",fp);
+            aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+            fputs(aux,fp);
+            fputs("\n",fp);
+            fputs(indentation,fp);
+            fputs("movq %rax, %rbx\n",fp);
             break;
         case call:
         {
-            res = concatStr(indentation,"call ");
-            res = concatStrFree(res,ins->args[0]->target->labelName);
-            res = concatStrFree(res,"\n");
+            fputs(indentation,fp);
+            fputs("call ",fp);
+            fputs(ins->args[0]->target->labelName,fp);
+            fputs("\n",fp);
             break;
         }
         case cmp:
         {
-            res = concatStr(indentation,"cmp ");
-            res = concatStrFree(res,convertTarget(ins->args[0]->target,ins->args[0]->mode));
-            res = concatStrFree(res,", ");
-            res = concatStrFree(res,convertTarget(ins->args[1]->target,ins->args[1]->mode));
-            res = concatStrFree(res,"\n");
+            fputs(indentation,fp);
+            fputs("cmp ",fp);
+            aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+            fputs(aux,fp);
+            free(aux);
+            fputs(", ",fp);
+            aux = convertTarget(ins->args[1]->target,ins->args[1]->mode);
+            fputs(aux,fp);
+            free(aux);
+            fputs("\n",fp);
             break;
         }
         case jmp:
         {
-            res = concatStr(indentation,"jmp ");
-            res = concatStrFree(res,ins->args[0]->target->labelName);
-            res = concatStrFree(res,"\n");
+            fputs(indentation,fp);
+            fputs("jmp ",fp);
+            fputs(ins->args[0]->target->labelName,fp);
+            fputs("\n",fp);
             break;
         }
         case jne:
         {
-            res = concatStr(indentation,"jne ");
-            res = concatStrFree(res,ins->args[0]->target->labelName);
-            res = concatStrFree(res,"\n");
+            fputs(indentation,fp);
+            fputs("jne ",fp);
+            fputs(ins->args[0]->target->labelName,fp);
+            fputs("\n",fp);
             break;
         }
         case sete:
         {
-            res = concatStr(indentation,res);
-            res = concatStrFree(res, "sete ");
-            res = concatStrFree(res,convertTarget(ins->args[0]->target,ins->args[0]->mode));
-            res = concatStrFree(res,"\n");
+            fputs(indentation,fp);
+            fputs( "sete ",fp);
+            aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+            fputs(aux,fp);
+            free(aux);
+            fputs("\n",fp);
             break;
         }
         case setne:
         {
-            res = concatStr(indentation,res);
-            res = concatStrFree(res, "setne ");
-            res = concatStrFree(res,convertTarget(ins->args[0]->target,ins->args[0]->mode));
-            res = concatStrFree(res,"\n");
+            fputs(indentation,fp);
+            fputs( "setne ",fp);
+            aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+            fputs(aux,fp);
+            free(aux);
+            fputs("\n",fp);
             break;
         }
         case setg:
         {
-            res = concatStr(indentation,res);
-            res = concatStrFree(res, "setg ");
-            res = concatStrFree(res,convertTarget(ins->args[0]->target,ins->args[0]->mode));
-            res = concatStrFree(res,"\n");
+            fputs(indentation,fp);
+            fputs( "setg ",fp);
+            aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+            fputs(aux,fp);
+            free(aux);
+            fputs("\n",fp);
             break;
         }
         case setge:
         {
-            res = concatStr(indentation,res);
-            res = concatStrFree(res, "setge ");
-            res = concatStrFree(res,convertTarget(ins->args[0]->target,ins->args[0]->mode));
-            res = concatStrFree(res,"\n");
+            fputs(indentation,fp);
+            fputs( "setge ",fp);
+            aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+            fputs(aux,fp);
+            free(aux);
+            fputs("\n",fp);
             break;
         }
         case setl:
         {
-            res = concatStr(indentation,res);
-            res = concatStrFree(res, "setl ");
-            res = concatStrFree(res,convertTarget(ins->args[0]->target,ins->args[0]->mode));
-            res = concatStrFree(res,"\n");
+            fputs(indentation,fp);
+            fputs( "setl ",fp);
+            aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+            fputs(aux,fp);
+            free(aux);
+            fputs("\n",fp);
             break;
         }
         case setle:
         {
-            res = concatStr(indentation,res);
-            res = concatStrFree(res, "setle ");
-            res = concatStrFree(res,convertTarget(ins->args[0]->target,ins->args[0]->mode));
-            res = concatStrFree(res,"\n");
+            fputs(indentation,fp);
+            fputs( "setle ",fp);
+            aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+            fputs(aux,fp);
+            free(aux);
+            fputs("\n",fp);
             break;
         }
         case and:
         {
-            res = concatStr(indentation,res);
-            res = concatStrFree(res, "and ");
-            res = concatStrFree(res,convertTarget(ins->args[0]->target,ins->args[0]->mode));
-            res = concatStrFree(res,", ");
-            res = concatStrFree(res,convertTarget(ins->args[1]->target,ins->args[1]->mode));
-            res = concatStrFree(res,"\n");
+            fputs(indentation,fp);
+            fputs("and ",fp);
+            aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+            fputs(aux,fp);
+            free(aux);
+            fputs(", ",fp);
+            aux = convertTarget(ins->args[1]->target,ins->args[1]->mode);
+            fputs(aux,fp);
+            free(aux);
+            fputs("\n",fp);
             break;
         }
         case or:
         {
-            res = concatStr(indentation,res);
-            res = concatStrFree(res, "or ");
-            res = concatStrFree(res,convertTarget(ins->args[0]->target,ins->args[0]->mode));
-            res = concatStrFree(res,", ");
-            res = concatStrFree(res,convertTarget(ins->args[1]->target,ins->args[1]->mode));
-            res = concatStrFree(res,"\n");
+            fputs(indentation,fp);
+            fputs( "or ",fp);
+            aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+            fputs(aux,fp);
+            free(aux);
+            fputs(", ",fp);
+            aux = convertTarget(ins->args[1]->target,ins->args[1]->mode);
+            fputs(aux, fp);
+            fputs("\n",fp);
             break;
         }
         case meta:
         {
-            res = convertMetaIns(ins);
+            aux = convertMetaIns(ins);
+            fputs(aux,fp);
+            free(aux);
             break;
         }
         case label:
         {
-            res = concatStr(ins->args[0]->target->labelName,":\n");
+            fputs(ins->args[0]->target->labelName,fp);
+            fputs(":\n",fp);
             break;
         }
         default:
+
             printf("DEBUG OPKIND: %d",ins->op->opK);
-            res = "debugINS\n";
+            fputs("debugINS\n",fp);
             break;
     }
     return res;
@@ -324,11 +380,14 @@ char* convertMetaIns(INS* ins)
         sprintf(stackSpace,"%d",ins->op->metaInformation);
         res = concatStr(indentation,"push %rbp\t #ALLOCATE STACK SPACE\n");
         res = concatStrFree(res,indentation);
-        res = concatStr(res,"movq %rsp, %rbp\n");
-        res = concatStrFree(res,indentation);
-        res = concatStrFree(res,"addq $");
-        res = concatStrFree(res,stackSpace);
-        res = concatStrFree(res,", %rsp\n");
+        res = concatStrFree(res,"movq %rsp, %rbp\n");
+        if(ins->op->metaInformation != 0)
+        {
+            res = concatStrFree(res,indentation);
+            res = concatStrFree(res,"addq $");
+            res = concatStrFree(res,stackSpace);
+            res = concatStrFree(res,", %rsp\n");
+        }
         return res;
     }
     if(ins->op->metaK == DEALLOCATE_STACK_SPACE)
@@ -369,7 +428,7 @@ char* convertMetaIns(INS* ins)
 char* meta_function_declaration(INS* ins)
 {
     char* res = "\n.type ";
-    res = concatStrFree(res,ins->op->metaString);
+    res = concatStr(res,ins->op->metaString);
     res = concatStrFree(res,", @function\n");
     return res;
 }
@@ -385,7 +444,7 @@ char* convertTarget(Target* t, Mode* m)
             char intString[20];
             sprintf(intString,"%d",t->additionalInfo);
             res = "$";
-            res = concatStr(res,intString);
+            res = concatStrFree(res,intString);
             break;
         }
         case mem:

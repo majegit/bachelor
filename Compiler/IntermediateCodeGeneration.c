@@ -523,17 +523,21 @@ void quickAddPop(Target* t, Mode* m)
 //Pushes a variable (identifier) on the stack
 void quickAddPushId(char* name)
 {
-    quickAddMoveRBPToRSL();
+    Target* t;
+    int* varDepthAndOffset = staticLinkCount(name,currentScope);
+    if(varDepthAndOffset[0] != 0)
+    {
+        quickAddMoveRBPToRSL();
+        for(int i=0; i < varDepthAndOffset[0]; i++)
+            quickAddMeta(FOLLOW_STATIC_LINK);
+        t = makeTarget(rsl,bits_64);
+    }
+    else
+        t = makeTarget(rbp,bits_64);
 
-    int* staticLinkJumpsAndOffset = staticLinkCount(name,currentScope);
-    for(int i=0; i < staticLinkJumpsAndOffset[0]; i++)
-        quickAddMeta(FOLLOW_STATIC_LINK);
-
-    Mode* m = makeModeIRL(staticLinkJumpsAndOffset[1]);
-    Target* t = makeTarget(rsl,bits_64);
+    Mode* m = makeModeIRL(varDepthAndOffset[1]);
     quickAddPush(getSizeOfId(name),t,m);
-
-    free(staticLinkJumpsAndOffset); //Free malloc'ed memory
+    free(varDepthAndOffset); //Free malloc'ed memory
 }
 
 void quickAddPopRRT(opSize size)
@@ -658,6 +662,9 @@ void quickAddCompareINS(opKind k, opSize size)
 
 void quickAddBooleanINS(opKind k)
 {
+    quickAddPopReg(bits_8,2); //Right side of binop
+    quickAddPopReg(bits_8,1); //Left side of binop
+
     Target* rightEXP = makeTargetReg(bits_8,2);
     ARG* argRight = makeARG(rightEXP, makeMode(dir));
 
@@ -665,7 +672,7 @@ void quickAddBooleanINS(opKind k)
     ARG* argLeft = makeARG(leftEXP, makeMode(dir));
     ARG* args[2] = {argRight,argLeft};
 
-    OP* boolOP = makeOP(cmp,bits_8);
+    OP* boolOP = makeOP(k,bits_8);
     quickAddIns(makeINS(boolOP,args));
 }
 

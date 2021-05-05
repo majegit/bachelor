@@ -2,8 +2,12 @@ int main()
 {
     boolean t = true;
     boolean f = false;
-    print(f);
+    boolean new = t&&t;
     print(t);
-    print(
+    print(f);
+    print(new);
+    print(t||f);
+    print(f||f);
+
     return 3;
 }
