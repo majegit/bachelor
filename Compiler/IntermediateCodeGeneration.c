@@ -58,88 +58,122 @@ void icgTraverseSTMT(STMT* s)
     switch(s->kind)
     {
         case whileK:
-            {
-                char* labelName = labelGenerator(while_label);     //Generate start label
-                char* endlabelName = concatStr("end",labelName);    //Make end label
+        {
+            char* labelName = labelGenerator(while_label);     //Generate start label
+            char* endlabelName = concatStr("end",labelName);    //Make end label
 
-                quickAddLabelString(while_label, labelName);       //while_X:
-                icgTraverseEXP(s->val.whileS.guard);                    //Guard
-                quickAddPopRRT(bits_8);                             //Move boolean to rrt
-                quickAddCheckTruthValue();                              //cmp rrt, $1
-                quickAddJumpIfFalse(endwhile_label,endlabelName);    //jne endwhile_X
-                icgTraverseSTMTCOMP(s->val.whileS.body);                //generate the code for the body of the whileloop
-                quickAddLabelString(endwhile_label, endlabelName); //endwhile_X:
-            }
+            quickAddLabelString(while_label, labelName);       //while_X:
+            icgTraverseEXP(s->val.whileS.guard);                    //Guard
+            quickAddPopRRT(bits_8);                             //Move boolean to rrt
+            quickAddCheckTruthValue();                              //cmp rrt, $1
+            quickAddJumpIfFalse(endwhile_label,endlabelName);    //jne endwhile_X
+            icgTraverseSTMTCOMP(s->val.whileS.body);                //generate the code for the body of the whileloop
+            quickAddLabelString(endwhile_label, endlabelName); //endwhile_X:
             break;
+        }
         case assignK:
+        {
+            Target* from, *to;
+            ARG* argFrom, *argTo;
+            EXP* e = s->val.assignS.val;
+            int* varDepthAndOffset = staticLinkCount(s->val.assignS.name,currentScope); //Find relative nested depth and offset from rbp
+            Mode* modeIRL = makeModeIRL(varDepthAndOffset[1]);
+            if(e->kind == intK || e->kind == boolK || e->kind == charK)
+                from = makeTargetIMI(e->val.intE);
+            else if(e->kind == doubleK)
             {
-                EXP* e = s->val.assignS.val;
+                from = NULL; //TODO: add doubles
+            }
+            else if(e->kind == idK)
+            {
+                Target* memFromTarget;
+                int* idDepthAndOffset = staticLinkCount(e->val.idE,currentScope);
+                if(idDepthAndOffset[0] != 0)
+                {
+                    quickAddMoveRBPToRSL();
+                    for(int i=0; i < idDepthAndOffset[0]; i++)
+                        quickAddMeta(FOLLOW_STATIC_LINK);
+                    memFromTarget = makeTarget(rsl,bits_64);
+                }
+                else
+                    memFromTarget = makeTarget(rbp,bits_64);
+                ARG* memFromArg = makeARG(memFromTarget,makeModeIRL(idDepthAndOffset[1]));
+
+                Target* reg1 = makeTargetReg(getSizeOfId(e->val.idE),1);
+                ARG* argReg1 = makeARG(reg1,makeMode(dir));
+
+                ARG* args[2] = {memFromArg,argReg1};
+                OP* moveMem = makeOP(move,getSizeOfId(e->val.idE));
+                quickAddIns(makeINS(moveMem,args));
+                free(idDepthAndOffset);
+                from = makeTargetReg(getSizeOfId(s->val.assignS.name),1);
+            }
+            else
+            {
                 icgTraverseEXP(e);
-                int* varDepthAndOffset = staticLinkCount(s->val.assignS.name,currentScope);
-
-                quickAddPopRRT(getSizeOfType(s->val.assignS.val->type));
+                quickAddPopRRT(getSizeOfType(e->type));
+                from = makeTarget(rrt,getSizeOfId(s->val.assignS.name));
+            }
+            if(varDepthAndOffset[0] != 0) //The variable is NOT in the current scope
+            {
                 quickAddMoveRBPToRSL();
-
-                printSYMBOLTABLE(currentScope->par);
                 for(int i=0; i < varDepthAndOffset[0]; i++)
                     quickAddMeta(FOLLOW_STATIC_LINK);
-
-                Target* from = makeTarget(rrt,getSizeOfId(s->val.assignS.name));
-                ARG* argFrom = makeARG(from,makeMode(dir));
-
-                Mode* modeIRL = makeModeIRL(varDepthAndOffset[1]);
-                Target* to = makeTarget(rsl,bits_64);
-                ARG* argTo = makeARG(to,modeIRL);
-
-                ARG* args[2] = {argFrom, argTo};
-
-                OP* op = makeOP(move,getSizeOfId(s->val.assignS.name));
-
-                quickAddIns(makeINS(op,args));
-
-                free(varDepthAndOffset); //Free malloc'ed memory
+                to = makeTarget(rsl,bits_64);
             }
+            else
+                to = makeTarget(rbp,bits_64);
+            argFrom = makeARG(from,makeMode(dir));
+            argTo = makeARG(to,modeIRL);
+
+            ARG* args[2] = {argFrom, argTo};
+            OP* op = makeOP(move,getSizeOfId(s->val.assignS.name));
+            quickAddIns(makeINS(op,args));
+
+            free(varDepthAndOffset); //Free malloc'ed memory
             break;
+        }
         case ifElseK:
+        {
+            int elsePart = s->val.ifElseS.elsebody != NULL;           //Check if there is an else part
+            char* labelName = labelGenerator(if_label);        //Generate if_X label
+
+            quickAddLabelString(if_label, labelName);          //if_X:
+            icgTraverseEXP(s->val.ifElseS.cond);                    //Guard
+            quickAddPopRRT(bits_8);                             //Move boolean to rrt
+            quickAddCheckTruthValue();                              //cmp rrt, $1
+            labelName = concatStr("end",labelName);             //Generate endif_X label
+            quickAddJumpIfFalse(endif_label,labelName);          //jne endif_X
+            icgTraverseSTMTCOMP(s->val.ifElseS.ifbody);             //if-body
+
+            char* endelseLabel = "";
+            if(elsePart)
             {
-                int elsePart = s->val.ifElseS.elsebody != NULL;           //Check if there is an else part
-                char* labelName = labelGenerator(if_label);        //Generate if_X label
-
-                quickAddLabelString(if_label, labelName);          //if_X:
-                icgTraverseEXP(s->val.ifElseS.cond);                    //Guard
-                quickAddPopRRT(bits_8);                             //Move boolean to rrt
-                quickAddCheckTruthValue();                              //cmp rrt, $1
-                labelName = concatStr("end",labelName);             //Generate endif_X label
-                quickAddJumpIfFalse(endif_label,labelName);          //jne endif_X
-                icgTraverseSTMTCOMP(s->val.ifElseS.ifbody);             //if-body
-
-                char* endelseLabel = "";
-                if(elsePart)
-                {
-                    endelseLabel = concatStr("endelse",labelName+5);//Generate endelse_X
-                    quickAddUnconditionalJmp(endelse_label,endelseLabel); //jmp endelse_X
-                }
-                quickAddLabelString(endif_label, labelName);        //endif_X:
-                if(elsePart)
-                {
-                    icgTraverseSTMTCOMP(s->val.ifElseS.elsebody);        //else-body
-                    quickAddLabelString(endelse_label,endelseLabel);//endelse_X:
-                }
+                endelseLabel = concatStr("endelse",labelName+5);//Generate endelse_X
+                quickAddUnconditionalJmp(endelse_label,endelseLabel); //jmp endelse_X
+            }
+            quickAddLabelString(endif_label, labelName);        //endif_X:
+            if(elsePart)
+            {
+                icgTraverseSTMTCOMP(s->val.ifElseS.elsebody);        //else-body
+                quickAddLabelString(endelse_label,endelseLabel);//endelse_X:
             }
             break;
+        }
         case returnK:
+        {
             icgTraverseEXP(s->val.returnS);
-            SYMBOL* funSymbol = lookupSymbolFun(currentFunction->name,currentScope);
-            if(depth != 0)
-            {
+            SYMBOL *funSymbol = lookupSymbolFun(currentFunction->name, currentScope);
+            if (depth != 0) {
                 quickAddMoveRBPToRSL();
-                for(int i = 0; i<depth; i++)
+                for (int i = 0; i < depth; i++)
                     quickAddMeta(FOLLOW_STATIC_LINK);
                 quickAddMoveRSLToRBP();
             }
-            char* endLabel = concatStr("end",funSymbol->label);
-            quickAddUnconditionalJmp(endfunction_label,endLabel);
+            char *endLabel = concatStr("end", funSymbol->label);
+            quickAddUnconditionalJmp(endfunction_label, endLabel);
             break;
+        }
         case printK:
         {
             opSize typeSize = getSizeOfType(s->val.printS->type);
@@ -167,32 +201,45 @@ void icgTraverseSTMT(STMT* s)
             break;
         }
         case varDeclK:
+        {
+            if(s->val.varDeclS.value == NULL)
+                break;
+
+            Target* from, *to;
+            ARG* argFrom, *argTo;
+            EXP* e = s->val.varDeclS.value;
+            int* varDepthAndOffset = staticLinkCount(s->val.varDeclS.name,currentScope); //Find relative nested depth and offset from rbp
+            Mode* modeIRL = makeModeIRL(varDepthAndOffset[1]);
+            if(varDepthAndOffset[0] != 0) //The variable is NOT in the current scope
             {
-                if(s->val.varDeclS.value == NULL)
-                    break;
-                icgTraverseEXP(s->val.varDeclS.value);
-                quickAddPopRRT(getSizeOfType(s->val.varDeclS.type));
                 quickAddMoveRBPToRSL();
-
-                int* staticLinkJumpsAndOffset = staticLinkCount(s->val.varDeclS.name,currentScope);
-                for(int i=0; i < staticLinkJumpsAndOffset[0]; i++)
+                for(int i=0; i < varDepthAndOffset[0]; i++)
                     quickAddMeta(FOLLOW_STATIC_LINK);
-
-                Target* from = makeTarget(rrt,getSizeOfId(s->val.varDeclS.name));
-                ARG* argFrom = makeARG(from,makeMode(dir));
-
-                Mode* modeIRL = makeModeIRL(staticLinkJumpsAndOffset[1]);
-                Target* to = makeTarget(rsl,bits_64);
-                ARG* argTo = makeARG(to,modeIRL);
-
-                ARG* args[2] = {argFrom, argTo};
-
-                OP* op = makeOP(move,getSizeOfId(s->val.varDeclS.name));
-                quickAddIns(makeINS(op,args));
-
-                free(staticLinkJumpsAndOffset); //Free malloc'ed memory
+                to = makeTarget(rsl,bits_64);
             }
+            else
+                to = makeTarget(rbp,bits_64);
+            if(e->kind == intK || e->kind == boolK || e->kind == charK)
+                from = makeTargetIMI(e->val.intE);
+            else if(e->kind == doubleK)
+            {
+                from = NULL; //TODO: add doubles
+            }
+            else
+            {
+                icgTraverseEXP(e);
+                quickAddPopRRT(getSizeOfType(s->val.varDeclS.type));
+                from = makeTarget(rrt,getSizeOfType(s->val.varDeclS.type));
+            }
+            argFrom = makeARG(from,makeMode(dir));
+            argTo = makeARG(to,modeIRL);
+
+            ARG* args[2] = {argFrom, argTo};
+            OP* op = makeOP(move,getSizeOfType(s->val.varDeclS.type));
+            quickAddIns(makeINS(op,args));
+            free(varDepthAndOffset); //Free malloc'ed memory
             break;
+        }
         case expK:
             icgTraverseEXP(s->val.expS);
             break;
@@ -220,14 +267,14 @@ void icgTraverseEXP(EXP* e)
         }
         case boolK:
         case charK:
-            {
-                Target* target = makeTargetIMI(e->val.charE); //e->val.charE = e->val.boolE, they are both ints in an union
-                ARG* arg = makeARG(target, makeMode(dir));
-                ARG* args[2] = {arg, NULL};
-                OP* op = makeOP(push, bits_8);
-                quickAddIns(makeINS(op, args));
-            }
+        {
+            Target* target = makeTargetIMI(e->val.charE); //e->val.charE = e->val.boolE, they are both ints in an union
+            ARG* arg = makeARG(target, makeMode(dir));
+            ARG* args[2] = {arg, NULL};
+            OP* op = makeOP(push, bits_8);
+            quickAddIns(makeINS(op, args));
             break;
+        }
         case doubleK:
             //TODO: add doubles
             break;
@@ -269,6 +316,8 @@ void icgTraverseEXP(EXP* e)
             icgTraverseAPARAMETERNODE(e->val.funE.aparameternode);
             SYMBOL* funSymbol = lookupSymbolFun(e->val.funE.id,currentScope);
             quickAddCallFun(funSymbol->label);
+            int sizeOfParameters = getSizeOfParameters(funSymbol->fpn);
+            quickAddMetaWithInfo(DEALLOCATE_ARGUMENTS,sizeOfParameters);
             quickAddPushRRT();
             break;
         }
@@ -714,6 +763,18 @@ int getIntFromopSize(opSize size)
         default:
             return 0;
     }
+}
+
+int getSizeOfParameters(FPARAMETERNODE* fpn)
+{
+    int parameterSize = 0;
+    FPARAMETERNODE* currentNode = fpn;
+    while(currentNode != NULL)
+    {
+        parameterSize += getIntFromopSize(getSizeOfType(currentNode->current->type));
+        currentNode = currentNode->next;
+    }
+    return parameterSize;
 }
 
 opSize getSizeOfType(char* typeName)

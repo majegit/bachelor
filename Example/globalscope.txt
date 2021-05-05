@@ -11,6 +11,7 @@ int main()
     print(t);
     print(x);
     print(y);
+    return 3;
 }
 
 int h()

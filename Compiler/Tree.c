@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <string.h>
 #include "Tree.h"
-#include "Error.h"
 
 extern int lineno;
 
@@ -75,12 +74,30 @@ EXP* makeEXPbinop(EXP* left, char* operator, EXP* right)
 EXP* makeEXPfun(char* id, APARAMETERNODE* aparameternode)
 {
     EXP* e;
-    e = (EXP* )malloc(sizeof(EXP));
+    e = (EXP*)malloc(sizeof(EXP));
     e->lineno = lineno;
     e->kind = funK;
     e->val.funE.id = id;
     e->val.funE.aparameternode = aparameternode;
     return e;
+}
+
+EXP* makeEXPUnaryMinusId(char* id)
+{
+    EXP* eId;
+    eId = (EXP*)malloc(sizeof(EXP));
+    eId->lineno = lineno;
+    eId->kind = idK;
+    eId->val.idE = id;
+
+    EXP* eZero;
+    eZero = (EXP*)malloc(sizeof(EXP));
+    eZero->lineno = lineno;
+    eZero->kind = intK;
+    eZero->val.intE = 0;
+    eZero->type = "INT";
+
+    return makeEXPbinop(eZero,"-",eId);
 }
 
 STMT* makeSTMTwhile(EXP* guard, STMTCOMP* body)
@@ -191,6 +208,7 @@ APARAMETER* makeAPARAMETER(EXP* exp)
     APARAMETER* a;
     a = (APARAMETER*)malloc(sizeof(APARAMETER));
     a->exp = exp;
+    a->lineno = lineno;
     return a;
 }
 
@@ -209,6 +227,7 @@ FPARAMETER* makeFPARAMETER(char* type, char* name)
     p = (FPARAMETER*)malloc(sizeof(FPARAMETER));
     p->name = name;
     p->type = type;
+    p->lineno = lineno;
     return p;
 }
 
@@ -226,6 +245,7 @@ FUNCTION* makeFUNCTION(char* returnType, char* name, FPARAMETERNODE* args, STMTC
     FUNCTION* fun;
     fun = (FUNCTION*)malloc(sizeof(FUNCTION));
     fun->returnType = returnType;
+    fun->lineno = body->stmtnode->stmt->lineno - 1;
     fun->name = name;
     fun->args = args;
     fun->body = body;
@@ -289,7 +309,7 @@ SYMBOLTABLE* makeSYMBOLTABLE(SYMBOLTABLE* par)
     st->symbols = NULL;
     st->symbolCount = 0;
     st->nextVariableLabel = 0;
-    st->nextParameterLabel = 8;
+    st->nextParameterLabel = 16;
     return st;
 }
 SYMBOL* lookupSymbolCurrentTable(char* name, SYMBOLTABLE* st)
@@ -362,8 +382,16 @@ void addSymbol(SYMBOL* symbol, SYMBOLTABLE* st)
     }
     else if(symbol->kind == formalParameter)
     {
-        st->nextParameterLabel += 8;
         symbol->offset = st->nextParameterLabel;
+        if (strcmp(symbol->type, "BOOLEAN") == 0) {
+            st->nextParameterLabel += 1;
+        } else if (strcmp(symbol->type, "INT") == 0) {
+            st->nextParameterLabel += 4;
+        } else if (strcmp(symbol->type, "DOUBLE") == 0) {
+            st->nextParameterLabel += 8;
+        } else if (strcmp(symbol->type, "CHAR") == 0) {
+            st->nextParameterLabel += 1;
+        }
     }
     SYMBOLNODE* sn = makeSYMBOLNODE(symbol, st->symbols);
     st->symbols = sn;

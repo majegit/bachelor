@@ -30,6 +30,9 @@ char* asmCode = "";
 
 void emit(LL* code, const char* outputFileName)
 {
+    //Print the asmcode to a file
+    FILE* fp = fopen(outputFileName,"w");
+
     LLN* node = code->first;
     int i = 0;
     while(node != NULL)
@@ -46,13 +49,8 @@ void emit(LL* code, const char* outputFileName)
     if(code->pFlagINT)
         asmCode = concatStrFree(asmCode,printINT);
     if(code->pFlagDOUBLE)
-        asmCode = concatStrFree(asmCode,"DOUBLE DEBUG\n");
+        asmCode = concatStrFree(asmCode,"DOUBLE PRINT DEBUG\n");
 
-    printf("\n---ASMCODE BELOW---\n\n%s",asmCode);
-
-    //Print the asmcode to a file
-    FILE* fp = fopen(outputFileName,"w");
-    fputs(asmCode,fp);
     fclose(fp);
 }
 
@@ -153,10 +151,43 @@ char* convertInsToAsm(INS* ins)
         }
         case mul:
         {
+            res = concatStr(indentation,res);
+            res = concatStrFree(res,"imul ");
+            res = concatStrFreeFree(res, convertTarget(ins->args[0]->target,ins->args[0]->mode));
+            res = concatStrFree(res, ", ");
+            res = concatStrFreeFree(res, convertTarget(ins->args[1]->target,ins->args[1]->mode));
+            res = concatStrFree(res, "\n");
             break;
         }
         case divi:
-            res = "debugDIVI\n";
+            res = concatStr(res,indentation);
+            res = concatStrFree(res,"mov");
+            res = concatStrFree(res,sizeModifier[ins->args[1]->target->size]);
+            res = concatStrFree(res," ");
+            res = concatStrFree(res,convertTarget(ins->args[1]->target,ins->args[1]->mode));
+            res = concatStrFree(res,", ");
+            res = concatStrFree(res,raxVariants[ins->args[0]->target->size]);
+            res = concatStrFree(res,"\n");
+            if(ins->args[0]->target->size == bits_32) //Convert long (32bits) to quad (64bits)
+            {
+                res = concatStrFree(res, indentation);
+                res = concatStrFree(res,"cltq\n");
+                res = concatStrFree(res,indentation);
+                res = concatStrFree(res,"movq %rax, %rdx\n");
+                res = concatStrFree(res,indentation);
+                res = concatStrFree(res,"shr $32, %rdx\n");
+            }
+            else
+            {
+                res = concatStrFree(res,indentation);
+                res = concatStrFree(res,"cqto\n");
+            }
+            res = concatStrFree(res, indentation);
+            res = concatStrFree(res,"idiv ");
+            res = concatStrFree(res,convertTarget(ins->args[0]->target,ins->args[0]->mode));
+            res = concatStrFree(res,"\n");
+            res = concatStrFree(res, indentation);
+            res = concatStrFree(res, "movq %rax, %rbx\n");
             break;
         case call:
         {
@@ -246,6 +277,16 @@ char* convertInsToAsm(INS* ins)
             res = concatStrFree(res,"\n");
             break;
         }
+        case or:
+        {
+            res = concatStr(indentation,res);
+            res = concatStrFree(res, "or ");
+            res = concatStrFree(res,convertTarget(ins->args[0]->target,ins->args[0]->mode));
+            res = concatStrFree(res,", ");
+            res = concatStrFree(res,convertTarget(ins->args[1]->target,ins->args[1]->mode));
+            res = concatStrFree(res,"\n");
+            break;
+        }
         case meta:
         {
             res = convertMetaIns(ins);
@@ -294,13 +335,12 @@ char* convertMetaIns(INS* ins)
     {
         char stackSpace[20];
         sprintf(stackSpace,"%d",ins->op->metaInformation);
-        res = concatStr(indentation,"subq $");
+        res = concatStr(indentation,"addq $");
         res = concatStrFree(res,stackSpace);
         res = concatStrFree(res, ", %rsp");
         res = concatStrFree(res,"\n");
-        char* aux = concatStr(indentation,"pop %rbp\n");
-        res = concatStrFree(res,aux);
-        free(aux);
+        res = concatStrFree(res,indentation);
+        res = concatStrFree(res,"pop %rbp\n");
         return res;
     }
     if(ins->op->metaK == CALLEE_PROLOGUE)
@@ -311,6 +351,15 @@ char* convertMetaIns(INS* ins)
         return deepCopy(callee_restore);
     if(ins->op->metaK == CALLEE_EPILOGUE)
         return concatStr(indentation,callee_epilogue);
+    if(ins->op->metaK == DEALLOCATE_ARGUMENTS)
+    {
+        char stackSpace[20];
+        sprintf(stackSpace,"%d",ins->op->metaInformation);
+        res = concatStr(indentation,"addq $");
+        res = concatStrFree(res,stackSpace);
+        res = concatStrFree(res, ", %rsp\n");
+        return res;
+    }
     if(ins->op->metaK == FOLLOW_STATIC_LINK)
         return concatStr(indentation,follow_static_link);
     printf("debugMETA: %d\n",ins->op->metaK);

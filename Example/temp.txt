@@ -1,0 +1,9 @@
+int main()
+{
+    boolean t = true;
+    boolean f = false;
+    print(f);
+    print(t);
+    print(
+    return 3;
+}

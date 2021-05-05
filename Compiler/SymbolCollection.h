@@ -13,7 +13,7 @@ void scTraverseGlobalSTMTNODE(STMTNODE* sn);
 void scTraverseEXP(EXP* e, SYMBOLTABLE* st);
 
 //This function checks if all branches of a function contains a return stmt
+//Also used to find unreachable code
 int allBranchesReturn(STMTNODE* sn);
-int guardAlwaysTrue(EXP* guard);
 
 #endif

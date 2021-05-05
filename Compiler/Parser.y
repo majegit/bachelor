@@ -65,10 +65,16 @@ program : stmtnode
 
 exp : tIDENTIFIER
       {$$ = makeEXPid($1);}
+    | '-' tIDENTIFIER
+      {$$ = makeEXPUnaryMinusId($2);}
     | tINT
       {$$ = makeEXPint($1);}
+    | '-' tINT
+      {$$ = makeEXPint($2*-1);}
     | tDOUBLE
       {$$ = makeEXPdouble($1);}
+    | '-' tDOUBLE
+      {$$ = makeEXPdouble($2*-1);}
     | tBOOLEAN
       {$$ = makeEXPbool($1);}
     | '\'' tIDENTIFIER '\''

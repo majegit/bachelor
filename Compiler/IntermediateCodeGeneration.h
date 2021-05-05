@@ -73,7 +73,7 @@ typedef enum metaKind {
     CALL_PRINTF,
     ALLOCATE_STACK_SPACE,
     DEALLOCATE_STACK_SPACE,   //15
-    REVERSE_PUSH_ARGUMENTS,
+    DEALLOCATE_ARGUMENTS,
     FOLLOW_STATIC_LINK
 } metaKind;
 
@@ -206,6 +206,7 @@ char* labelGenerator(labelKind kind);
 opSize getSizeOfType(char* typeName);
 opSize getSizeOfId(char* idName);
 int getIntFromopSize(opSize size);
+int getSizeOfParameters(FPARAMETERNODE* fpn);
 
 
 //Check if an operator is a compare/arithmetic/boolean operator

@@ -6,14 +6,12 @@
 #include "DebugUtils.h"
 #include "Emit.h"
 
-
-int lineno;
+int lineno = 1;
 void yyparse();
 PROGRAM* program;
 
 int main()
 {
-    lineno = 1;
 
     printf("STARTING SCANNING AND PARSING\n");
     yyparse();

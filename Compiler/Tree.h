@@ -23,6 +23,7 @@ EXP* makeEXPbool(int boolval);
 EXP* makeEXPdouble(double doubleval);
 EXP* makeEXPbinop(EXP* left, char* operator, EXP* right);
 EXP* makeEXPfun(char* id, struct APARAMETERNODE* aparameternode);
+EXP* makeEXPUnaryMinusId(char* id);
 
 typedef struct STMT {
     int lineno;

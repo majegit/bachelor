@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include "Tree.h"
 #include "SymbolCollection.h"
-#include "Error.h"
 
 int mainFound = 0;
 
@@ -12,12 +11,14 @@ void symbolCollection(PROGRAM* p)
     scTraversePROGRAM(p);
 }
 
-void scTraversePROGRAM(PROGRAM* prog)
-{
+void scTraversePROGRAM(PROGRAM* prog) {
     scTraverseGlobalSTMTNODE(prog->sc->stmtnode); //Just checks that there only are declarations in global scope
     scTraverseSTMTCOMP(prog->sc, prog->globalScope);
-    if(!mainFound)
-        throwError("no main function found!");
+    if (!mainFound)
+    {
+        printf("ERROR: no main function found!\n");
+        exit(0);
+    }
 }
 
 //The global scope can only contain declarations
@@ -27,7 +28,7 @@ void scTraverseGlobalSTMTNODE(STMTNODE* sn)
         return;
     if(sn->stmt->kind != funDeclK && sn->stmt->kind != varDeclK)
     {
-        printf("ERROR: the global scope can only contain declarations on line: %d",sn->stmt->lineno);
+        printf("ERROR: non-declaration found in global scope on line: %d",sn->stmt->lineno);
         exit(0);
     }
     scTraverseGlobalSTMTNODE(sn->next);
@@ -137,9 +138,15 @@ void scTraverseFUNCTION(FUNCTION* f, SYMBOLTABLE* st)
     {
         mainFound = 1;
         if(strcmp(f->returnType,"INT") != 0 || f->args != NULL)
-            throwError("declare main as: \"int main()\"");
+        {
+            printf("ERROR: declare main as: \"int main()\"\n");
+            exit(0);
+        }
         if(st->par != NULL)
-            throwError("the main function must be in the global scope!");
+        {
+            printf("ERROR: the main function must be in the global scope!\n");
+            exit(0);
+        }
     }
 
     SYMBOLTABLE* newScope = makeSYMBOLTABLE(st);
@@ -149,9 +156,8 @@ void scTraverseFUNCTION(FUNCTION* f, SYMBOLTABLE* st)
     //Check if all branches of computation ends with a return stmt
     if(allBranchesReturn(f->body->stmtnode) == 0)
     {
-        char* errorMsg = concatStr("not all branches of function \"",f->name);
-        errorMsg = concatStrFree(errorMsg,"\" return a value");
-        throwErrorLine(errorMsg,f->lineno);
+        printf("ERROR: not all branches of function \"%s\" have a return statement on line: %d",f->name,f->lineno);
+        exit(0);
     }
 }
 
@@ -172,23 +178,10 @@ int allBranchesReturn(STMTNODE* sn)
         STMT* this = sn->stmt;
         if(this->kind == returnK)
             alwaysReturn = 1;
-        else if(this->kind == whileK && guardAlwaysTrue(this->val.whileS.guard))
-            alwaysReturn = allBranchesReturn(this->val.whileS.body->stmtnode);
-        else if(this->kind == ifElseK && guardAlwaysTrue(this->val.ifElseS.cond))
-            alwaysReturn = allBranchesReturn(this->val.ifElseS.ifbody->stmtnode);
         else if(this->kind == ifElseK && this->val.ifElseS.elsebody != NULL)
-            alwaysReturn = allBranchesReturn(this->val.ifElseS.ifbody->stmtnode) && allBranchesReturn(this->val.ifElseS.elsebody->stmtnode);
+            alwaysReturn = allBranchesReturn(this->val.ifElseS.ifbody->stmtnode) & allBranchesReturn(this->val.ifElseS.elsebody->stmtnode);
         sn = sn->next;
     }
-    if(sn != NULL)
-        throwErrorLine("unreachable code",sn->stmt->lineno);
     return alwaysReturn;
-}
-
-int guardAlwaysTrue(EXP* e)
-{
-    if(e->kind == boolK && e->val.boolE == 1)
-        return 1;
-    return 0;
 }
 

@@ -105,6 +105,9 @@ OPERATION_WRAPPER* searchOperations(char* op, char* typeLeft, char* typeRight)
     TYPE* right = stringToType(typeRight);
     OPERATION* operation = NULL;
     OPERATION_WRAPPER* operationWrapper = (OPERATION_WRAPPER*)malloc(sizeof(OPERATION_WRAPPER));
+    operationWrapper->opCount = 0;
+    operationWrapper->op = NULL;
+
     int opCounter = 0;
     int leastCoercion = -1;
     for(int i = 0; i < operations; i++)

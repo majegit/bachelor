@@ -3,7 +3,6 @@
 #include <string.h>
 #include "TypeChecking.h"
 #include "Operations.c"
-#include "Error.h"
 
 SYMBOLTABLE* currentScope = NULL;
 FUNCTION* currentFunction = NULL;
@@ -138,6 +137,7 @@ void tcTraverseEXP(EXP* e)
             if(strcmp(opWrapper->op->argTypes[1]->type, e->val.binopE.right->type) != 0) //Flag coercion for the right argument
                 e->val.binopE.right->coerceTo = opWrapper->op->argTypes[1]->type;
             e->type = opWrapper->op->returnType->type;
+            printf("Made it4\n");
             break;
         case funK:
             {

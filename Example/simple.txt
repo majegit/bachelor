@@ -3,6 +3,6 @@ main() {
    a = a+something(2);
 }
 
-int function something(int formalInt){
+int something(int formalInt){
     return formalInt*2;
 }

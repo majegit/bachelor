@@ -1,0 +1,17 @@
+
+
+int main() {
+    int x = 3 - -2;
+    print(x);
+    int y = -x * -4;
+    y = 32 / 4;
+    print(y);
+    print(g(g(10,100,1000),4,5));
+    return 3;
+}
+
+int g(int x, int y, int z)
+{
+    int h = x/y;
+    return h+x+x*y-z;
+}
