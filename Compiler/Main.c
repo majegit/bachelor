@@ -12,7 +12,6 @@ PROGRAM* program;
 
 int main()
 {
-
     printf("STARTING SCANNING AND PARSING\n");
     yyparse();
     printf("STARTING SYMBOL COLLECTION\n");

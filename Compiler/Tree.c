@@ -82,6 +82,17 @@ EXP* makeEXPfun(char* id, APARAMETERNODE* aparameternode)
     return e;
 }
 
+EXP* makeEXPcoerce(char* targetType, EXP* exp)
+{
+    EXP* e;
+    e = (EXP*)malloc(sizeof(EXP));
+    e->lineno = lineno;
+    e->kind = coerceK;
+    e->val.coerceE = exp;
+    e->type = targetType;
+    return e;
+}
+
 EXP* makeEXPUnaryMinusId(char* id)
 {
     EXP* eId;
@@ -401,8 +412,6 @@ void addSymbol(SYMBOL* symbol, SYMBOLTABLE* st)
 int funCounter = 0;
 char* funLabelGenerator(char* funName)
 {
-    if(strcmp(funName, "main") == 0)
-        return "main";
     char* res;
     char intString[20];
     sprintf(intString, "%d", funCounter++);
@@ -410,14 +419,6 @@ char* funLabelGenerator(char* funName)
     res = concatStrFree(res, "_");
     res = concatStrFree(res, funName);
     return res;
-}
-
-int doubleCounter = 0;
-char* doubleLabelGenerator()
-{
-    char intAsString[20];
-    sprintf(intAsString,"%d",doubleCounter++);
-    return concatStr("doubleconst_",intAsString);
 }
 
 //Util function, it does NOT free the input strings

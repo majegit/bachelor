@@ -4,11 +4,13 @@
 #include "Tree.h"
 #include "IntermediateCodeGeneration.h"
 
-SYMBOLTABLE* currentScope;
 LL* code = &(LL){NULL,NULL,0,0,0,0};
 LLFUN* funs = &(LLFUN){NULL,NULL};
-int depth = 0;
+LLD* doubles = &(LLD){NULL,NULL};
+
+SYMBOLTABLE* currentScope;
 FUNCTION* currentFunction;
+int depth = 0;
 
 LL* icgTraversePROGRAM(PROGRAM* prog)
 {
@@ -18,7 +20,6 @@ LL* icgTraversePROGRAM(PROGRAM* prog)
     int globalStackSpace = currentScope->nextVariableLabel;              //Stack space needed in global scope
     quickAddMetaWithInfo(ALLOCATE_STACK_SPACE, globalStackSpace);   //Push rbp and allocate stack space
     icgTraverseSTMTNODE(prog->sc->stmtnode);
-    quickAddCallFun("main");
 
     quickAddMeta(PROGRAM_EPILOGUE);
 
@@ -28,6 +29,16 @@ LL* icgTraversePROGRAM(PROGRAM* prog)
         icgTraverseFUNCTION(currentNode->f);
         currentNode = currentNode->next;
     }
+
+    LLND* cNode = doubles->first;
+    while(cNode != NULL)
+    {
+        OP* op = makeOPMeta(DOUBLE_DECLARATION,0,cNode->val,cNode->label);
+        ARG* args[2] = {NULL, NULL};
+        quickAddIns(makeINS(op,args));
+        cNode = cNode->next;
+    }
+
     return code;
 }
 
@@ -73,21 +84,32 @@ void icgTraverseSTMT(STMT* s)
         }
         case assignK:
         {
+            OP* op;
             Target* from, *to;
             ARG* argFrom, *argTo;
             EXP* e = s->val.assignS.val;
+
             int* varDepthAndOffset = staticLinkCount(s->val.assignS.name,currentScope); //Find relative nested depth and offset from rbp
             Mode* modeIRL = makeModeIRL(varDepthAndOffset[1]);
+
             if(e->kind == intK || e->kind == boolK || e->kind == charK)
+            {
                 from = makeTargetIMI(e->val.intE);
+                op = makeOP(move,getSizeOfType(e->type));
+            }
             else if(e->kind == doubleK)
             {
-                from = NULL; //TODO: add doubles
+                from = makeTargetDouble(e->val.doubleE);
+                op = makeOP(move,bits_64);
             }
             else if(e->kind == idK)
             {
                 Target* memFromTarget;
                 int* idDepthAndOffset = staticLinkCount(e->val.idE,currentScope);
+
+                Target* reg1 = makeTargetReg(getSizeOfId(e->val.idE),1);
+                ARG* argReg1 = makeARG(reg1,makeMode(dir));
+
                 if(idDepthAndOffset[0] != 0)
                 {
                     quickAddMoveRBPToRSL();
@@ -97,23 +119,26 @@ void icgTraverseSTMT(STMT* s)
                 }
                 else
                     memFromTarget = makeTarget(rbp,bits_64);
-                ARG* memFromArg = makeARG(memFromTarget,makeModeIRL(idDepthAndOffset[1]));
 
-                Target* reg1 = makeTargetReg(getSizeOfId(e->val.idE),1);
-                ARG* argReg1 = makeARG(reg1,makeMode(dir));
+                ARG* memFromArg = makeARG(memFromTarget,makeModeIRL(idDepthAndOffset[1]));
 
                 ARG* args[2] = {memFromArg,argReg1};
                 OP* moveMem = makeOP(move,getSizeOfId(e->val.idE));
                 quickAddIns(makeINS(moveMem,args));
                 free(idDepthAndOffset);
                 from = makeTargetReg(getSizeOfId(s->val.assignS.name),1);
+
+                op = makeOP(move,getSizeOfType(e->type));
             }
             else
             {
                 icgTraverseEXP(e);
                 quickAddPopRRT(getSizeOfType(e->type));
                 from = makeTarget(rrt,getSizeOfId(s->val.assignS.name));
+                op = makeOP(move,getSizeOfType(e->type));
             }
+
+
             if(varDepthAndOffset[0] != 0) //The variable is NOT in the current scope
             {
                 quickAddMoveRBPToRSL();
@@ -123,11 +148,11 @@ void icgTraverseSTMT(STMT* s)
             }
             else
                 to = makeTarget(rbp,bits_64);
+
             argFrom = makeARG(from,makeMode(dir));
             argTo = makeARG(to,modeIRL);
 
             ARG* args[2] = {argFrom, argTo};
-            OP* op = makeOP(move,getSizeOfId(s->val.assignS.name));
             quickAddIns(makeINS(op,args));
 
             free(varDepthAndOffset); //Free malloc'ed memory
@@ -235,7 +260,7 @@ void icgTraverseSTMT(STMT* s)
             argTo = makeARG(to,modeIRL);
 
             ARG* args[2] = {argFrom, argTo};
-            OP* op = makeOP(move,getSizeOfType(s->val.varDeclS.type));
+            OP* op = makeOP(move,getSizeOfId(s->val.varDeclS.name));
             quickAddIns(makeINS(op,args));
             free(varDepthAndOffset); //Free malloc'ed memory
             break;
@@ -276,14 +301,18 @@ void icgTraverseEXP(EXP* e)
             break;
         }
         case doubleK:
-            //TODO: add doubles
+        {
+            char* dLabel = doubleLabelGenerator(e->val.doubleE);
+            quickAddPushDoubleLabel(dLabel);
             break;
+        }
         case binopK:
+        {
             icgTraverseEXP(e->val.binopE.left);
             icgTraverseEXP(e->val.binopE.right);
 
             char* op = e->val.binopE.operator;
-            opSize size = getSizeOfType(e->val.binopE.right->type);
+            opSize size = getSizeOfType(e->val.binopE.right->type); //Using the fact that for all operations, the operands are same type
 
             if(strcmp(op,"-") == 0)
                 quickAddArithmeticINS(sub,size);
@@ -309,8 +338,9 @@ void icgTraverseEXP(EXP* e)
                 quickAddBooleanINS(and);
             else if (strcmp(op,"OR") == 0)
                 quickAddBooleanINS(or);
-            quickAddPushReg(1,getSizeOfType(e->type));
+            quickAddPushReg(1,size);
             break;
+        }
         case funK:
         {
             icgTraverseAPARAMETERNODE(e->val.funE.aparameternode);
@@ -321,11 +351,29 @@ void icgTraverseEXP(EXP* e)
             quickAddPushRRT();
             break;
         }
+        case coerceK:
+        {
+            icgTraverseEXP(e->val.coerceE);
+
+            opKind opK;
+            if(strcmp(e->type, "DOUBLE") == 0 && strcmp(e->val.coerceE->type, "INT") == 0) //Right now this is the only type of coercion
+                opK = cvtsi2sd;
+            else
+                exit(1); //ERROR, should never happen
+
+            Target* rspT = makeTarget(rsp,bits_64);
+            ARG* rspA = makeARG(rspT,makeMode(ind));
+
+            Target* xmmT = makeTargetReg(bits_64_d,0);
+            ARG* xmmA = makeARG(xmmT,makeMode(dir));
+
+            OP* op = makeOP(opK,bits_64_d);
+            ARG* args[2] = {rspA,xmmA};
+            quickAddIns(makeINS(op,args));
+            break;
+        }
     }
-    if(e->coerceTo != NULL)
-    {
-        //TODO: pop into reg 1, do the coercion, and push back onto stack
-    }
+    //TODO: test coercion
 }
 
 void icgTraverseAPARAMETERNODE(APARAMETERNODE* apn)
@@ -377,8 +425,6 @@ void addToLL(LLN* newCode)
     code->last = newCode;
 }
 
-
-
 //MAKE_X
 Mode* makeMode(addressingMode addressingMode) {
     Mode* mode = (Mode*)malloc(sizeof(Mode));
@@ -411,7 +457,11 @@ Target* makeTargetLabel(labelKind k, char* name)
 
 Target* makeTargetReg(opSize s, int regNumber)
 {
-    Target* t = makeTarget(reg,s);
+    Target* t;
+    if(s == bits_64_d)
+        t = makeTarget(xmm,s);
+    else
+        t = makeTarget(reg,s);
     t->additionalInfo = regNumber;
     return t;
 }
@@ -423,6 +473,13 @@ Target* makeTargetIMI(int imiValue)
     return t;
 }
 
+Target* makeTargetDouble(double doubleVal)
+{
+    char* lName = doubleLabelGenerator(doubleVal);
+    Target* t = makeTargetLabel(double_label,lName);
+    return t;
+}
+
 OP* makeOP(opKind opK, opSize size)
 {
     OP* op = (OP*)malloc(sizeof(OP));
@@ -431,12 +488,13 @@ OP* makeOP(opKind opK, opSize size)
     return op;
 }
 
-OP* makeOPMeta(metaKind k, int metaInfo, char* metaLabel)
+OP* makeOPMeta(metaKind k, int metaInt, double metaDouble, char* metaLabel)
 {
     OP* op = makeOP(meta,bits_64);
     op->opK = meta;
     op->metaK = k;
-    op->metaInformation = metaInfo;
+    op->metaInt = metaInt;
+    op->metaDouble = metaDouble;
     op->metaString = metaLabel;
     return op;
 }
@@ -466,8 +524,6 @@ LLN* makeLLN(INS* ins)
     return node;
 }
 
-
-
 //QUICK ADD X
 void quickAddIns(INS* ins)
 {
@@ -476,21 +532,21 @@ void quickAddIns(INS* ins)
 }
 
 void quickAddMeta(metaKind metaK) {
-    OP* op = makeOPMeta(metaK,0,NULL);
+    OP* op = makeOPMeta(metaK,0,0,NULL);
     ARG* args[2] = {NULL,NULL};
     quickAddIns(makeINS(op,args));
 };
 
-void quickAddMetaWithInfo(metaKind metaK, int metaInformation)
+void quickAddMetaWithInfo(metaKind metaK, int metaInt)
 {
-    OP* op = makeOPMeta(metaK,metaInformation,NULL);
+    OP* op = makeOPMeta(metaK,metaInt,0,NULL);
     ARG* args[2] = {NULL,NULL};
     quickAddIns(makeINS(op,args));
 }
 
 void quickAddMetaString(metaKind metaK, char* str)
 {
-    OP* op = makeOPMeta(metaK,0,str);
+    OP* op = makeOPMeta(metaK,0,0,str);
     ARG* args[2] = {NULL,NULL};
     quickAddIns(makeINS(op,args));
 }
@@ -549,7 +605,7 @@ void quickAddPopRRT(opSize size)
     quickAddIns(makeINS(op,args));
 }
 
-//Pop into a register
+//Pop into a register (normal or XMM)
 void quickAddPopReg(opSize size, int registerNumber)
 {
     Target* t = makeTargetReg(size,registerNumber);
@@ -624,6 +680,7 @@ void quickAddArithmeticINS(opKind k, opSize size)  //L 'OP' R
 {
     quickAddPopReg(size,2); //Right side of binop
     quickAddPopReg(size,1); //Left side of binop
+
 
     Target* rightEXP = makeTargetReg(size,2);
     ARG* argRight = makeARG(rightEXP, makeMode(dir));
@@ -724,6 +781,15 @@ void quickAddPushRRT()
     quickAddIns(makeINS(op,args));
 }
 
+void quickAddPushDoubleLabel(char* label)
+{
+    Target* t = makeTargetLabel(double_label, label);
+    ARG* arg = makeARG(t,makeMode(dir));
+    OP* op = makeOP(push, bits_64_d);
+    ARG* args[2] = {arg, NULL};
+    quickAddIns(makeINS(op,args));
+}
+
 void addToLLFUN(FUNCTION* f)
 {
     //Make a node containing f
@@ -757,6 +823,32 @@ char* labelGenerator(labelKind kind) {
     return res;
 }
 
+void addToLLD(LLND* llnd)
+{
+    //Add node to LLD
+    if(doubles->first == NULL) //First time we insert something
+        doubles->first = llnd;
+    else
+        doubles->last->next = llnd;
+    doubles->last = llnd;
+}
+
+int doubleCounter = 0;
+char* doubleLabelGenerator(double val)
+{
+    char intAsString[20];
+    sprintf(intAsString,"%d",doubleCounter++);
+
+    char* label = concatStr("doubleconst_",intAsString);
+    LLND* node = (LLND*)malloc(sizeof(LLND));
+    node->val = val;
+    node->label = label;
+    node->next = NULL;
+    addToLLD(node);
+
+    return label;
+}
+
 int getIntFromopSize(opSize size)
 {
     switch(size)
@@ -766,6 +858,7 @@ int getIntFromopSize(opSize size)
         case bits_32:
             return 4;
         case bits_64:
+        case bits_64_d:
             return 8;
         default:
             return 0;
@@ -791,7 +884,7 @@ opSize getSizeOfType(char* typeName)
     if (strcmp(typeName, "INT") == 0)
         return bits_32;
     if (strcmp(typeName, "DOUBLE") == 0)
-        return bits_64;
+        return bits_64_d;
     if (strcmp(typeName, "CHAR") == 0)
         return bits_8;
     return 0;

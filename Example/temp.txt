@@ -1,13 +1,27 @@
-int main()
-{
-    boolean t = true;
-    boolean f = false;
-    boolean new = t&&t;
-    print(t);
-    print(f);
-    print(new);
-    print(t||f);
-    print(f||f);
 
+int g()
+{
     return 3;
 }
+
+int x;
+x = myfun();
+
+double y;
+y = 2.2;
+
+double z;
+z = -2.2;
+
+double j;
+
+j = -2.2;
+
+int myfun()
+{
+    int h = x;
+    return h;
+}
+
+
+

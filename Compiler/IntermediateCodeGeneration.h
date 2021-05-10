@@ -31,13 +31,15 @@ typedef enum opKind {
     or,     //25
     meta,
     label,  //27
-    dconst
+    dconst,
+    cvtsi2sd
 } opKind;
 
 typedef enum opSize {
     bits_8,
     bits_32,
-    bits_64
+    bits_64,
+    bits_64_d
 } opSize;
 
 typedef enum addressingMode {
@@ -53,7 +55,8 @@ typedef enum targetKind {
     rsp, //Stack pointer
     rrt, //Return register
     rsl, //Register for static link computation
-    reg  //Other registers
+    reg, //Other registers
+    xmm, //Double registers
 } targetKind;
 
 typedef enum metaKind {
@@ -74,7 +77,8 @@ typedef enum metaKind {
     ALLOCATE_STACK_SPACE,
     DEALLOCATE_STACK_SPACE,   //15
     DEALLOCATE_ARGUMENTS,
-    FOLLOW_STATIC_LINK
+    FOLLOW_STATIC_LINK,
+    DOUBLE_DECLARATION,
 } metaKind;
 
 typedef enum labelKind {
@@ -84,7 +88,8 @@ typedef enum labelKind {
     endif_label,
     endelse_label,
     function_label,
-    endfunction_label
+    endfunction_label,
+    double_label
 } labelKind;
 
 typedef struct Mode {
@@ -104,7 +109,8 @@ typedef struct Operation {
     opKind opK;
     opSize size;
     metaKind metaK;      //This is only relevant if opKind is meta also
-    int metaInformation; //This is only relevant if opkind is meta also
+    int metaInt;         //This is only relevant if opkind is meta also
+    double metaDouble;   //This is only relevant if opkind is meta also
     char* metaString;    //This is only relevant if opkind is meta also
 } OP;
 
@@ -142,6 +148,21 @@ typedef struct LLFUN {
     LLNFUN* last;
 } LLFUN;
 
+//For doubles
+typedef struct LLND
+{
+    struct LLND* next;
+    char* label;
+    double val;
+} LLND;
+
+typedef struct LLD
+{
+    LLND* first;
+    LLND* last;
+} LLD;
+
+
 LL* icgTraversePROGRAM(PROGRAM* prog);
 void icgTraverseSTMTCOMP(STMTCOMP* sc);
 void icgTraverseSTMTNODE(STMTNODE* sn);
@@ -150,8 +171,9 @@ void icgTraverseEXP(EXP* e);
 void icgTraverseAPARAMETERNODE(APARAMETERNODE* apn);
 void icgTraverseFUNCTION(FUNCTION* f);
 
-void addToLL(LLN *moreCode);
+void addToLL(LLN* moreCode);
 void addToLLFUN(FUNCTION* f);
+void addToLLD(LLND* llnd);
 
 Mode* makeMode(addressingMode mode);
 Mode* makeModeIRL(int offset);
@@ -160,9 +182,10 @@ Target* makeTarget(targetKind k, opSize s);
 Target* makeTargetLabel(labelKind k, char* name);
 Target* makeTargetReg(opSize size, int reg);
 Target* makeTargetIMI(int imiValue);
+Target* makeTargetDouble(double doubleVal);
 
 OP* makeOP(opKind opK, opSize size);
-OP* makeOPMeta(metaKind k, int metaInfo, char* metaLabel);
+OP* makeOPMeta(metaKind k, int metaInfo, double metaDouble, char* metaLabel);
 
 ARG* makeARG(Target* target, Mode* mode);
 INS* makeINS(OP* op, ARG** args);
@@ -176,7 +199,7 @@ LLN* makeLLN(INS* ins);
 //Quick Add Functions
 void quickAddIns(INS* ins);
 void quickAddMeta(metaKind kind);
-void quickAddMetaWithInfo(metaKind kind, int metaInformation);
+void quickAddMetaWithInfo(metaKind kind, int metaInt);
 
 void quickAddMetaString(metaKind metaK, char* str);
 void quickAddLabelString(labelKind kind, char* label);
@@ -199,10 +222,12 @@ void quickAddPushRSP();
 void quickAddMoveRBPToRSP();
 void quickAddPopRBP();
 void quickAddPushRRT();
+void quickAddPushDoubleLabel(char* label);
 
 
 //Other
 char* labelGenerator(labelKind kind);
+char* doubleLabelGenerator(double val);
 opSize getSizeOfType(char* typeName);
 opSize getSizeOfId(char* idName);
 int getIntFromopSize(opSize size);

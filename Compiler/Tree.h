@@ -3,7 +3,7 @@
 
 typedef struct EXP {
     int lineno;
-    enum {idK,intK,doubleK,boolK,charK,binopK,funK} kind;
+    enum {idK,intK,doubleK,boolK,charK,binopK,funK,coerceK} kind;
     union {
         char* idE;
         char charE;
@@ -11,9 +11,9 @@ typedef struct EXP {
         double doubleE;
         struct {struct EXP* left; struct EXP* right; char* operator;} binopE;
         struct {char* id; struct APARAMETERNODE* aparameternode;} funE;
+        struct EXP* coerceE;
     } val;
     char* type;
-    char* coerceTo;
 } EXP;
 
 EXP* makeEXPid(char* id);
@@ -23,6 +23,7 @@ EXP* makeEXPbool(int boolval);
 EXP* makeEXPdouble(double doubleval);
 EXP* makeEXPbinop(EXP* left, char* operator, EXP* right);
 EXP* makeEXPfun(char* id, struct APARAMETERNODE* aparameternode);
+EXP* makeEXPcoerce(char* targetType, EXP* e);
 EXP* makeEXPUnaryMinusId(char* id);
 
 typedef struct STMT {
@@ -150,7 +151,6 @@ int* staticLinkCount(char* name, SYMBOLTABLE* st);
 
 void addSymbol(SYMBOL* symbol, SYMBOLTABLE* st);
 char* funLabelGenerator(char* funName);
-char* doubleLabelGenerator();
 
 //Util functions
 char* concatStr(const char* str1, const char* str2);

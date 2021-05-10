@@ -12,8 +12,8 @@ const char* rbpVariants[] = {"%bpl","%ebp","%rbp"};
 const char* rdiVariants[] = {"%dil","%edi","%rdi"};
 const char* rspVariants[] = {"%sl", "%esl","%rsp"};
 
-const char* sizeModifier[]  = {"b","l","q"};
-const char* sizeModifier2[] = {"1","4","8"};
+const char* sizeModifier[]  = {"b","l","q","sd"};
+const char* sizeModifier2[] = {"1","4","8","8"};
 
 const char* program_prologue = ".section .data\n.section .text\n.global _start\n_start:\n";
 const char* program_epilogue = "    movq %rax, %rdi\n    movq $60, %rax\n    syscall\n\n";
@@ -50,6 +50,7 @@ void emit(LL* code, const char* outputFileName)
     if(code->pFlagDOUBLE)
         fputs("DOUBLE DEBUG\n",fp);
 
+    printf("closing file\n");
     fclose(fp);
 }
 
@@ -363,7 +364,7 @@ char* convertInsToAsm(INS* ins)
 
 char* convertMetaIns(INS* ins)
 {
-    char* res;
+    char* res = "";
     if(ins->op->metaK == PROGRAM_PROLOGUE)
         return deepCopy(program_prologue);
     if(ins->op->metaK == PROGRAM_EPILOGUE)
@@ -377,11 +378,11 @@ char* convertMetaIns(INS* ins)
     if(ins->op->metaK == ALLOCATE_STACK_SPACE)
     {
         char stackSpace[20];
-        sprintf(stackSpace,"%d",ins->op->metaInformation);
+        sprintf(stackSpace,"%d",ins->op->metaInt);
         res = concatStr(indentation,"push %rbp\t #ALLOCATE STACK SPACE\n");
         res = concatStrFree(res,indentation);
         res = concatStrFree(res,"movq %rsp, %rbp\n");
-        if(ins->op->metaInformation != 0)
+        if(ins->op->metaInt != 0)
         {
             res = concatStrFree(res,indentation);
             res = concatStrFree(res,"addq $");
@@ -393,7 +394,7 @@ char* convertMetaIns(INS* ins)
     if(ins->op->metaK == DEALLOCATE_STACK_SPACE)
     {
         char stackSpace[20];
-        sprintf(stackSpace,"%d",ins->op->metaInformation);
+        sprintf(stackSpace,"%d",ins->op->metaInt);
         res = concatStr(indentation,"addq $");
         res = concatStrFree(res,stackSpace);
         res = concatStrFree(res, ", %rsp");
@@ -413,7 +414,7 @@ char* convertMetaIns(INS* ins)
     if(ins->op->metaK == DEALLOCATE_ARGUMENTS)
     {
         char stackSpace[20];
-        sprintf(stackSpace,"%d",ins->op->metaInformation);
+        sprintf(stackSpace,"%d",ins->op->metaInt);
         res = concatStr(indentation,"addq $");
         res = concatStrFree(res,stackSpace);
         res = concatStrFree(res, ", %rsp\n");
@@ -421,6 +422,13 @@ char* convertMetaIns(INS* ins)
     }
     if(ins->op->metaK == FOLLOW_STATIC_LINK)
         return concatStr(indentation,follow_static_link);
+    if(ins->op->metaK == DOUBLE_DECLARATION)
+    {
+        res = concatStr(res,ins->op->metaString);
+        res = concatStrFree(res,":\n");
+        res = concatStrFreeFree(res,getLongsFromDouble(ins->op->metaDouble));
+        return res;
+    }
     printf("debugMETA: %d\n",ins->op->metaK);
     return deepCopy("debugMETA\n");
 }
@@ -502,6 +510,28 @@ char* convertTarget(Target* t, Mode* m)
         return res;
     }
     return deepCopy("debug!!\n");
+}
+
+char* getLongsFromDouble(double val)
+{
+    char intAsString[20];
+    char* res = "";
+    res = concatStr(res,indentation);
+    res = concatStrFree(res,".long ");
+    sprintf(intAsString,"%u",*(unsigned int*)&val);
+    res = concatStrFree(res,intAsString);
+    res = concatStrFree(res,"\n");
+    res = concatStrFree(res,indentation);
+    res = concatStrFree(res,".long ");
+    if(val < 0)
+    {
+        res = concatStrFree(res,"-");
+        val *= -1;
+    }
+    sprintf(intAsString,"%u",*(((unsigned int*)&val) + 1));
+    res = concatStrFree(res,intAsString);
+    res = concatStrFree(res,"\n");
+    return res;
 }
 
 const char* printCHAR = "\n.type printCHAR, @function\n"

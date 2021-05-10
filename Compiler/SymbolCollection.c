@@ -4,34 +4,13 @@
 #include "Tree.h"
 #include "SymbolCollection.h"
 
-int mainFound = 0;
-
 void symbolCollection(PROGRAM* p)
 {
     scTraversePROGRAM(p);
 }
 
 void scTraversePROGRAM(PROGRAM* prog) {
-    scTraverseGlobalSTMTNODE(prog->sc->stmtnode); //Just checks that there only are declarations in global scope
     scTraverseSTMTCOMP(prog->sc, prog->globalScope);
-    if (!mainFound)
-    {
-        printf("ERROR: no main function found!\n");
-        exit(0);
-    }
-}
-
-//The global scope can only contain declarations
-void scTraverseGlobalSTMTNODE(STMTNODE* sn)
-{
-    if(sn == NULL)
-        return;
-    if(sn->stmt->kind != funDeclK && sn->stmt->kind != varDeclK)
-    {
-        printf("ERROR: non-declaration found in global scope on line: %d",sn->stmt->lineno);
-        exit(0);
-    }
-    scTraverseGlobalSTMTNODE(sn->next);
 }
 
 void scTraverseSTMTCOMP(STMTCOMP* sc, SYMBOLTABLE* st)
@@ -133,22 +112,6 @@ void scTraverseEXP(EXP* e, SYMBOLTABLE* st)
 
 void scTraverseFUNCTION(FUNCTION* f, SYMBOLTABLE* st)
 {
-    //Add function name and returnType to current table
-    if(strcmp(f->name,"main") == 0)
-    {
-        mainFound = 1;
-        if(strcmp(f->returnType,"INT") != 0 || f->args != NULL)
-        {
-            printf("ERROR: declare main as: \"int main()\"\n");
-            exit(0);
-        }
-        if(st->par != NULL)
-        {
-            printf("ERROR: the main function must be in the global scope!\n");
-            exit(0);
-        }
-    }
-
     SYMBOLTABLE* newScope = makeSYMBOLTABLE(st);
     scTraverseFPARAMETERNODE(f->args, newScope);
     scTraverseSTMTCOMP(f->body, newScope);

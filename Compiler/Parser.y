@@ -124,7 +124,9 @@ stmt : WHILE '(' exp ')' stmtcompound
      | type tIDENTIFIER ';'
        {$$ = makeSTMTvarDecl($1,$2,NULL);}
      | type tIDENTIFIER ASSIGN exp ';'
-       {$$ = makeSTMTvarDecl($1,$2,$4);}
+       {$$ = makeSTMTvarDecl($1,$2,NULL);
+        $$ = makeSTMTassign($2,$4);
+        }
      | functionDecl
        {$$ = makeSTMTfunDecl($1);}
      | exp ';'

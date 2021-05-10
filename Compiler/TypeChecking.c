@@ -48,14 +48,17 @@ void tcTraverseSTMT(STMT* s)
             break;
         case assignK:
             tcTraverseEXP(s->val.assignS.val);
-            SYMBOL* symbol = lookupSymbolVar(s->val.assignS.name, currentScope);
-            if(!isSubtype(stringToType(s->val.assignS.val->type),stringToType(symbol->type)))
+            SYMBOL* var = lookupSymbolVar(s->val.assignS.name, currentScope);
+            if(!isSubtype(stringToType(s->val.assignS.val->type),stringToType(var->type)))
             {
-                printf("ERROR: Incompatible type, expected %s, got %s on line: %d\n",symbol->type,s->val.assignS.val->type,s->lineno);
+                printf("ERROR: Incompatible type, expected %s, got %s on line: %d\n",var->type,s->val.assignS.val->type,s->lineno);
                 exit(0);
             }
-            if(strcmp(s->val.assignS.val->type,symbol->type) != 0)
-                s->val.assignS.val->coerceTo = symbol->type;
+            if(strcmp(s->val.assignS.val->type,var->type) != 0)
+            {
+                EXP* e = makeEXPcoerce(var->type,s->val.assignS.val);
+                s->val.assignS.val = e;
+            }
             break;
         case ifElseK:
             tcTraverseEXP(s->val.ifElseS.cond);
@@ -76,7 +79,10 @@ void tcTraverseSTMT(STMT* s)
                 exit(0);
             }
             if(strcmp(s->val.returnS->type,currentFunction->returnType) != 0)
-                s->val.returnS->coerceTo = currentFunction->returnType;
+            {
+                EXP* e = makeEXPcoerce(currentFunction->returnType, s->val.returnS);
+                s->val.returnS = e;
+            }
             break;
         case printK:
             tcTraverseEXP(s->val.printS);
@@ -90,8 +96,8 @@ void tcTraverseSTMT(STMT* s)
                     printf("ERROR: Incompatible type, expected %s, got %s at line: %d.\n",s->val.varDeclS.type,s->val.varDeclS.value->type,s->lineno);
                     exit(0);
                 }
-                if(strcmp(s->val.varDeclS.value->type,s->val.varDeclS.type) != 0)
-                    s->val.varDeclS.value->coerceTo = s->val.varDeclS.type;
+                //if(strcmp(s->val.varDeclS.value->type,s->val.varDeclS.type) != 0)//TODO: fix this
+                  //  s->val.varDeclS.value->coerceTo = s->val.varDeclS.type;
             }
             break;
         case expK:
@@ -119,38 +125,49 @@ void tcTraverseEXP(EXP* e)
             break;
         }
         case binopK:
+        {
             tcTraverseEXP(e->val.binopE.left);
             tcTraverseEXP(e->val.binopE.right);
-            OPERATION_WRAPPER* opWrapper = searchOperations(e->val.binopE.operator, e->val.binopE.left->type, e->val.binopE.right->type);
-            if(opWrapper->opCount == 0)
-            {
-                printf("ERROR: Operator '%s' not defined for %s %s on line: %d\n",e->val.binopE.operator,e->val.binopE.left->type,e->val.binopE.right->type,e->lineno);
+            OPERATION_WRAPPER *opWrapper = searchOperations(e->val.binopE.operator, e->val.binopE.left->type,
+                                                            e->val.binopE.right->type);
+            if (opWrapper->opCount == 0) {
+                printf("ERROR: Operator '%s' not defined for %s %s on line: %d\n", e->val.binopE.operator,
+                       e->val.binopE.left->type, e->val.binopE.right->type, e->lineno);
                 exit(0);
             }
-            if(opWrapper->opCount > 1)
-            {
-                printf("ERROR: multiple resolutions for %s '%s' %s, on lineno: %d\n",e->val.binopE.left->type,e->val.binopE.operator,e->val.binopE.right->type,e->lineno);
+            if (opWrapper->opCount > 1) {
+                printf("ERROR: multiple resolutions for %s '%s' %s, on lineno: %d\n", e->val.binopE.left->type,
+                       e->val.binopE.operator, e->val.binopE.right->type, e->lineno);
                 exit(0);
             }
-            if(strcmp(opWrapper->op->argTypes[0]->type, e->val.binopE.left->type) != 0) //Flag coercion for the left argument
-                e->val.binopE.left->coerceTo = opWrapper->op->argTypes[0]->type;
-            if(strcmp(opWrapper->op->argTypes[1]->type, e->val.binopE.right->type) != 0) //Flag coercion for the right argument
-                e->val.binopE.right->coerceTo = opWrapper->op->argTypes[1]->type;
+            if (strcmp(opWrapper->op->argTypes[0]->type, e->val.binopE.left->type) !=
+                0) //Make coercion for the left argument
+            {
+                EXP *ce = makeEXPcoerce(opWrapper->op->argTypes[0]->type, e->val.binopE.left);
+                e->val.binopE.left = ce;
+            }
+            if (strcmp(opWrapper->op->argTypes[1]->type, e->val.binopE.right->type) !=
+                0) //Make coercion for the right argument
+            {
+                EXP *ce = makeEXPcoerce(opWrapper->op->argTypes[1]->type, e->val.binopE.left);
+                e->val.binopE.right = ce;
+            }
             e->type = opWrapper->op->returnType->type;
-            printf("Made it4\n");
             break;
+        }
         case funK:
+        {
+            SYMBOL *functionSymbol = lookupSymbolFun(e->val.funE.id, currentScope);
+            if (functionSymbol == NULL) //TODO: throw into symbol collection, (andet gennemløb)
             {
-                SYMBOL* functionSymbol = lookupSymbolFun(e->val.funE.id, currentScope);
-                if(functionSymbol == NULL) //TODO: throw into symbol collection, (andet gennemløb)
-                {
-                    printf("ERROR: Function does not exist: %s on line: %d\n",e->val.funE.id,e->lineno);
-                    exit(0);
-                }
-                tcTraverseAPARAMETERNODE(e->val.funE.aparameternode, functionSymbol->fpn);
-                e->type = functionSymbol->type;
+                printf("ERROR: Function does not exist: %s on line: %d\n", e->val.funE.id, e->lineno);
+                exit(0);
             }
+            tcTraverseAPARAMETERNODE(e->val.funE.aparameternode, functionSymbol->fpn);
+            e->type = functionSymbol->type;
+
             break;
+        }
         default:
             break;
     }
@@ -172,7 +189,10 @@ void tcTraverseAPARAMETERNODE(APARAMETERNODE* apn, FPARAMETERNODE* fpn)
         exit(0);
     }
     if(strcmp(apn->current->exp->type,fpn->current->type) != 0)
-        apn->current->exp->coerceTo = fpn->current->type;
+    {
+        EXP* ce = makeEXPcoerce(fpn->current->type, apn->current->exp);
+        apn->current->exp = ce;
+    }
     tcTraverseAPARAMETERNODE(apn->next, fpn->next);
 }
 
