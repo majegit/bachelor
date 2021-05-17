@@ -53,8 +53,6 @@ void scTraverseSTMT(STMT* s, SYMBOLTABLE* st)
         }
         case varDeclK:
         {
-            if(s->val.varDeclS.value != NULL)
-                scTraverseEXP(s->val.varDeclS.value,st);
             SYMBOL* newSymbol = makeSYMBOLvariable(s->val.varDeclS.name,s->val.varDeclS.type);
             addSymbol(newSymbol,st);
             break;

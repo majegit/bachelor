@@ -164,7 +164,8 @@ STMT* makeSTMTprint(EXP* printEXP)
     s->val.printS = printEXP;
     return s;
 }
-STMT* makeSTMTvarDecl(char* type, char* name, EXP* value)
+
+STMT* makeSTMTvarDecl(char* type, char* name)
 {
     STMT* s;
     s = (STMT*)malloc(sizeof(STMT));
@@ -172,7 +173,6 @@ STMT* makeSTMTvarDecl(char* type, char* name, EXP* value)
     s->kind = varDeclK;
     s->val.varDeclS.type = type;
     s->val.varDeclS.name = name;
-    s->val.varDeclS.value = value;
     return s;
 }
 

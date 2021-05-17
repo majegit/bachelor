@@ -355,7 +355,7 @@ char* convertInsToAsm(INS* ins)
         }
         default:
 
-            printf("DEBUG OPKIND: %d",ins->op->opK);
+            printf("DEBUG OPKIND: %d\n",ins->op->opK);
             fputs("debugINS\n",fp);
             break;
     }

@@ -50,7 +50,7 @@ int yylex();
 %type <program> program
 %type <exp> exp
 %type <stmt> stmt
-%type <stmtnode> stmtnode
+%type <stmtnode> stmtnode syntactic_sugar
 %type <stmtcomp> stmtcompound
 %type <aparameter> aparameter
 %type <aparameternode> aparameternode opt_aparameternode
@@ -122,11 +122,7 @@ stmt : WHILE '(' exp ')' stmtcompound
      | tIDENTIFIER ASSIGN exp ';'
        {$$ = makeSTMTassign($1,$3);}
      | type tIDENTIFIER ';'
-       {$$ = makeSTMTvarDecl($1,$2,NULL);}
-     | type tIDENTIFIER ASSIGN exp ';'
-       {$$ = makeSTMTvarDecl($1,$2,NULL);
-        $$ = makeSTMTassign($2,$4);
-        }
+       {$$ = makeSTMTvarDecl($1,$2);}
      | functionDecl
        {$$ = makeSTMTfunDecl($1);}
      | exp ';'
@@ -137,11 +133,30 @@ stmtcompound : '{' stmtnode '}'
 	       {$$ = makeSTMTCOMP($2);}
 ;
 
+syntactic_sugar : type tIDENTIFIER ASSIGN exp ';'
+                  {STMT* stmt1 = makeSTMTvarDecl($1,$2);
+                   STMT* stmt2 = makeSTMTassign($2,$4);
+                   STMTNODE* stmtnode1 = makeSTMTNODE(stmt1,NULL);
+                   STMTNODE* stmtnode2 = makeSTMTNODE(stmt2,NULL);
+                   stmtnode1->next = stmtnode2;
+                   $$ = stmtnode1;}
+;
+
 stmtnode : stmt
 	   {$$ = makeSTMTNODE($1,NULL);}
 	 | stmt stmtnode
 	   {$$ = makeSTMTNODE($1,$2);}
+	 | syntactic_sugar
+	   {$$ = $1;}
+	 | syntactic_sugar stmtnode
+	   {STMTNODE* curr = $1;
+	    while(curr->next != NULL)
+	    	curr = curr->next;
+	    curr->next = $2;
+	    $$ = $1;}
 ;
+
+
 
 aparameter : exp
 	     {$$ = makeAPARAMETER($1);}

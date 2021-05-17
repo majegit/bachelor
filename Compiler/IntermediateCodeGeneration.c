@@ -226,45 +226,7 @@ void icgTraverseSTMT(STMT* s)
             break;
         }
         case varDeclK:
-        {
-            if(s->val.varDeclS.value == NULL)
-                break;
-
-            Target* from, *to;
-            ARG* argFrom, *argTo;
-            EXP* e = s->val.varDeclS.value;
-            int* varDepthAndOffset = staticLinkCount(s->val.varDeclS.name,currentScope); //Find relative nested depth and offset from rbp
-            Mode* modeIRL = makeModeIRL(varDepthAndOffset[1]);
-            if(varDepthAndOffset[0] != 0) //The variable is NOT in the current scope
-            {
-                quickAddMoveRBPToRSL();
-                for(int i=0; i < varDepthAndOffset[0]; i++)
-                    quickAddMeta(FOLLOW_STATIC_LINK);
-                to = makeTarget(rsl,bits_64);
-            }
-            else
-                to = makeTarget(rbp,bits_64);
-            if(e->kind == intK || e->kind == boolK || e->kind == charK)
-                from = makeTargetIMI(e->val.intE);
-            else if(e->kind == doubleK)
-            {
-                from = NULL; //TODO: add doubles
-            }
-            else
-            {
-                icgTraverseEXP(e);
-                quickAddPopRRT(getSizeOfType(s->val.varDeclS.type));
-                from = makeTarget(rrt,getSizeOfType(s->val.varDeclS.type));
-            }
-            argFrom = makeARG(from,makeMode(dir));
-            argTo = makeARG(to,modeIRL);
-
-            ARG* args[2] = {argFrom, argTo};
-            OP* op = makeOP(move,getSizeOfId(s->val.varDeclS.name));
-            quickAddIns(makeINS(op,args));
-            free(varDepthAndOffset); //Free malloc'ed memory
             break;
-        }
         case expK:
             icgTraverseEXP(s->val.expS);
             break;

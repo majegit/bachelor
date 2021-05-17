@@ -88,17 +88,6 @@ void tcTraverseSTMT(STMT* s)
             tcTraverseEXP(s->val.printS);
             break;
         case varDeclK:
-            if(s->val.varDeclS.value != NULL)
-            {
-                tcTraverseEXP(s->val.varDeclS.value);
-                if(!isSubtype(stringToType(s->val.varDeclS.value->type),stringToType(s->val.varDeclS.type)))
-                {
-                    printf("ERROR: Incompatible type, expected %s, got %s at line: %d.\n",s->val.varDeclS.type,s->val.varDeclS.value->type,s->lineno);
-                    exit(0);
-                }
-                //if(strcmp(s->val.varDeclS.value->type,s->val.varDeclS.type) != 0)//TODO: fix this
-                  //  s->val.varDeclS.value->coerceTo = s->val.varDeclS.type;
-            }
             break;
         case expK:
             tcTraverseEXP(s->val.expS);

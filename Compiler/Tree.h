@@ -33,7 +33,7 @@ typedef struct STMT {
         struct {struct EXP* guard; struct STMTCOMP* body;} whileS;
         struct {char* name; struct EXP* val;} assignS;
         struct {struct EXP* cond; struct STMTCOMP* ifbody; struct STMTCOMP* elsebody;} ifElseS;
-        struct {char* type; char* name; EXP* value;} varDeclS;
+        struct {char* type; char* name;} varDeclS;
         struct FUNCTION* funDeclS;
         struct EXP* returnS;
         struct EXP* printS;
@@ -46,7 +46,7 @@ STMT* makeSTMTassign(char* name, EXP* val);
 STMT* makeSTMTifElse(EXP* cond, struct STMTCOMP* ifbody, struct STMTCOMP* elsebody);
 STMT* makeSTMTreturn(EXP* returnEXP);
 STMT* makeSTMTprint(EXP* printEXP);
-STMT* makeSTMTvarDecl(char* type, char* name, EXP* value);
+STMT* makeSTMTvarDecl(char* type, char* name);
 STMT* makeSTMTfunDecl(struct FUNCTION* f);
 STMT* makeSTMTexp(EXP* exp);
 

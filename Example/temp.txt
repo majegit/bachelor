@@ -1,26 +1,14 @@
 
+
+
 int g()
 {
+    while(3 == 3)
+    {
+        double g = 2+2;
+        g = 3;
+    }
     return 3;
-}
-
-int x;
-x = myfun();
-
-double y;
-y = 2.2;
-
-double z;
-z = -2.2;
-
-double j;
-
-j = -2.2;
-
-int myfun()
-{
-    int h = x;
-    return h;
 }
 
 
