@@ -89,6 +89,8 @@ void icgTraverseSTMT(STMT* s)
             ARG* argFrom, *argTo;
             EXP* e = s->val.assignS.val;
 
+
+
             int* varDepthAndOffset = staticLinkCount(s->val.assignS.name,currentScope); //Find relative nested depth and offset from rbp
             Mode* modeIRL = makeModeIRL(varDepthAndOffset[1]);
 
@@ -107,8 +109,8 @@ void icgTraverseSTMT(STMT* s)
                 Target* memFromTarget;
                 int* idDepthAndOffset = staticLinkCount(e->val.idE,currentScope);
 
-                Target* reg1 = makeTargetReg(getSizeOfId(e->val.idE),1);
-                ARG* argReg1 = makeARG(reg1,makeMode(dir));
+                Target* reg0 = makeTargetReg(getSizeOfId(e->val.idE),0);
+                ARG* argReg0 = makeARG(reg0,makeMode(dir));
 
                 if(idDepthAndOffset[0] != 0)
                 {
@@ -122,23 +124,23 @@ void icgTraverseSTMT(STMT* s)
 
                 ARG* memFromArg = makeARG(memFromTarget,makeModeIRL(idDepthAndOffset[1]));
 
-                ARG* args[2] = {memFromArg,argReg1};
+                ARG* args[2] = {memFromArg,argReg0};
                 OP* moveMem = makeOP(move,getSizeOfId(e->val.idE));
                 quickAddIns(makeINS(moveMem,args));
                 free(idDepthAndOffset);
-                from = makeTargetReg(getSizeOfId(s->val.assignS.name),1);
+                from = makeTargetReg(getSizeOfId(s->val.assignS.name),0);
 
                 op = makeOP(move,getSizeOfType(e->type));
             }
             else
             {
+                printf("in here\n");
                 icgTraverseEXP(e);
                 quickAddPopRRT(getSizeOfType(e->type));
+                printf("size of type: %d\n",getSizeOfType(e->type)); //bits_64_d
                 from = makeTarget(rrt,getSizeOfId(s->val.assignS.name));
                 op = makeOP(move,getSizeOfType(e->type));
             }
-
-
             if(varDepthAndOffset[0] != 0) //The variable is NOT in the current scope
             {
                 quickAddMoveRBPToRSL();
@@ -241,8 +243,10 @@ void icgTraverseEXP(EXP* e)
     switch(e->kind)
     {
         case idK:
+        {
             quickAddPushId(e->val.idE);
             break;
+        }
         case intK:
         {
             Target* target = makeTargetIMI(e->val.intE); //e->val.charE = e->val.boolE = e->val.intE, they are all ints in an union
@@ -300,7 +304,7 @@ void icgTraverseEXP(EXP* e)
                 quickAddBooleanINS(and);
             else if (strcmp(op,"OR") == 0)
                 quickAddBooleanINS(or);
-            quickAddPushReg(1,size);
+            quickAddPushReg(0,size);
             break;
         }
         case funK:
@@ -420,10 +424,7 @@ Target* makeTargetLabel(labelKind k, char* name)
 Target* makeTargetReg(opSize s, int regNumber)
 {
     Target* t;
-    if(s == bits_64_d)
-        t = makeTarget(xmm,s);
-    else
-        t = makeTarget(reg,s);
+    t = makeTarget(reg,s);
     t->additionalInfo = regNumber;
     return t;
 }
@@ -640,31 +641,29 @@ void quickAddUnconditionalJmp(labelKind k, char* labelName)
 
 void quickAddArithmeticINS(opKind k, opSize size)  //L 'OP' R
 {
-    quickAddPopReg(size,2); //Right side of binop
-    quickAddPopReg(size,1); //Left side of binop
+    quickAddPopReg(size,1); //Right side of binop
+    quickAddPopReg(size,0); //Left side of binop
 
-
-    Target* rightEXP = makeTargetReg(size,2);
+    Target* rightEXP = makeTargetReg(size,1);
     ARG* argRight = makeARG(rightEXP, makeMode(dir));
 
-    Target* leftEXP = makeTargetReg(size,1);
+    Target* leftEXP = makeTargetReg(size,0);
     ARG* argLeft = makeARG(leftEXP, makeMode(dir));
 
     ARG* args[2] = {argRight,argLeft};
-
     OP* op = makeOP(k,size);
     quickAddIns(makeINS(op,args));
 }
 
 void quickAddCompareINS(opKind k, opSize size)
 {
-    quickAddPopReg(size, 1); //pop reg2  #Right side of binop
-    quickAddPopReg(size, 2); //pop reg1  #Left side of binop
+    quickAddPopReg(size, 0); //pop reg2  #Right side of binop
+    quickAddPopReg(size, 1); //pop reg1  #Left side of binop
 
-    Target* tLeft = makeTargetReg(size,2);
+    Target* tLeft = makeTargetReg(size,1);
     ARG* argLeft = makeARG(tLeft, makeMode(dir));
 
-    Target* tRight = makeTargetReg(size,1);
+    Target* tRight = makeTargetReg(size,0);
     ARG* argRight = makeARG(tRight, makeMode(dir));
 
     ARG* args[2] = {argRight,argLeft};
@@ -672,22 +671,22 @@ void quickAddCompareINS(opKind k, opSize size)
     OP* cmpOP = makeOP(cmp,size);
     quickAddIns(makeINS(cmpOP,args));
 
-    Target* resultRegister = makeTargetReg(bits_8,1);
+    Target* resultRegister = makeTargetReg(bits_8,0);
     ARG* arg = makeARG(resultRegister,makeMode(dir));
     ARG* argsSet[2] = {arg,NULL};
     OP* setOP = makeOP(k,bits_8);
-    quickAddIns(makeINS(setOP,argsSet)); //set<k> reg2  #8 bits register
+    quickAddIns(makeINS(setOP,argsSet)); //setb reg2  #8 bits register
 }
 
 void quickAddBooleanINS(opKind k)
 {
-    quickAddPopReg(bits_8,2); //Right side of binop
-    quickAddPopReg(bits_8,1); //Left side of binop
+    quickAddPopReg(bits_8,1); //Right side of binop
+    quickAddPopReg(bits_8,0); //Left side of binop
 
-    Target* rightEXP = makeTargetReg(bits_8,2);
+    Target* rightEXP = makeTargetReg(bits_8,1);
     ARG* argRight = makeARG(rightEXP, makeMode(dir));
 
-    Target* leftEXP = makeTargetReg(bits_8,1);
+    Target* leftEXP = makeTargetReg(bits_8,0);
     ARG* argLeft = makeARG(leftEXP, makeMode(dir));
     ARG* args[2] = {argRight,argLeft};
 
@@ -858,28 +857,5 @@ opSize getSizeOfId(char* idName)
     return getSizeOfType(id->type);
 }
 
-int isCompareOp(char* operator)
-{
-    return 1;
-    //if(strcmp(operator,"-"))
-}
-
-int isArithmeticOp(char* operator)
-{
-    if(strcmp(operator,"+"))
-        return 1;
-    if(strcmp(operator,"-"))
-        return 1;
-    if(strcmp(operator,"*"))
-        return 1;
-    if(strcmp(operator,"/"))
-        return 1;
-    return 0;
-}
-
-int isBooleanOp(char* operator)
-{
-
-}
 
 

@@ -5,12 +5,17 @@
 
 const char* indentation = "    ";
 
-const char* raxVariants[] = {"%al","%eax","%rax"};
-const char* rbxVariants[] = {"%bl","%ebx","%rbx"};
-const char* rcxVariants[] = {"%cl","%ecx","%rcx"};
-const char* rbpVariants[] = {"%bpl","%ebp","%rbp"};
-const char* rdiVariants[] = {"%dil","%edi","%rdi"};
-const char* rspVariants[] = {"%sl", "%esl","%rsp"};
+const char* raxVariants[] = {"%al","%eax","%rax","%rax"};
+
+const char* rbxVariants[] = {"%bl","%ebx","%rbx","%rbx"};
+const char* rcxVariants[] = {"%cl","%ecx","%rcx","%rcx"};
+const char** registers[] = {rbxVariants,rcxVariants};
+
+const char* sseVariants[] = {"%xmm0","%xmm1"};
+
+const char* rbpVariants[] = {"%bpl","%ebp","%rbp","%rbp"};
+const char* rdiVariants[] = {"%dil","%edi","%rdi","%rdi"};
+const char* rspVariants[] = {"%sl", "%esl","%rsp","%rsp"};
 
 const char* sizeModifier[]  = {"b","l","q","sd"};
 const char* sizeModifier2[] = {"1","4","8","8"};
@@ -34,7 +39,7 @@ void emit(LL* code, const char* outputFileName)
 {
     //Print the asmcode to a file
     fp = fopen(outputFileName,"w");
-    
+
     LLN* node = code->first;
     while(node != NULL)
     {
@@ -63,7 +68,10 @@ char* convertInsToAsm(INS* ins)
         {
             fputs(indentation,fp);
             fputs("mov",fp);
-            fputs(sizeModifier[ins->op->size],fp);
+            if(ins->op->size == bits_64_d && (!isXMM(ins->args[0]->target) || !isXMM(ins->args[1]->target)))
+                fputs("q",fp); //can only call movsd between 2 xmm registers...
+            else
+                fputs(sizeModifier[ins->op->size],fp);
             fputs(" ",fp);
             aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
             fputs(aux,fp);
@@ -78,7 +86,17 @@ char* convertInsToAsm(INS* ins)
         case push:
         {
             fputs(indentation,fp);
-            if(ins->op->size == bits_64)
+            if(ins->op->size == bits_64_d)
+            {
+                fputs("movq ",fp);
+                aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+                fputs(aux,fp);
+                free(aux);
+                fputs(", %rax\n",fp);
+                fputs(indentation,fp);
+                fputs("push %rax\n",fp);
+            }
+            else if(ins->op->size == bits_64)
             {
                 fputs("push ",fp);
                 aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
@@ -113,7 +131,17 @@ char* convertInsToAsm(INS* ins)
         case pop:
         {
             fputs(indentation,fp);
-            if(ins->op->size == bits_64)
+            if(ins->args[0]->target->size == bits_64_d)
+            {
+                fputs("pop %rax\n",fp);
+                fputs(indentation,fp);
+                fputs("movq %rax, ",fp);
+                aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+                fputs(aux,fp);
+                free(aux);
+                fputs("\n",fp);
+            }
+            else if(ins->op->size == bits_64)
             {
                 fputs("pop ",fp);
                 aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
@@ -171,7 +199,10 @@ char* convertInsToAsm(INS* ins)
         case mul:
         {
             fputs(indentation,fp);
-            fputs("imul ",fp);
+            if(ins->op->size == bits_64_d)
+                fputs("mulsd ",fp);
+            else
+                fputs("imul ",fp);
             aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
             fputs(aux,fp);
             free(aux);
@@ -184,36 +215,51 @@ char* convertInsToAsm(INS* ins)
         }
         case divi:
             fputs(indentation,fp);
-            fputs("mov",fp);
-            fputs(sizeModifier[ins->args[1]->target->size],fp);
-            fputs(" ",fp);
-            aux = convertTarget(ins->args[1]->target,ins->args[1]->mode);
-            fputs(aux,fp);
-            free(aux);
-            fputs(", ",fp);
-            fputs(raxVariants[ins->args[0]->target->size],fp);
-            fputs("\n",fp);
-            if(ins->args[0]->target->size == bits_32) //Convert long (32bits) to quad (64bits)
+            if(ins->args[0]->target->size == bits_64_d)
             {
-                fputs(indentation,fp);
-                fputs("cltq\n",fp);
-                fputs(indentation,fp);
-                fputs("movq %rax, %rdx\n",fp);
-                fputs(indentation,fp);
-                fputs("shr $32, %rdx\n",fp);
+                fputs("divsd ",fp);
+                aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+                fputs(aux,fp);
+                free(aux);
+                fputs(", ",fp);
+                aux = convertTarget(ins->args[1]->target,ins->args[1]->mode);
+                fputs(aux,fp);
+                free(aux);
+                fputs("\n",fp);
             }
             else
             {
+                fputs("mov",fp);
+                fputs(sizeModifier[ins->args[1]->target->size],fp);
+                fputs(" ",fp);
+                aux = convertTarget(ins->args[1]->target,ins->args[1]->mode);
+                fputs(aux,fp);
+                free(aux);
+                fputs(", ",fp);
+                fputs(raxVariants[ins->args[0]->target->size],fp);
+                fputs("\n",fp);
+                if(ins->args[0]->target->size == bits_32) //Convert long (32bits) to quad (64bits)
+                {
+                    fputs(indentation,fp);
+                    fputs("cltq\n",fp);
+                    fputs(indentation,fp);
+                    fputs("movq %rax, %rdx\n",fp);
+                    fputs(indentation,fp);
+                    fputs("shr $32, %rdx\n",fp);
+                }
+                else
+                {
+                    fputs(indentation,fp);
+                    fputs("cqto\n",fp);
+                }
                 fputs(indentation,fp);
-                fputs("cqto\n",fp);
+                fputs("idiv ",fp);
+                aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+                fputs(aux,fp);
+                fputs("\n",fp);
+                fputs(indentation,fp);
+                fputs("movq %rax, %rbx\n",fp);
             }
-            fputs(indentation,fp);
-            fputs("idiv ",fp);
-            aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
-            fputs(aux,fp);
-            fputs("\n",fp);
-            fputs(indentation,fp);
-            fputs("movq %rax, %rbx\n",fp);
             break;
         case call:
         {
@@ -354,7 +400,6 @@ char* convertInsToAsm(INS* ins)
             break;
         }
         default:
-
             printf("DEBUG OPKIND: %d\n",ins->op->opK);
             fputs("debugINS\n",fp);
             break;
@@ -482,23 +527,22 @@ char* convertTarget(Target* t, Mode* m)
         }
         case reg:
         {
-            if(t->additionalInfo == 1)
-                res = deepCopy(rbxVariants[modifier]);
-            else if(t->additionalInfo == 2)
-                res = deepCopy(rcxVariants[modifier]);
+            if(modifier == bits_64_d)
+                res = deepCopy(sseVariants[t->additionalInfo]);
             else
-                res = deepCopy("NOT_A_REG");
+                res = deepCopy(registers[t->additionalInfo][modifier]);
+            break;
         }
     }
     if(m->mode == dir)
         return res;
-    if(m->mode == ind)
+    else if(m->mode == ind)
     {
         res = concatStrFreeFree("(",res);
         res = concatStrFree(res,")");
         return res;
     }
-    if(m->mode == irl)
+    else //mode == irl
     {
         char offset[20];
         sprintf(offset,"%d",m->offset);
@@ -509,7 +553,6 @@ char* convertTarget(Target* t, Mode* m)
         res = aux;
         return res;
     }
-    return deepCopy("debug!!\n");
 }
 
 char* getLongsFromDouble(double val)
@@ -532,6 +575,13 @@ char* getLongsFromDouble(double val)
     res = concatStrFree(res,intAsString);
     res = concatStrFree(res,"\n");
     return res;
+}
+
+int isXMM(Target* t)
+{
+    if(t->size == bits_64_d && t->targetK == reg)
+        return 1;
+    return 0;
 }
 
 const char* printCHAR = "\n.type printCHAR, @function\n"

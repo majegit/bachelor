@@ -10,6 +10,8 @@ char* meta_function_declaration(INS* ins);
 char* convertTarget(Target* t, Mode* m);
 char* getLongsFromDouble(double val);
 
+int isXMM(Target* t);
+
 const char* printCHAR;
 const char* printBOOLEAN;
 const char* printINT;

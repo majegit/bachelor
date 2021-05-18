@@ -1,13 +1,9 @@
 
-
+int h = g();
 
 int g()
 {
-    while(3 == 3)
-    {
-        double g = 2+2;
-        g = 3;
-    }
+    double g = 12.0 * 4.0;
     return 3;
 }
 

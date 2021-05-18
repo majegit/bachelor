@@ -55,8 +55,7 @@ typedef enum targetKind {
     rsp, //Stack pointer
     rrt, //Return register
     rsl, //Register for static link computation
-    reg, //Other registers
-    xmm, //Double registers
+    reg, //registers
 } targetKind;
 
 typedef enum metaKind {
