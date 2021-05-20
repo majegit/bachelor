@@ -35,12 +35,12 @@ typedef enum opKind {
     cvtsi2sd
 } opKind;
 
-typedef enum opSize {
+typedef enum opSuffix {
     bits_8,
     bits_32,
     bits_64,
     bits_64_d
-} opSize;
+} opSuffix;
 
 typedef enum addressingMode {
     dir, //Direct:                     X
@@ -98,7 +98,7 @@ typedef struct Mode {
 
 typedef struct Target {
     targetKind targetK;
-    opSize size;
+    opSuffix size;
     int additionalInfo;  //This is used to determine register number or immediate value
     labelKind labelK;    //This is relevant if target kind is label
     char* labelName;     //This is relevant if target kind is label
@@ -106,7 +106,7 @@ typedef struct Target {
 
 typedef struct Operation {
     opKind opK;
-    opSize size;
+    opSuffix size;
     metaKind metaK;      //This is only relevant if opKind is meta also
     int metaInt;         //This is only relevant if opkind is meta also
     double metaDouble;   //This is only relevant if opkind is meta also
@@ -177,13 +177,13 @@ void addToLLD(LLND* llnd);
 Mode* makeMode(addressingMode mode);
 Mode* makeModeIRL(int offset);
 
-Target* makeTarget(targetKind k, opSize s);
+Target* makeTarget(targetKind k, opSuffix s);
 Target* makeTargetLabel(labelKind k, char* name);
-Target* makeTargetReg(opSize size, int reg);
+Target* makeTargetReg(opSuffix size, int reg);
 Target* makeTargetIMI(int imiValue);
 Target* makeTargetDouble(double doubleVal);
 
-OP* makeOP(opKind opK, opSize size);
+OP* makeOP(opKind opK, opSuffix size);
 OP* makeOPMeta(metaKind k, int metaInfo, double metaDouble, char* metaLabel);
 
 ARG* makeARG(Target* target, Mode* mode);
@@ -202,34 +202,34 @@ void quickAddMetaWithInfo(metaKind kind, int metaInt);
 
 void quickAddMetaString(metaKind metaK, char* str);
 void quickAddLabelString(labelKind kind, char* label);
-void quickAddPush(opSize size, Target* target, Mode* mode);
+void quickAddPush(opSuffix size, Target* target, Mode* mode);
 void quickAddPushId(char* name);
-void quickAddPopRRT(opSize size);
-void quickAddPopReg(opSize size, int registerNumber);
+void quickAddPopRRT(opSuffix size);
+void quickAddPopReg(opSuffix size, int registerNumber);
 void quickAddPop(Target* t, Mode* m);
 void quickAddMoveRBPToRSL();
 void quickAddMoveRSLToRBP();
 void quickAddCheckTruthValue();
 void quickAddJumpIfFalse(labelKind k, char* labelName);
 void quickAddUnconditionalJmp(labelKind k, char* labelString);
-void quickAddArithmeticINS(opKind k, opSize size);
-void quickAddCompareINS(opKind k, opSize size);
+void quickAddArithmeticINS(opKind k, opSuffix size);
+void quickAddCompareINS(opKind k, opSuffix size);
 void quickAddBooleanINS(opKind k);
-void quickAddPushReg(int regNumber,opSize size);
+void quickAddPushReg(int regNumber,opSuffix size);
 void quickAddCallFun(char* funLabel);
 void quickAddPushRSP();
 void quickAddMoveRBPToRSP();
 void quickAddPopRBP();
-void quickAddPushRRT();
+void quickAddPushRRT(opSuffix suffix);
 void quickAddPushDoubleLabel(char* label);
 
 
 //Other
 char* labelGenerator(labelKind kind);
 char* doubleLabelGenerator(double val);
-opSize getSizeOfType(char* typeName);
-opSize getSizeOfId(char* idName);
-int getIntFromopSize(opSize size);
+opSuffix getSuffixOfType(char* typeName);
+opSuffix getSizeOfId(char* idName);
+int getIntFromSuffix(opSuffix size);
 int getSizeOfParameters(FPARAMETERNODE* fpn);
 
 

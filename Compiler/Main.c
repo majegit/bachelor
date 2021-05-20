@@ -3,6 +3,7 @@
 #include "SymbolCollection.h"
 #include "TypeChecking.h"
 #include "IntermediateCodeGeneration.h"
+#include "Peephole.h"
 #include "DebugUtils.h"
 #include "Emit.h"
 
@@ -21,6 +22,8 @@ int main()
     printf("STARTING INTERMEDIATE CODE GENERATION\n");
     LL* iCode = icgTraversePROGRAM(program);
     printIC(iCode);
+    printf("STARTING PEEPHOLE OPTIMIZATION\n");
+    peepholeOptimize(iCode);
     printf("STARTING CODE EMIT\n");
     emit(iCode,"asmCode.s");
     return 0;

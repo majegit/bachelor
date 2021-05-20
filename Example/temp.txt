@@ -3,7 +3,6 @@ int h = g();
 
 int g()
 {
-    double g = 12.0 * 4.0;
     return 3;
 }
 

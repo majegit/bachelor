@@ -117,8 +117,7 @@ void tcTraverseEXP(EXP* e)
         {
             tcTraverseEXP(e->val.binopE.left);
             tcTraverseEXP(e->val.binopE.right);
-            OPERATION_WRAPPER *opWrapper = searchOperations(e->val.binopE.operator, e->val.binopE.left->type,
-                                                            e->val.binopE.right->type);
+            OPERATION_WRAPPER *opWrapper = searchOperations(e->val.binopE.operator, e->val.binopE.left->type, e->val.binopE.right->type);
             if (opWrapper->opCount == 0) {
                 printf("ERROR: Operator '%s' not defined for %s %s on line: %d\n", e->val.binopE.operator,
                        e->val.binopE.left->type, e->val.binopE.right->type, e->lineno);
@@ -129,16 +128,14 @@ void tcTraverseEXP(EXP* e)
                        e->val.binopE.operator, e->val.binopE.right->type, e->lineno);
                 exit(0);
             }
-            if (strcmp(opWrapper->op->argTypes[0]->type, e->val.binopE.left->type) !=
-                0) //Make coercion for the left argument
+            if (strcmp(opWrapper->op->argTypes[0]->type, e->val.binopE.left->type) != 0) //Make coercion for the left argument
             {
                 EXP *ce = makeEXPcoerce(opWrapper->op->argTypes[0]->type, e->val.binopE.left);
                 e->val.binopE.left = ce;
             }
-            if (strcmp(opWrapper->op->argTypes[1]->type, e->val.binopE.right->type) !=
-                0) //Make coercion for the right argument
+            if (strcmp(opWrapper->op->argTypes[1]->type, e->val.binopE.right->type) != 0) //Make coercion for the right argument
             {
-                EXP *ce = makeEXPcoerce(opWrapper->op->argTypes[1]->type, e->val.binopE.left);
+                EXP *ce = makeEXPcoerce(opWrapper->op->argTypes[1]->type, e->val.binopE.right);
                 e->val.binopE.right = ce;
             }
             e->type = opWrapper->op->returnType->type;
@@ -147,7 +144,7 @@ void tcTraverseEXP(EXP* e)
         case funK:
         {
             SYMBOL *functionSymbol = lookupSymbolFun(e->val.funE.id, currentScope);
-            if (functionSymbol == NULL) //TODO: throw into symbol collection, (andet gennemløb)
+            if (functionSymbol == NULL)
             {
                 printf("ERROR: Function does not exist: %s on line: %d\n", e->val.funE.id, e->lineno);
                 exit(0);

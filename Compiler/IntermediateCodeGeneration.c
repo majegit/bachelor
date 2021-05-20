@@ -85,76 +85,28 @@ void icgTraverseSTMT(STMT* s)
         case assignK:
         {
             OP* op;
-            Target* from, *to;
-            ARG* argFrom, *argTo;
+            Target* src, *dest;
+            ARG* srcA, *destA;
             EXP* e = s->val.assignS.val;
 
-
+            icgTraverseEXP(e);
+            quickAddPopRRT(getSuffixOfType(e->type));
 
             int* varDepthAndOffset = staticLinkCount(s->val.assignS.name,currentScope); //Find relative nested depth and offset from rbp
-            Mode* modeIRL = makeModeIRL(varDepthAndOffset[1]);
+            int varDepth = varDepthAndOffset[0]; //Scope depth
+            int varOffset = varDepthAndOffset[1]; //Offset from base pointer
 
-            if(e->kind == intK || e->kind == boolK || e->kind == charK)
-            {
-                from = makeTargetIMI(e->val.intE);
-                op = makeOP(move,getSizeOfType(e->type));
-            }
-            else if(e->kind == doubleK)
-            {
-                from = makeTargetDouble(e->val.doubleE);
-                op = makeOP(move,bits_64);
-            }
-            else if(e->kind == idK)
-            {
-                Target* memFromTarget;
-                int* idDepthAndOffset = staticLinkCount(e->val.idE,currentScope);
+            quickAddMoveRBPToRSL();
+            for(int i=0; i < varDepth; i++)
+                quickAddMeta(FOLLOW_STATIC_LINK);
 
-                Target* reg0 = makeTargetReg(getSizeOfId(e->val.idE),0);
-                ARG* argReg0 = makeARG(reg0,makeMode(dir));
+            op = makeOP(move,getSuffixOfType(e->type));
+            src = makeTarget(rrt,getSizeOfId(s->val.assignS.name));
+            srcA = makeARG(src,makeMode(dir));
+            dest = makeTarget(rsl,bits_64);
+            destA = makeARG(dest,makeModeIRL(varOffset));
 
-                if(idDepthAndOffset[0] != 0)
-                {
-                    quickAddMoveRBPToRSL();
-                    for(int i=0; i < idDepthAndOffset[0]; i++)
-                        quickAddMeta(FOLLOW_STATIC_LINK);
-                    memFromTarget = makeTarget(rsl,bits_64);
-                }
-                else
-                    memFromTarget = makeTarget(rbp,bits_64);
-
-                ARG* memFromArg = makeARG(memFromTarget,makeModeIRL(idDepthAndOffset[1]));
-
-                ARG* args[2] = {memFromArg,argReg0};
-                OP* moveMem = makeOP(move,getSizeOfId(e->val.idE));
-                quickAddIns(makeINS(moveMem,args));
-                free(idDepthAndOffset);
-                from = makeTargetReg(getSizeOfId(s->val.assignS.name),0);
-
-                op = makeOP(move,getSizeOfType(e->type));
-            }
-            else
-            {
-                printf("in here\n");
-                icgTraverseEXP(e);
-                quickAddPopRRT(getSizeOfType(e->type));
-                printf("size of type: %d\n",getSizeOfType(e->type)); //bits_64_d
-                from = makeTarget(rrt,getSizeOfId(s->val.assignS.name));
-                op = makeOP(move,getSizeOfType(e->type));
-            }
-            if(varDepthAndOffset[0] != 0) //The variable is NOT in the current scope
-            {
-                quickAddMoveRBPToRSL();
-                for(int i=0; i < varDepthAndOffset[0]; i++)
-                    quickAddMeta(FOLLOW_STATIC_LINK);
-                to = makeTarget(rsl,bits_64);
-            }
-            else
-                to = makeTarget(rbp,bits_64);
-
-            argFrom = makeARG(from,makeMode(dir));
-            argTo = makeARG(to,modeIRL);
-
-            ARG* args[2] = {argFrom, argTo};
+            ARG* args[2] = {srcA, destA};
             quickAddIns(makeINS(op,args));
 
             free(varDepthAndOffset); //Free malloc'ed memory
@@ -173,7 +125,7 @@ void icgTraverseSTMT(STMT* s)
             quickAddJumpIfFalse(endif_label,labelName);          //jne endif_X
             icgTraverseSTMTCOMP(s->val.ifElseS.ifbody);             //if-body
 
-            char* endelseLabel = "";
+            char* endelseLabel;
             if(elsePart)
             {
                 endelseLabel = concatStr("endelse",labelName+5);//Generate endelse_X
@@ -203,7 +155,7 @@ void icgTraverseSTMT(STMT* s)
         }
         case printK:
         {
-            opSize typeSize = getSizeOfType(s->val.printS->type);
+            opSuffix typeSize = getSuffixOfType(s->val.printS->type);
             icgTraverseEXP(s->val.printS);  //TODO: DOUBLES
 
             char* printFun = concatStr("print",s->val.printS->type);
@@ -220,7 +172,7 @@ void icgTraverseSTMT(STMT* s)
 
             Target* t = makeTarget(rsp,bits_64);
             ARG* rsp = makeARG(t,makeMode(dir));
-            Target* imiT = makeTargetIMI(getIntFromopSize(typeSize));
+            Target* imiT = makeTargetIMI(getIntFromSuffix(typeSize));
             ARG* imiArg = makeARG(imiT,makeMode(dir));
             ARG* args[2] = {imiArg,rsp};
             OP* op = makeOP(add, bits_64);
@@ -278,7 +230,7 @@ void icgTraverseEXP(EXP* e)
             icgTraverseEXP(e->val.binopE.right);
 
             char* op = e->val.binopE.operator;
-            opSize size = getSizeOfType(e->val.binopE.right->type); //Using the fact that for all operations, the operands are same type
+            opSuffix size = getSuffixOfType(e->val.binopE.right->type); //Using the fact that for all operations, the operands are same type
 
             if(strcmp(op,"-") == 0)
                 quickAddArithmeticINS(sub,size);
@@ -314,32 +266,64 @@ void icgTraverseEXP(EXP* e)
             quickAddCallFun(funSymbol->label);
             int sizeOfParameters = getSizeOfParameters(funSymbol->fpn);
             quickAddMetaWithInfo(DEALLOCATE_ARGUMENTS,sizeOfParameters);
-            quickAddPushRRT();
+            quickAddPushRRT(getSuffixOfType(funSymbol->type));
             break;
         }
         case coerceK:
         {
+            Target* src, *dest;
+            ARG* srcA, *destA;
+            ARG* args[2];
+            OP* op;
+            opKind opK;
+
             icgTraverseEXP(e->val.coerceE);
 
-            opKind opK;
+            opSuffix suffixPre = getSuffixOfType(e->val.coerceE->type);
+            opSuffix suffixPost = getSuffixOfType(e->type);
+
             if(strcmp(e->type, "DOUBLE") == 0 && strcmp(e->val.coerceE->type, "INT") == 0) //Right now this is the only type of coercion
                 opK = cvtsi2sd;
             else
                 exit(1); //ERROR, should never happen
 
-            Target* rspT = makeTarget(rsp,bits_64);
-            ARG* rspA = makeARG(rspT,makeMode(ind));
+            //The expression to be coerced is on the stack, convert it and save result in register 0
+            op = makeOP(opK,0);
+            src = makeTarget(rsp,bits_64);
+            srcA = makeARG(src,makeMode(ind));
 
-            Target* xmmT = makeTargetReg(bits_64_d,0);
-            ARG* xmmA = makeARG(xmmT,makeMode(dir));
+            dest = makeTargetReg(suffixPost,0);
+            destA = makeARG(dest,makeMode(dir));
 
-            OP* op = makeOP(opK,bits_64_d);
-            ARG* args[2] = {rspA,xmmA};
+            args[0] = srcA;
+            args[1] = destA;
+            quickAddIns(makeINS(op,args));
+
+            //Remove the top of stack (uncoerced expression)
+            op = makeOP(add,bits_64);
+
+            src = makeTargetIMI(getIntFromSuffix(suffixPre));
+            srcA = makeARG(src,makeMode(dir));
+
+            dest = makeTarget(rsp,bits_64);
+            destA = makeARG(dest,makeMode(dir));
+
+            args[0] = srcA;
+            args[1] = destA;
+            quickAddIns(makeINS(op,args));
+
+            //Push register 0 onto the stack
+            op = makeOP(push,suffixPost);
+
+            src = makeTargetReg(suffixPost,0);
+            srcA = makeARG(src,makeMode(dir));
+
+            args[0] = srcA;
+            args[1] = destA;
             quickAddIns(makeINS(op,args));
             break;
         }
     }
-    //TODO: test coercion
 }
 
 void icgTraverseAPARAMETERNODE(APARAMETERNODE* apn)
@@ -369,7 +353,7 @@ void icgTraverseFUNCTION(FUNCTION* f)
 
     char* endfunLabel = concatStr("end",funLabel);
     quickAddLabelString(endfunction_label,endfunLabel); //endfunX_<function name>
-    quickAddPopRRT(getSizeOfType(f->returnType));
+    quickAddPopRRT(getSuffixOfType(f->returnType));
     quickAddMoveRBPToRSP();
     quickAddPopRBP();
     quickAddMeta(CALLEE_RESTORE);                       //Pop callee save registers
@@ -405,7 +389,7 @@ Mode* makeModeIRL(int offset)
     return mode;
 }
 
-Target* makeTarget(targetKind k, opSize s)
+Target* makeTarget(targetKind k, opSuffix s)
 {
     Target* t = (Target*)malloc(sizeof(Target));
     t->targetK = k;
@@ -421,7 +405,7 @@ Target* makeTargetLabel(labelKind k, char* name)
     return t;
 }
 
-Target* makeTargetReg(opSize s, int regNumber)
+Target* makeTargetReg(opSuffix s, int regNumber)
 {
     Target* t;
     t = makeTarget(reg,s);
@@ -443,7 +427,7 @@ Target* makeTargetDouble(double doubleVal)
     return t;
 }
 
-OP* makeOP(opKind opK, opSize size)
+OP* makeOP(opKind opK, opSuffix size)
 {
     OP* op = (OP*)malloc(sizeof(OP));
     op->opK = opK;
@@ -523,7 +507,7 @@ void quickAddLabelString(labelKind kind, char* name)
     quickAddIns(makeINS(op,args));
 }
 
-void quickAddPush(opSize size, Target* target, Mode* mode)
+void quickAddPush(opSuffix size, Target* target, Mode* mode)
 {
     ARG* arg = makeARG(target, mode);
     ARG* args[2] = {arg,NULL};
@@ -559,7 +543,7 @@ void quickAddPushId(char* name)
     free(varDepthAndOffset); //Free malloc'ed memory
 }
 
-void quickAddPopRRT(opSize size)
+void quickAddPopRRT(opSuffix size)
 {
     Target* t = makeTarget(rrt,size);
     ARG* arg = makeARG(t,makeMode(dir));
@@ -569,7 +553,7 @@ void quickAddPopRRT(opSize size)
 }
 
 //Pop into a register (normal or XMM)
-void quickAddPopReg(opSize size, int registerNumber)
+void quickAddPopReg(opSuffix size, int registerNumber)
 {
     Target* t = makeTargetReg(size,registerNumber);
     ARG* arg = makeARG(t,makeMode(dir));
@@ -578,7 +562,7 @@ void quickAddPopReg(opSize size, int registerNumber)
     quickAddIns(makeINS(op,args));
 }
 
-void quickAddPushReg(int regNumber, opSize size)
+void quickAddPushReg(int regNumber, opSuffix size)
 {
     Target* t = makeTargetReg(size,regNumber);
     quickAddPush(size,t,makeMode(dir));
@@ -639,7 +623,7 @@ void quickAddUnconditionalJmp(labelKind k, char* labelName)
     quickAddIns(makeINS(op,args));
 }
 
-void quickAddArithmeticINS(opKind k, opSize size)  //L 'OP' R
+void quickAddArithmeticINS(opKind k, opSuffix size)  //L 'OP' R
 {
     quickAddPopReg(size,1); //Right side of binop
     quickAddPopReg(size,0); //Left side of binop
@@ -655,7 +639,7 @@ void quickAddArithmeticINS(opKind k, opSize size)  //L 'OP' R
     quickAddIns(makeINS(op,args));
 }
 
-void quickAddCompareINS(opKind k, opSize size)
+void quickAddCompareINS(opKind k, opSuffix size)
 {
     quickAddPopReg(size, 0); //pop reg2  #Right side of binop
     quickAddPopReg(size, 1); //pop reg1  #Left side of binop
@@ -733,12 +717,12 @@ void quickAddPopRBP()
     quickAddIns(makeINS(op,args));
 }
 
-void quickAddPushRRT()
+void quickAddPushRRT(opSuffix suffix)
 {
-    Target* t = makeTarget(rrt,bits_64);
-    ARG* arg = makeARG(t,makeMode(dir));
-    OP* op = makeOP(push, bits_64);
-    ARG* args[2] = {arg, NULL};
+    OP* op = makeOP(push, suffix);
+    Target* dest = makeTarget(rrt,suffix);
+    ARG* destA = makeARG(dest,makeMode(dir));
+    ARG* args[2] = {destA, NULL};
     quickAddIns(makeINS(op,args));
 }
 
@@ -810,7 +794,7 @@ char* doubleLabelGenerator(double val)
     return label;
 }
 
-int getIntFromopSize(opSize size)
+int getIntFromSuffix(opSuffix size)
 {
     switch(size)
     {
@@ -832,13 +816,13 @@ int getSizeOfParameters(FPARAMETERNODE* fpn)
     FPARAMETERNODE* currentNode = fpn;
     while(currentNode != NULL)
     {
-        parameterSize += getIntFromopSize(getSizeOfType(currentNode->current->type));
+        parameterSize += getIntFromSuffix(getSuffixOfType(currentNode->current->type));
         currentNode = currentNode->next;
     }
     return parameterSize;
 }
 
-opSize getSizeOfType(char* typeName)
+opSuffix getSuffixOfType(char* typeName)
 {
     if (strcmp(typeName, "BOOLEAN") == 0)
         return bits_8;
@@ -851,10 +835,10 @@ opSize getSizeOfType(char* typeName)
     return 0;
 }
 
-opSize getSizeOfId(char* idName)
+opSuffix getSizeOfId(char* idName)
 {
     SYMBOL* id = lookupSymbolVar(idName,currentScope);
-    return getSizeOfType(id->type);
+    return getSuffixOfType(id->type);
 }
 
 

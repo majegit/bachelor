@@ -15,10 +15,10 @@ const char* sseVariants[] = {"%xmm0","%xmm1"};
 
 const char* rbpVariants[] = {"%bpl","%ebp","%rbp","%rbp"};
 const char* rdiVariants[] = {"%dil","%edi","%rdi","%rdi"};
-const char* rspVariants[] = {"%sl", "%esl","%rsp","%rsp"};
+const char* rspVariants[] = {"%sl", "%esp","%rsp","%rsp"};
 
-const char* sizeModifier[]  = {"b","l","q","sd"};
-const char* sizeModifier2[] = {"1","4","8","8"};
+const char* suffixModifier[]  = {"b","l","q","sd"};
+const char* suffixModifier2[] = {"1","4","8","8"};
 
 const char* program_prologue = ".section .data\n.section .text\n.global _start\n_start:\n";
 const char* program_epilogue = "    movq %rax, %rdi\n    movq $60, %rax\n    syscall\n\n";
@@ -69,15 +69,15 @@ char* convertInsToAsm(INS* ins)
             fputs(indentation,fp);
             fputs("mov",fp);
             if(ins->op->size == bits_64_d && (!isXMM(ins->args[0]->target) || !isXMM(ins->args[1]->target)))
-                fputs("q",fp); //can only call movsd between 2 xmm registers...
+                fputs("q",fp); //can only use movsd if both arguments are xmm registers
             else
-                fputs(sizeModifier[ins->op->size],fp);
+                fputs(suffixModifier[ins->op->size],fp);
             fputs(" ",fp);
-            aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+            aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
             fputs(aux,fp);
             free(aux);
             fputs(", ",fp);
-            aux = convertTarget(ins->args[1]->target,ins->args[1]->mode);
+            aux = stringifyTarget(ins->args[1]->target,ins->args[1]->mode);
             fputs(aux,fp);
             free(aux);
             fputs("\n",fp);
@@ -89,7 +89,7 @@ char* convertInsToAsm(INS* ins)
             if(ins->op->size == bits_64_d)
             {
                 fputs("movq ",fp);
-                aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+                aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
                 fputs(aux,fp);
                 free(aux);
                 fputs(", %rax\n",fp);
@@ -99,7 +99,7 @@ char* convertInsToAsm(INS* ins)
             else if(ins->op->size == bits_64)
             {
                 fputs("push ",fp);
-                aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+                aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
                 fputs(aux,fp);
                 free(aux);
                 fputs("\n",fp);
@@ -107,13 +107,13 @@ char* convertInsToAsm(INS* ins)
             else
             {
                 fputs("subq $",fp);
-                fputs(sizeModifier2[ins->op->size],fp);
+                fputs(suffixModifier2[ins->op->size],fp);
                 fputs(", %rsp\n",fp);
                 fputs(indentation,fp);
                 fputs("mov",fp);
-                fputs(sizeModifier[ins->op->size],fp);
+                fputs(suffixModifier[ins->op->size],fp);
                 fputs(" ",fp);
-                aux = convertTarget(ins->args[0]->target, ins->args[0]->mode);
+                aux = stringifyTarget(ins->args[0]->target, ins->args[0]->mode);
                 fputs(aux, fp);
                 free(aux);
                 fputs(", ",fp);
@@ -121,7 +121,7 @@ char* convertInsToAsm(INS* ins)
                 fputs("\n",fp);
                 fputs(indentation,fp);
                 fputs("mov",fp);
-                fputs(sizeModifier[ins->op->size],fp);
+                fputs(suffixModifier[ins->op->size],fp);
                 fputs(" ",fp);
                 fputs(raxVariants[ins->op->size],fp);
                 fputs(", (%rsp)\n",fp);
@@ -136,7 +136,7 @@ char* convertInsToAsm(INS* ins)
                 fputs("pop %rax\n",fp);
                 fputs(indentation,fp);
                 fputs("movq %rax, ",fp);
-                aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+                aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
                 fputs(aux,fp);
                 free(aux);
                 fputs("\n",fp);
@@ -144,7 +144,7 @@ char* convertInsToAsm(INS* ins)
             else if(ins->op->size == bits_64)
             {
                 fputs("pop ",fp);
-                aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+                aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
                 fputs(aux,fp);
                 free(aux);
                 fputs("\n",fp);
@@ -152,15 +152,15 @@ char* convertInsToAsm(INS* ins)
             else
             {
                 fputs("mov",fp);
-                fputs(sizeModifier[ins->op->size],fp);
+                fputs(suffixModifier[ins->op->size],fp);
                 fputs(" (%rsp), ",fp);
-                aux = convertTarget(ins->args[0]->target, ins->args[0]->mode);
+                aux = stringifyTarget(ins->args[0]->target, ins->args[0]->mode);
                 fputs(aux,fp);
                 free(aux);
                 fputs("\n",fp);
                 fputs(indentation,fp);
                 fputs("addq $",fp);
-                fputs(sizeModifier2[ins->op->size],fp);
+                fputs(suffixModifier2[ins->op->size],fp);
                 fputs(", %rsp\n",fp);
             }
             break;
@@ -169,13 +169,13 @@ char* convertInsToAsm(INS* ins)
         {
             fputs(indentation,fp);
             fputs("add",fp);
-            fputs(sizeModifier[ins->op->size],fp);
+            fputs(suffixModifier[ins->op->size],fp);
             fputs(" ",fp);
-            aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+            aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
             fputs(aux,fp);
             free(aux);
             fputs(", ",fp);
-            aux = convertTarget(ins->args[1]->target,ins->args[1]->mode);
+            aux = stringifyTarget(ins->args[1]->target,ins->args[1]->mode);
             fputs(aux,fp);
             free(aux);
             fputs("\n",fp);
@@ -185,13 +185,13 @@ char* convertInsToAsm(INS* ins)
         {
             fputs(indentation,fp);
             fputs("sub",fp);
-            fputs(sizeModifier[ins->op->size],fp);
+            fputs(suffixModifier[ins->op->size],fp);
             fputs(" ",fp);
-            aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+            aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
             fputs(aux,fp);
             free(aux);
             fputs(", ",fp);
-            aux = convertTarget(ins->args[1]->target,ins->args[1]->mode);
+            aux = stringifyTarget(ins->args[1]->target,ins->args[1]->mode);
             fputs(aux,fp);
             fputs("\n",fp);
             break;
@@ -203,11 +203,11 @@ char* convertInsToAsm(INS* ins)
                 fputs("mulsd ",fp);
             else
                 fputs("imul ",fp);
-            aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+            aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
             fputs(aux,fp);
             free(aux);
             fputs(", ",fp);
-            aux = convertTarget(ins->args[1]->target,ins->args[1]->mode);
+            aux = stringifyTarget(ins->args[1]->target,ins->args[1]->mode);
             fputs(aux, fp);
             free(aux);
             fputs("\n",fp);
@@ -218,11 +218,11 @@ char* convertInsToAsm(INS* ins)
             if(ins->args[0]->target->size == bits_64_d)
             {
                 fputs("divsd ",fp);
-                aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+                aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
                 fputs(aux,fp);
                 free(aux);
                 fputs(", ",fp);
-                aux = convertTarget(ins->args[1]->target,ins->args[1]->mode);
+                aux = stringifyTarget(ins->args[1]->target,ins->args[1]->mode);
                 fputs(aux,fp);
                 free(aux);
                 fputs("\n",fp);
@@ -230,9 +230,9 @@ char* convertInsToAsm(INS* ins)
             else
             {
                 fputs("mov",fp);
-                fputs(sizeModifier[ins->args[1]->target->size],fp);
+                fputs(suffixModifier[ins->args[1]->target->size],fp);
                 fputs(" ",fp);
-                aux = convertTarget(ins->args[1]->target,ins->args[1]->mode);
+                aux = stringifyTarget(ins->args[1]->target,ins->args[1]->mode);
                 fputs(aux,fp);
                 free(aux);
                 fputs(", ",fp);
@@ -254,7 +254,7 @@ char* convertInsToAsm(INS* ins)
                 }
                 fputs(indentation,fp);
                 fputs("idiv ",fp);
-                aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+                aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
                 fputs(aux,fp);
                 fputs("\n",fp);
                 fputs(indentation,fp);
@@ -272,12 +272,15 @@ char* convertInsToAsm(INS* ins)
         case cmp:
         {
             fputs(indentation,fp);
-            fputs("cmp ",fp);
-            aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+            if(ins->op->size == bits_64_d)
+                fputs("comisd ",fp);
+            else
+                fputs("cmp ",fp);
+            aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
             fputs(aux,fp);
             free(aux);
             fputs(", ",fp);
-            aux = convertTarget(ins->args[1]->target,ins->args[1]->mode);
+            aux = stringifyTarget(ins->args[1]->target,ins->args[1]->mode);
             fputs(aux,fp);
             free(aux);
             fputs("\n",fp);
@@ -303,7 +306,7 @@ char* convertInsToAsm(INS* ins)
         {
             fputs(indentation,fp);
             fputs( "sete ",fp);
-            aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+            aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
             fputs(aux,fp);
             free(aux);
             fputs("\n",fp);
@@ -313,7 +316,7 @@ char* convertInsToAsm(INS* ins)
         {
             fputs(indentation,fp);
             fputs( "setne ",fp);
-            aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+            aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
             fputs(aux,fp);
             free(aux);
             fputs("\n",fp);
@@ -323,7 +326,7 @@ char* convertInsToAsm(INS* ins)
         {
             fputs(indentation,fp);
             fputs( "setg ",fp);
-            aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+            aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
             fputs(aux,fp);
             free(aux);
             fputs("\n",fp);
@@ -333,7 +336,7 @@ char* convertInsToAsm(INS* ins)
         {
             fputs(indentation,fp);
             fputs( "setge ",fp);
-            aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+            aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
             fputs(aux,fp);
             free(aux);
             fputs("\n",fp);
@@ -343,7 +346,7 @@ char* convertInsToAsm(INS* ins)
         {
             fputs(indentation,fp);
             fputs( "setl ",fp);
-            aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+            aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
             fputs(aux,fp);
             free(aux);
             fputs("\n",fp);
@@ -353,7 +356,7 @@ char* convertInsToAsm(INS* ins)
         {
             fputs(indentation,fp);
             fputs( "setle ",fp);
-            aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+            aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
             fputs(aux,fp);
             free(aux);
             fputs("\n",fp);
@@ -363,11 +366,11 @@ char* convertInsToAsm(INS* ins)
         {
             fputs(indentation,fp);
             fputs("and ",fp);
-            aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+            aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
             fputs(aux,fp);
             free(aux);
             fputs(", ",fp);
-            aux = convertTarget(ins->args[1]->target,ins->args[1]->mode);
+            aux = stringifyTarget(ins->args[1]->target,ins->args[1]->mode);
             fputs(aux,fp);
             free(aux);
             fputs("\n",fp);
@@ -377,11 +380,11 @@ char* convertInsToAsm(INS* ins)
         {
             fputs(indentation,fp);
             fputs( "or ",fp);
-            aux = convertTarget(ins->args[0]->target,ins->args[0]->mode);
+            aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
             fputs(aux,fp);
             free(aux);
             fputs(", ",fp);
-            aux = convertTarget(ins->args[1]->target,ins->args[1]->mode);
+            aux = stringifyTarget(ins->args[1]->target,ins->args[1]->mode);
             fputs(aux, fp);
             fputs("\n",fp);
             break;
@@ -397,6 +400,20 @@ char* convertInsToAsm(INS* ins)
         {
             fputs(ins->args[0]->target->labelName,fp);
             fputs(":\n",fp);
+            break;
+        }
+        case cvtsi2sd:
+        {
+            fputs(indentation,fp);
+            fputs("cvtsi2sd ",fp);
+            aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
+            fputs(aux,fp);
+            free(aux);
+            fputs(", ",fp);
+            aux = stringifyTarget(ins->args[1]->target,ins->args[1]->mode);
+            fputs(aux,fp);
+            free(aux);
+            fputs("\n",fp);
             break;
         }
         default:
@@ -486,10 +503,10 @@ char* meta_function_declaration(INS* ins)
     return res;
 }
 
-char* convertTarget(Target* t, Mode* m)
+char* stringifyTarget(Target* t, Mode* m)
 {
     char* res = "";
-    opSize modifier = t->size;
+    opSuffix modifier = t->size;
     switch(t->targetK)
     {
         case imi:
@@ -579,9 +596,25 @@ char* getLongsFromDouble(double val)
 
 int isXMM(Target* t)
 {
-    if(t->size == bits_64_d && t->targetK == reg)
+    if(t != NULL && t->size == bits_64_d && t->targetK == reg)
         return 1;
     return 0;
+}
+
+int memoryReferences(INS* ins)
+{
+    int count = 0;
+    if(ins->args[0] != NULL)
+    {
+        if(ins->args[0]->target->targetK == mem || ins->args[0]->mode->mode == ind || ins->args[0]->mode->mode == irl)
+            count++;
+        if(ins->args[1] != NULL)
+        {
+            if(ins->args[1]->target->targetK == mem || ins->args[1]->mode->mode == ind || ins->args[1]->mode->mode == irl)
+                count++;
+        }
+    }
+    return count;
 }
 
 const char* printCHAR = "\n.type printCHAR, @function\n"
@@ -621,7 +654,6 @@ const char* printBOOLEAN = "\n.type printBOOLEAN, @function\n"
 
 const char* printINT = "\n.type printINT, @function\n"
                        "printINT:\n"
-                       "    xor %rax, %rax\n"
                        "    xor %rdx, %rdx\n"
                        "    movq $1, %r10 #Always print newline\n"
                        "    xor %r11, %r11\n"
