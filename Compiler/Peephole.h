@@ -13,5 +13,10 @@ int pattern0(LLN* previous, LLN** current);
 int pattern1(LLN* previous, LLN** current);
 int pattern2(LLN* previous, LLN** current);
 int pattern3(LLN* previous, LLN** current);
+int pattern4(LLN* previous, LLN** current);
+
+int equalModes(Mode* m0, Mode* m1);
+int equalTargets(Target* t0, Target* t1);
+int equalArgs(ARG* arg0, ARG* arg1);
 
 #endif

@@ -1,4 +1,5 @@
 #include "Peephole.h"
+#include "DebugUtils.h"
 
 const int pattern_count = 4;
 int (*patterns[4])(LLN*,LLN**) = {pattern0,pattern1,pattern2,pattern3};
@@ -22,7 +23,8 @@ void peepholeOptimize(LL* code)
                     break; //Break out of for loop
             }
             previous = current;
-            current = current->next;
+            if(current)
+                current = current->next;
         }
     }
 }
@@ -35,6 +37,7 @@ void peepholeOptimize(LL* code)
 //MOVE <OP0> <OP1>
 int pattern0(LLN* previous, LLN** current)
 {
+    printf("0\n");
     LLN* c = *current;
     if(c->ins->op->opK == push && c->next != NULL && c->next->ins->op->opK == pop)
     {
@@ -55,49 +58,135 @@ int pattern0(LLN* previous, LLN** current)
 }
 
 //TEMPLATE:
-//MOVQ %RBP, %RSL
-//MOV<suffix> <offset>(%RSL), <TARGET1>
+//MOVQ RBP, RSL
+//MOV<suffix> <offset>(RSL), <TARGET1>
 //
 //RESULT:
-//MOV<suffix> <offset>(%RBP), <TARGET1>
+//MOV<suffix> <offset>(RBP), <TARGET1>
 int pattern1(LLN* previous, LLN** current)
 {
+    printf("1\n");
+    LLN* c = *current;
+    if(!c->next)
+        return 0;
+    INS* ins0 = c->ins;
+    INS* ins1 = c->next->ins;
+
+    if (ins0->op->opK == move &&
+        ins0->op->size == bits_64 &&
+        ins0->args[0] != NULL &&
+        ins0->args[0]->target->targetK == rbp &&
+        ins0->args[0]->mode->mode == dir &&
+        ins0->args[1] != NULL &&
+        ins0->args[1]->target->targetK == rsl &&
+        ins0->args[1]->mode->mode == dir &&
+        ins1->op->opK == move &&
+        ins1->args[0] != NULL &&
+        ins1->args[0]->target->targetK == rsl &&
+        ins1->args[0]->mode->mode == irl &&
+        ins1->args[1] != NULL &&
+        ins1->args[1]->mode->mode == dir)
+    {
+        printf("made it in 1\n");
+        OP* op = makeOP(move, ins1->op->size);
+        Target* src = makeTarget(rbp);
+        ARG* srcA = makeARG(src,makeModeIRL(ins1->args[0]->mode->offset));
+        Target* dest = makeTarget(ins1->args[1]->target->targetK);
+        ARG* destA = makeARG(dest,makeMode(dir));
+        ARG* args[2] = {srcA,destA};
+        INS* newINS = makeINS(op,args);
+        LLN* newLLN = makeLLN(newINS);
+        previous->next = newLLN;
+        newLLN->next = (*current)->next->next;
+        *current = newLLN;
+        return 1;
+    }
     return 0;
 }
 
-
+//TEMPLATE:
+//MOVQ RBP, RSL
+//MOV<suffix> <TARGET1>, <offset>(RSL)
+//
+//RESULT:
+//MOV<suffix> <TARGET1>, <offset>(RBP)
+int pattern2(LLN* previous, LLN** current)
+{
+    printf("2\n");
+    LLN* c = *current;
+    if(!c->next)
+        return 0;
+    INS* ins0 = c->ins;
+    INS* ins1 = c->next->ins;
+    if (ins0->op->opK == move &&
+        ins0->op->size == bits_64 &&
+        ins0->args[0] != NULL &&
+        ins0->args[0]->target->targetK == rbp &&
+        ins0->args[0]->mode->mode == dir &&
+        ins0->args[1] != NULL &&
+        ins0->args[1]->target->targetK == rsl &&
+        ins0->args[1]->mode->mode == dir &&
+        ins1->op->opK == move &&
+        ins1->args[0] != NULL &&
+        ins1->args[1] != NULL &&
+        ins1->args[1]->target->targetK == rsl &&
+        ins1->args[1]->mode->mode == irl)
+    {
+        printf("Made it in boy\n");
+        OP* op = makeOP(move, ins1->op->size);
+        Target* src = makeTarget(ins1->args[0]->target->targetK);
+        ARG* srcA = makeARG(src,ins1->args[0]->mode);
+        Target* dest = makeTarget(rbp);
+        ARG* destA = makeARG(dest,makeModeIRL(ins1->args[1]->mode->offset));
+        ARG* args[2] = {srcA,destA};
+        INS* newINS = makeINS(op,args);
+        LLN* newLLN = makeLLN(newINS);
+        previous->next = newLLN;
+        newLLN->next = (*current)->next->next;
+        *current = newLLN;
+        return 1;
+    }
+    return 0;
+}
 
 //TEMPLATE:
 //ADDQ $0, <OP0>
 //
 //RESULT:
 //
-int pattern2(LLN* previous, LLN** current)
+int pattern3(LLN* previous, LLN** current)
 {
+    printf("3\n");
     INS* ins = (*current)->ins;
     if(ins->op != NULL && ins->op->opK == add && ins->args[0] != NULL && ins->args[0]->target->targetK == imi && ins->args[0]->target->additionalInfo == 0)
     {
-        printf("In pattern2\n");
         previous->next = (*current)->next;
-        current = NULL;
+        *current = NULL;
         return 1;
     }
     return 0;
 }
 
-/* DESCRIPTION:
- * When calling the meta operation DEALLOCATE_ARGUMENTS on functions
- * with no arguments, then it results in addq $0, %rsp. This useless
- * instruction can be removed.
- */
-int pattern3(LLN* previous, LLN** current)
+int equalModes(Mode* m0, Mode* m1)
 {
-    INS* ins = (*current)->ins;
-    if(ins->op->metaK == DEALLOCATE_ARGUMENTS && ins->op->metaInt == 0)
-    {
-        previous->next = (*current)->next;
-        current = NULL;
+    if(m0->mode == m1->mode && m0->offset == m1->offset)
         return 1;
-    }
+    return 0;
+}
+
+int equalTargets(Target* t0, Target* t1)
+{
+    if(t0->targetK == t1->targetK
+        && t0->additionalInfo == t1->additionalInfo
+        && strcmp(t0->labelName,t1->labelName) == 0
+        && t0->labelK == t1->labelK)
+        return 1;
+    return 0;
+}
+
+int equalArgs(ARG* arg0, ARG* arg1)
+{
+    if(equalTargets(arg0->target,arg1->target) && equalModes(arg0->mode,arg1->mode))
+        return 1;
     return 0;
 }

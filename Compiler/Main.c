@@ -21,7 +21,6 @@ int main()
     typeChecking(program);
     printf("STARTING INTERMEDIATE CODE GENERATION\n");
     LL* iCode = icgTraversePROGRAM(program);
-    printIC(iCode);
     printf("STARTING PEEPHOLE OPTIMIZATION\n");
     peepholeOptimize(iCode);
     printf("STARTING CODE EMIT\n");

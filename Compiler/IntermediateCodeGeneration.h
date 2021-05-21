@@ -59,25 +59,20 @@ typedef enum targetKind {
 } targetKind;
 
 typedef enum metaKind {
-    PROGRAM_PROLOGUE,         //0
+    PROGRAM_PROLOGUE,           //0
     PROGRAM_EPILOGUE,
     MAIN_CALLEE_SAVE,
     MAIN_CALLEE_RESTORE,
     FUNCTION_DECLARATION,
-    CALLEE_PROLOGUE,          //5
-    CALLEE_SAVE,
+    CALLEE_SAVE,                //5
     CALLEE_RESTORE,
     CALLEE_EPILOGUE,
-    CALLER_PROLOGUE,
-    CALLER_EPILOGUE,          //10
     CALLER_SAVE,
     CALLER_RESTORE,
-    CALL_PRINTF,
-    ALLOCATE_STACK_SPACE,
-    DEALLOCATE_STACK_SPACE,   //15
-    DEALLOCATE_ARGUMENTS,
+    ALLOCATE_STACK_SPACE,       //10
+    DEALLOCATE_STACK_SPACE,
     FOLLOW_STATIC_LINK,
-    DOUBLE_DECLARATION,
+    DOUBLE_DECLARATION,         //13
 } metaKind;
 
 typedef enum labelKind {
@@ -98,7 +93,6 @@ typedef struct Mode {
 
 typedef struct Target {
     targetKind targetK;
-    opSuffix size;
     int additionalInfo;  //This is used to determine register number or immediate value
     labelKind labelK;    //This is relevant if target kind is label
     char* labelName;     //This is relevant if target kind is label
@@ -177,9 +171,9 @@ void addToLLD(LLND* llnd);
 Mode* makeMode(addressingMode mode);
 Mode* makeModeIRL(int offset);
 
-Target* makeTarget(targetKind k, opSuffix s);
+Target* makeTarget(targetKind k);
 Target* makeTargetLabel(labelKind k, char* name);
-Target* makeTargetReg(opSuffix size, int reg);
+Target* makeTargetReg(int reg);
 Target* makeTargetIMI(int imiValue);
 Target* makeTargetDouble(double doubleVal);
 

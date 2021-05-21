@@ -50,3 +50,34 @@ void printOP(OP* op)
         printf("META: %d",op->metaK);
     printf("\n");
 }
+
+void printTarget(Target* t)
+{
+    printf("TARGETK: %d\n",t->targetK);
+}
+
+void printARG(ARG* arg)
+{
+    if(arg->mode->mode == ind)
+        printf("IND\n");
+    if(arg->mode->mode == irl)
+        printf("IRL\n");
+    printTarget(arg->target);
+    printf("\n");
+}
+
+void printINS(INS* ins)
+{
+    printf("OPKIND: %d\n",ins->op->opK);
+    printf("OPSIZE: %d\n",ins->op->size);
+    if(ins->args[0])
+    {
+        printf("ARG0: \n");
+        printARG(ins->args[0]);
+    }
+    if(ins->args[1])
+    {
+        printf("ARG1: \n");
+        printARG(ins->args[1]);
+    }
+}

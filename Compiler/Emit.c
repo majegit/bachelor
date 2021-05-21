@@ -24,16 +24,16 @@ const char* program_prologue = ".section .data\n.section .text\n.global _start\n
 const char* program_epilogue = "    movq %rax, %rdi\n    movq $60, %rax\n    syscall\n\n";
 const char* main_callee_save = "";
 const char* main_callee_restore = "";
-const char* callee_prologue = "";
+//There is a function handling FUNCTION_DECLARATION metakind
 const char* callee_save = "";
 const char* callee_restore = "";
 const char* callee_epilogue = "ret\n";
+const char* caller_save = "";
+const char* caller_restore = "";
 const char* follow_static_link = "movq (%rdi), %rdi\n";
-
+//There is a function handling DOUBLE_DECLARATION metakind
 
 FILE* fp;
-char* aux;
-
 
 void emit(LL* code, const char* outputFileName)
 {
@@ -67,20 +67,28 @@ char* convertInsToAsm(INS* ins)
         case move:
         {
             fputs(indentation,fp);
-            fputs("mov",fp);
-            if(ins->op->size == bits_64_d && (!isXMM(ins->args[0]->target) || !isXMM(ins->args[1]->target)))
-                fputs("q",fp); //can only use movsd if both arguments are xmm registers
+            if(ins->op->size == bits_64_d)
+            {
+                fputs(indentation,fp);
+                fputs("movq ",fp);
+                fputARG(ins->args[0],ins->op->size);
+                fputs(", %rax\n",fp);
+
+                fputs(indentation,fp);
+                fputs("movq %rax, ",fp);
+                fputARG(ins->args[1],ins->op->size);
+                fputs("\n",fp);
+            }
             else
+            {
+                fputs("mov",fp);
                 fputs(suffixModifier[ins->op->size],fp);
-            fputs(" ",fp);
-            aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
-            fputs(aux,fp);
-            free(aux);
-            fputs(", ",fp);
-            aux = stringifyTarget(ins->args[1]->target,ins->args[1]->mode);
-            fputs(aux,fp);
-            free(aux);
-            fputs("\n",fp);
+                fputs(" ",fp);
+                fputARG(ins->args[0],ins->op->size);
+                fputs(", ",fp);
+                fputARG(ins->args[1],ins->op->size);
+                fputs("\n",fp);
+            }
             break;
         }
         case push:
@@ -89,19 +97,16 @@ char* convertInsToAsm(INS* ins)
             if(ins->op->size == bits_64_d)
             {
                 fputs("movq ",fp);
-                aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
-                fputs(aux,fp);
-                free(aux);
+                fputARG(ins->args[0],ins->op->size);
                 fputs(", %rax\n",fp);
                 fputs(indentation,fp);
                 fputs("push %rax\n",fp);
             }
             else if(ins->op->size == bits_64)
             {
+                fputs(indentation, fp);
                 fputs("push ",fp);
-                aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
-                fputs(aux,fp);
-                free(aux);
+                fputARG(ins->args[0],ins->op->size);
                 fputs("\n",fp);
             }
             else
@@ -113,9 +118,7 @@ char* convertInsToAsm(INS* ins)
                 fputs("mov",fp);
                 fputs(suffixModifier[ins->op->size],fp);
                 fputs(" ",fp);
-                aux = stringifyTarget(ins->args[0]->target, ins->args[0]->mode);
-                fputs(aux, fp);
-                free(aux);
+                fputARG(ins->args[0],ins->op->size);
                 fputs(", ",fp);
                 fputs(raxVariants[ins->op->size],fp);
                 fputs("\n",fp);
@@ -131,22 +134,18 @@ char* convertInsToAsm(INS* ins)
         case pop:
         {
             fputs(indentation,fp);
-            if(ins->args[0]->target->size == bits_64_d)
+            if(ins->op->size == bits_64_d)
             {
                 fputs("pop %rax\n",fp);
                 fputs(indentation,fp);
                 fputs("movq %rax, ",fp);
-                aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
-                fputs(aux,fp);
-                free(aux);
+                fputARG(ins->args[0],ins->op->size);
                 fputs("\n",fp);
             }
             else if(ins->op->size == bits_64)
             {
                 fputs("pop ",fp);
-                aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
-                fputs(aux,fp);
-                free(aux);
+                fputARG(ins->args[0],ins->op->size);
                 fputs("\n",fp);
             }
             else
@@ -154,9 +153,7 @@ char* convertInsToAsm(INS* ins)
                 fputs("mov",fp);
                 fputs(suffixModifier[ins->op->size],fp);
                 fputs(" (%rsp), ",fp);
-                aux = stringifyTarget(ins->args[0]->target, ins->args[0]->mode);
-                fputs(aux,fp);
-                free(aux);
+                fputARG(ins->args[0],ins->op->size);
                 fputs("\n",fp);
                 fputs(indentation,fp);
                 fputs("addq $",fp);
@@ -171,13 +168,9 @@ char* convertInsToAsm(INS* ins)
             fputs("add",fp);
             fputs(suffixModifier[ins->op->size],fp);
             fputs(" ",fp);
-            aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
-            fputs(aux,fp);
-            free(aux);
+            fputARG(ins->args[0],ins->op->size);
             fputs(", ",fp);
-            aux = stringifyTarget(ins->args[1]->target,ins->args[1]->mode);
-            fputs(aux,fp);
-            free(aux);
+            fputARG(ins->args[1],ins->op->size);
             fputs("\n",fp);
             break;
         }
@@ -187,12 +180,9 @@ char* convertInsToAsm(INS* ins)
             fputs("sub",fp);
             fputs(suffixModifier[ins->op->size],fp);
             fputs(" ",fp);
-            aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
-            fputs(aux,fp);
-            free(aux);
+            fputARG(ins->args[0],ins->op->size);
             fputs(", ",fp);
-            aux = stringifyTarget(ins->args[1]->target,ins->args[1]->mode);
-            fputs(aux,fp);
+            fputARG(ins->args[1],ins->op->size);
             fputs("\n",fp);
             break;
         }
@@ -203,42 +193,32 @@ char* convertInsToAsm(INS* ins)
                 fputs("mulsd ",fp);
             else
                 fputs("imul ",fp);
-            aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
-            fputs(aux,fp);
-            free(aux);
+            fputARG(ins->args[0],ins->op->size);
             fputs(", ",fp);
-            aux = stringifyTarget(ins->args[1]->target,ins->args[1]->mode);
-            fputs(aux, fp);
-            free(aux);
+            fputARG(ins->args[1],ins->op->size);
             fputs("\n",fp);
             break;
         }
         case divi:
             fputs(indentation,fp);
-            if(ins->args[0]->target->size == bits_64_d)
+            if(ins->op->size == bits_64_d)
             {
                 fputs("divsd ",fp);
-                aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
-                fputs(aux,fp);
-                free(aux);
+                fputARG(ins->args[0],ins->op->size);
                 fputs(", ",fp);
-                aux = stringifyTarget(ins->args[1]->target,ins->args[1]->mode);
-                fputs(aux,fp);
-                free(aux);
+                fputARG(ins->args[1],ins->op->size);
                 fputs("\n",fp);
             }
             else
             {
                 fputs("mov",fp);
-                fputs(suffixModifier[ins->args[1]->target->size],fp);
+                fputs(suffixModifier[ins->op->size],fp);
                 fputs(" ",fp);
-                aux = stringifyTarget(ins->args[1]->target,ins->args[1]->mode);
-                fputs(aux,fp);
-                free(aux);
+                fputARG(ins->args[1],ins->op->size);
                 fputs(", ",fp);
-                fputs(raxVariants[ins->args[0]->target->size],fp);
+                fputs(raxVariants[ins->op->size],fp);
                 fputs("\n",fp);
-                if(ins->args[0]->target->size == bits_32) //Convert long (32bits) to quad (64bits)
+                if(ins->op->size == bits_32) //Convert long (32bits) to quad (64bits)
                 {
                     fputs(indentation,fp);
                     fputs("cltq\n",fp);
@@ -254,8 +234,7 @@ char* convertInsToAsm(INS* ins)
                 }
                 fputs(indentation,fp);
                 fputs("idiv ",fp);
-                aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
-                fputs(aux,fp);
+                fputARG(ins->args[0],ins->op->size);
                 fputs("\n",fp);
                 fputs(indentation,fp);
                 fputs("movq %rax, %rbx\n",fp);
@@ -276,13 +255,9 @@ char* convertInsToAsm(INS* ins)
                 fputs("comisd ",fp);
             else
                 fputs("cmp ",fp);
-            aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
-            fputs(aux,fp);
-            free(aux);
+            fputARG(ins->args[0],ins->op->size);
             fputs(", ",fp);
-            aux = stringifyTarget(ins->args[1]->target,ins->args[1]->mode);
-            fputs(aux,fp);
-            free(aux);
+            fputARG(ins->args[1],ins->op->size);
             fputs("\n",fp);
             break;
         }
@@ -306,9 +281,7 @@ char* convertInsToAsm(INS* ins)
         {
             fputs(indentation,fp);
             fputs( "sete ",fp);
-            aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
-            fputs(aux,fp);
-            free(aux);
+            fputARG(ins->args[0],ins->op->size);
             fputs("\n",fp);
             break;
         }
@@ -316,9 +289,7 @@ char* convertInsToAsm(INS* ins)
         {
             fputs(indentation,fp);
             fputs( "setne ",fp);
-            aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
-            fputs(aux,fp);
-            free(aux);
+            fputARG(ins->args[0],ins->op->size);
             fputs("\n",fp);
             break;
         }
@@ -326,9 +297,7 @@ char* convertInsToAsm(INS* ins)
         {
             fputs(indentation,fp);
             fputs( "setg ",fp);
-            aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
-            fputs(aux,fp);
-            free(aux);
+            fputARG(ins->args[0],ins->op->size);
             fputs("\n",fp);
             break;
         }
@@ -336,9 +305,7 @@ char* convertInsToAsm(INS* ins)
         {
             fputs(indentation,fp);
             fputs( "setge ",fp);
-            aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
-            fputs(aux,fp);
-            free(aux);
+            fputARG(ins->args[0],ins->op->size);
             fputs("\n",fp);
             break;
         }
@@ -346,9 +313,7 @@ char* convertInsToAsm(INS* ins)
         {
             fputs(indentation,fp);
             fputs( "setl ",fp);
-            aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
-            fputs(aux,fp);
-            free(aux);
+            fputARG(ins->args[0],ins->op->size);
             fputs("\n",fp);
             break;
         }
@@ -356,9 +321,7 @@ char* convertInsToAsm(INS* ins)
         {
             fputs(indentation,fp);
             fputs( "setle ",fp);
-            aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
-            fputs(aux,fp);
-            free(aux);
+            fputARG(ins->args[0],ins->op->size);
             fputs("\n",fp);
             break;
         }
@@ -366,13 +329,9 @@ char* convertInsToAsm(INS* ins)
         {
             fputs(indentation,fp);
             fputs("and ",fp);
-            aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
-            fputs(aux,fp);
-            free(aux);
+            fputARG(ins->args[0],ins->op->size);
             fputs(", ",fp);
-            aux = stringifyTarget(ins->args[1]->target,ins->args[1]->mode);
-            fputs(aux,fp);
-            free(aux);
+            fputARG(ins->args[1],ins->op->size);
             fputs("\n",fp);
             break;
         }
@@ -380,20 +339,15 @@ char* convertInsToAsm(INS* ins)
         {
             fputs(indentation,fp);
             fputs( "or ",fp);
-            aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
-            fputs(aux,fp);
-            free(aux);
+            fputARG(ins->args[0],ins->op->size);
             fputs(", ",fp);
-            aux = stringifyTarget(ins->args[1]->target,ins->args[1]->mode);
-            fputs(aux, fp);
+            fputARG(ins->args[1],ins->op->size);
             fputs("\n",fp);
             break;
         }
         case meta:
         {
-            aux = convertMetaIns(ins);
-            fputs(aux,fp);
-            free(aux);
+            fputMeta(ins);
             break;
         }
         case label:
@@ -406,215 +360,193 @@ char* convertInsToAsm(INS* ins)
         {
             fputs(indentation,fp);
             fputs("cvtsi2sd ",fp);
-            aux = stringifyTarget(ins->args[0]->target,ins->args[0]->mode);
-            fputs(aux,fp);
-            free(aux);
+            fputARG(ins->args[0],ins->op->size);
             fputs(", ",fp);
-            aux = stringifyTarget(ins->args[1]->target,ins->args[1]->mode);
-            fputs(aux,fp);
-            free(aux);
+            fputARG(ins->args[1],ins->op->size);
             fputs("\n",fp);
             break;
         }
         default:
             printf("DEBUG OPKIND: %d\n",ins->op->opK);
-            fputs("debugINS\n",fp);
+            fputs("DEBUG INSTRUCTION\n",fp);
             break;
     }
     return res;
 }
 
-char* convertMetaIns(INS* ins)
-{
-    char* res = "";
-    if(ins->op->metaK == PROGRAM_PROLOGUE)
-        return deepCopy(program_prologue);
-    if(ins->op->metaK == PROGRAM_EPILOGUE)
-        return deepCopy(program_epilogue);
-    if(ins->op->metaK == MAIN_CALLEE_SAVE)
-        return deepCopy(main_callee_save);
-    if(ins->op->metaK == MAIN_CALLEE_RESTORE)
-        return deepCopy(main_callee_restore);
-    if(ins->op->metaK == FUNCTION_DECLARATION)
-        return meta_function_declaration(ins);
-    if(ins->op->metaK == ALLOCATE_STACK_SPACE)
-    {
-        char stackSpace[20];
-        sprintf(stackSpace,"%d",ins->op->metaInt);
-        res = concatStr(indentation,"push %rbp\t #ALLOCATE STACK SPACE\n");
-        res = concatStrFree(res,indentation);
-        res = concatStrFree(res,"movq %rsp, %rbp\n");
-        if(ins->op->metaInt != 0)
-        {
-            res = concatStrFree(res,indentation);
-            res = concatStrFree(res,"addq $");
-            res = concatStrFree(res,stackSpace);
-            res = concatStrFree(res,", %rsp\n");
+void fputMeta(INS* ins) {
+    switch (ins->op->metaK) {
+        case PROGRAM_PROLOGUE: {
+            fputs(program_prologue, fp);
+            break;
         }
-        return res;
+        case PROGRAM_EPILOGUE: {
+            fputs(program_epilogue, fp);
+            break;
+        }
+        case MAIN_CALLEE_SAVE: {
+            fputs(main_callee_save, fp);
+            break;
+        }
+        case MAIN_CALLEE_RESTORE: {
+            fputs(main_callee_restore, fp);
+            break;
+        }
+        case FUNCTION_DECLARATION: {
+            fputs("\n.type ", fp);
+            fputs(ins->op->metaString, fp);
+            fputs(", @function\n", fp);
+            break;
+        }
+        case CALLEE_SAVE: {
+            fputs(callee_save, fp);
+            break;
+        }
+        case CALLEE_RESTORE: {
+            fputs(callee_restore, fp);
+            break;
+        }
+        case CALLEE_EPILOGUE: {
+            fputs(callee_epilogue, fp);
+            break;
+        }
+        case CALLER_SAVE: {
+            fputs(caller_save, fp);
+            break;
+        }
+        case CALLER_RESTORE: {
+            fputs(caller_restore, fp);
+            break;
+        }
+        case ALLOCATE_STACK_SPACE: {
+            char stackSpace[20];
+            fputs(indentation, fp);
+            fputs("push %rbp\t #ALLOCATE STACK SPACE\n", fp);
+
+            fputs(indentation, fp);
+            fputs("movq %rsp, %rbp\n", fp);
+
+            sprintf(stackSpace, "%d", ins->op->metaInt);
+            fputs(indentation, fp);
+            fputs("addq $", fp);
+            fputs(stackSpace, fp);
+            fputs(", %rsp\n", fp);
+            break;
+        }
+        case DEALLOCATE_STACK_SPACE: {
+            char stackSpace[20];
+            sprintf(stackSpace, "%d", ins->op->metaInt);
+            fputs(indentation, fp);
+            fputs("addq $", fp);
+            fputs(stackSpace, fp);
+            fputs(", %rsp\n", fp);
+
+            fputs(indentation, fp);
+            fputs("pop %rbp\n", fp);
+            break;
+        }
+        case FOLLOW_STATIC_LINK: {
+            fputs(indentation, fp);
+            fputs(follow_static_link, fp);
+            break;
+        }
+        case DOUBLE_DECLARATION: {
+            fputs(ins->op->metaString, fp);
+            fputs(":\n", fp);
+            putLongsFromDouble(ins->op->metaDouble);
+            break;
+        }
     }
-    if(ins->op->metaK == DEALLOCATE_STACK_SPACE)
-    {
-        char stackSpace[20];
-        sprintf(stackSpace,"%d",ins->op->metaInt);
-        res = concatStr(indentation,"addq $");
-        res = concatStrFree(res,stackSpace);
-        res = concatStrFree(res, ", %rsp");
-        res = concatStrFree(res,"\n");
-        res = concatStrFree(res,indentation);
-        res = concatStrFree(res,"pop %rbp\n");
-        return res;
-    }
-    if(ins->op->metaK == CALLEE_PROLOGUE)
-        return deepCopy(callee_prologue);
-    if(ins->op->metaK == CALLEE_SAVE)
-        return deepCopy(callee_save);
-    if(ins->op->metaK == CALLEE_RESTORE)
-        return deepCopy(callee_restore);
-    if(ins->op->metaK == CALLEE_EPILOGUE)
-        return concatStr(indentation,callee_epilogue);
-    if(ins->op->metaK == DEALLOCATE_ARGUMENTS)
-    {
-        char stackSpace[20];
-        sprintf(stackSpace,"%d",ins->op->metaInt);
-        res = concatStr(indentation,"addq $");
-        res = concatStrFree(res,stackSpace);
-        res = concatStrFree(res, ", %rsp\n");
-        return res;
-    }
-    if(ins->op->metaK == FOLLOW_STATIC_LINK)
-        return concatStr(indentation,follow_static_link);
-    if(ins->op->metaK == DOUBLE_DECLARATION)
-    {
-        res = concatStr(res,ins->op->metaString);
-        res = concatStrFree(res,":\n");
-        res = concatStrFreeFree(res,getLongsFromDouble(ins->op->metaDouble));
-        return res;
-    }
-    printf("debugMETA: %d\n",ins->op->metaK);
-    return deepCopy("debugMETA\n");
 }
 
-char* meta_function_declaration(INS* ins)
+void fputARG(ARG* a, opSuffix suffix)
 {
-    char* res = "\n.type ";
-    res = concatStr(res,ins->op->metaString);
-    res = concatStrFree(res,", @function\n");
-    return res;
+    if(a->mode->mode == dir)
+        fputTarget(a->target, suffix);
+    else if(a->mode->mode == ind)
+    {
+        fputs("(",fp);
+        fputTarget(a->target, bits_64);
+        fputs(")",fp);
+    }
+    else
+    {
+        char intString[20];
+        sprintf(intString,"%d",a->mode->offset);
+        fputs(intString,fp);
+        fputs("(",fp);
+        fputTarget(a->target, bits_64);
+        fputs(")",fp);
+    }
 }
 
-char* stringifyTarget(Target* t, Mode* m)
+void fputTarget(Target* t, opSuffix suffix)
 {
-    char* res = "";
-    opSuffix modifier = t->size;
+    printf("TARGETK: %d\n",t->targetK);
     switch(t->targetK)
     {
         case imi:
         {
             char intString[20];
             sprintf(intString,"%d",t->additionalInfo);
-            res = "$";
-            res = concatStrFree(res,intString);
+            fputs("$",fp);
+            fputs(intString,fp);
             break;
         }
         case mem:
         {
-            res = deepCopy(t->labelName);
+            fputs(t->labelName,fp);
             break;
         }
         case rbp:
         {
-            res = deepCopy(rbpVariants[modifier]);
+            fputs(rbpVariants[suffix],fp);
             break;
         }
         case rsp:
         {
-            res = deepCopy(rspVariants[modifier]);
+            fputs(rspVariants[suffix],fp);
             break;
         }
         case rrt:
         {
-            res = deepCopy(raxVariants[modifier]);
+            fputs(raxVariants[suffix],fp);
             break;
         }
         case rsl:
         {
-            res = deepCopy(rdiVariants[modifier]);
+            fputs(rdiVariants[suffix],fp);
             break;
         }
         case reg:
         {
-            if(modifier == bits_64_d)
-                res = deepCopy(sseVariants[t->additionalInfo]);
+            if(suffix == bits_64_d)
+                fputs(sseVariants[t->additionalInfo],fp);
             else
-                res = deepCopy(registers[t->additionalInfo][modifier]);
+                fputs(registers[t->additionalInfo][suffix],fp);
             break;
         }
     }
-    if(m->mode == dir)
-        return res;
-    else if(m->mode == ind)
-    {
-        res = concatStrFreeFree("(",res);
-        res = concatStrFree(res,")");
-        return res;
-    }
-    else //mode == irl
-    {
-        char offset[20];
-        sprintf(offset,"%d",m->offset);
-        res = concatStrFree("(",res);
-        res = concatStrFree(res,")");
-        char* aux = concatStr(offset,res);
-        free(res);
-        res = aux;
-        return res;
-    }
 }
 
-char* getLongsFromDouble(double val)
+void putLongsFromDouble(double val)
 {
     char intAsString[20];
-    char* res = "";
-    res = concatStr(res,indentation);
-    res = concatStrFree(res,".long ");
+    fputs(indentation,fp);
+    fputs(".long ",fp);
     sprintf(intAsString,"%u",*(unsigned int*)&val);
-    res = concatStrFree(res,intAsString);
-    res = concatStrFree(res,"\n");
-    res = concatStrFree(res,indentation);
-    res = concatStrFree(res,".long ");
+    fputs(intAsString,fp);
+    fputs("\n",fp);
+    fputs(indentation,fp);
+    fputs(".long ",fp);
     if(val < 0)
     {
-        res = concatStrFree(res,"-");
+        fputs("-",fp);
         val *= -1;
     }
     sprintf(intAsString,"%u",*(((unsigned int*)&val) + 1));
-    res = concatStrFree(res,intAsString);
-    res = concatStrFree(res,"\n");
-    return res;
-}
-
-int isXMM(Target* t)
-{
-    if(t != NULL && t->size == bits_64_d && t->targetK == reg)
-        return 1;
-    return 0;
-}
-
-int memoryReferences(INS* ins)
-{
-    int count = 0;
-    if(ins->args[0] != NULL)
-    {
-        if(ins->args[0]->target->targetK == mem || ins->args[0]->mode->mode == ind || ins->args[0]->mode->mode == irl)
-            count++;
-        if(ins->args[1] != NULL)
-        {
-            if(ins->args[1]->target->targetK == mem || ins->args[1]->mode->mode == ind || ins->args[1]->mode->mode == irl)
-                count++;
-        }
-    }
-    return count;
+    fputs(intAsString,fp);
+    fputs("\n",fp);
 }
 
 const char* printCHAR = "\n.type printCHAR, @function\n"

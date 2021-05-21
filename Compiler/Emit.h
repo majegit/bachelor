@@ -5,13 +5,10 @@
 void emit(LL* code, const char* outputFileName);
 char* convertInsToAsm(INS* ins);
 
-char* convertMetaIns(INS* ins);
-char* meta_function_declaration(INS* ins);
-char* stringifyTarget(Target* t, Mode* m);
-char* getLongsFromDouble(double val);
-
-int isXMM(Target* t);
-int memoryReferences(INS* ins);
+void fputMeta(INS* ins);
+void fputARG(ARG* a, opSuffix suffix);
+void fputTarget(Target* t, opSuffix suffix);
+void putLongsFromDouble(double val);
 
 const char* printCHAR;
 const char* printBOOLEAN;

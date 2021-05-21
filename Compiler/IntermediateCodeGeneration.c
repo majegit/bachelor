@@ -101,9 +101,9 @@ void icgTraverseSTMT(STMT* s)
                 quickAddMeta(FOLLOW_STATIC_LINK);
 
             op = makeOP(move,getSuffixOfType(e->type));
-            src = makeTarget(rrt,getSizeOfId(s->val.assignS.name));
+            src = makeTarget(rrt);
             srcA = makeARG(src,makeMode(dir));
-            dest = makeTarget(rsl,bits_64);
+            dest = makeTarget(rsl);
             destA = makeARG(dest,makeModeIRL(varOffset));
 
             ARG* args[2] = {srcA, destA};
@@ -170,11 +170,14 @@ void icgTraverseSTMT(STMT* s)
 
             quickAddCallFun(printFun);
 
-            Target* t = makeTarget(rsp,bits_64);
-            ARG* rsp = makeARG(t,makeMode(dir));
-            Target* imiT = makeTargetIMI(getIntFromSuffix(typeSize));
-            ARG* imiArg = makeARG(imiT,makeMode(dir));
-            ARG* args[2] = {imiArg,rsp};
+            //Decrement stack pointer (reverse push arguments)
+            Target* src = makeTargetIMI(getIntFromSuffix(typeSize));
+            ARG* srcA = makeARG(src,makeMode(dir));
+
+            Target* dest = makeTarget(rsp);
+            ARG* destA = makeARG(dest,makeMode(dir));
+
+            ARG* args[2] = {srcA,destA};
             OP* op = makeOP(add, bits_64);
             quickAddIns(makeINS(op,args));
             break;
@@ -265,7 +268,18 @@ void icgTraverseEXP(EXP* e)
             SYMBOL* funSymbol = lookupSymbolFun(e->val.funE.id,currentScope);
             quickAddCallFun(funSymbol->label);
             int sizeOfParameters = getSizeOfParameters(funSymbol->fpn);
-            quickAddMetaWithInfo(DEALLOCATE_ARGUMENTS,sizeOfParameters);
+
+            OP* op = makeOP(add,bits_64);
+
+            Target* src = makeTargetIMI(sizeOfParameters);
+            ARG* srcA = makeARG(src,makeMode(dir));
+
+            Target* dest = makeTarget(rsp);
+            ARG* destA = makeARG(dest,makeMode(dir));
+
+            ARG* args[2] = {srcA,destA};
+            quickAddIns(makeINS(op,args));
+
             quickAddPushRRT(getSuffixOfType(funSymbol->type));
             break;
         }
@@ -289,10 +303,10 @@ void icgTraverseEXP(EXP* e)
 
             //The expression to be coerced is on the stack, convert it and save result in register 0
             op = makeOP(opK,0);
-            src = makeTarget(rsp,bits_64);
+            src = makeTarget(rsp);
             srcA = makeARG(src,makeMode(ind));
 
-            dest = makeTargetReg(suffixPost,0);
+            dest = makeTargetReg(0);
             destA = makeARG(dest,makeMode(dir));
 
             args[0] = srcA;
@@ -305,7 +319,7 @@ void icgTraverseEXP(EXP* e)
             src = makeTargetIMI(getIntFromSuffix(suffixPre));
             srcA = makeARG(src,makeMode(dir));
 
-            dest = makeTarget(rsp,bits_64);
+            dest = makeTarget(rsp);
             destA = makeARG(dest,makeMode(dir));
 
             args[0] = srcA;
@@ -315,7 +329,7 @@ void icgTraverseEXP(EXP* e)
             //Push register 0 onto the stack
             op = makeOP(push,suffixPost);
 
-            src = makeTargetReg(suffixPost,0);
+            src = makeTargetReg(0);
             srcA = makeARG(src,makeMode(dir));
 
             args[0] = srcA;
@@ -345,7 +359,6 @@ void icgTraverseFUNCTION(FUNCTION* f)
     currentScope = f->body->symbolTable;                     //update currentScope
     int stackSpace = currentScope->nextVariableLabel;
 
-    quickAddMeta(CALLEE_PROLOGUE);                      //Possibly nothing
     quickAddMetaWithInfo(ALLOCATE_STACK_SPACE,stackSpace);
     quickAddMeta(CALLEE_SAVE);                          //Push callee save registers
 
@@ -389,33 +402,32 @@ Mode* makeModeIRL(int offset)
     return mode;
 }
 
-Target* makeTarget(targetKind k, opSuffix s)
+Target* makeTarget(targetKind k)
 {
     Target* t = (Target*)malloc(sizeof(Target));
     t->targetK = k;
-    t->size = s;
     return t;
 }
 
 Target* makeTargetLabel(labelKind k, char* name)
 {
-    Target* t = makeTarget(mem,0);
+    Target* t = makeTarget(mem);
     t->labelK = k;
     t->labelName = name;
     return t;
 }
 
-Target* makeTargetReg(opSuffix s, int regNumber)
+Target* makeTargetReg(int regNumber)
 {
     Target* t;
-    t = makeTarget(reg,s);
+    t = makeTarget(reg);
     t->additionalInfo = regNumber;
     return t;
 }
 
 Target* makeTargetIMI(int imiValue)
 {
-    Target* t = makeTarget(imi,0);
+    Target* t = makeTarget(imi);
     t->additionalInfo = imiValue;
     return t;
 }
@@ -533,10 +545,10 @@ void quickAddPushId(char* name)
         quickAddMoveRBPToRSL();
         for(int i=0; i < varDepthAndOffset[0]; i++)
             quickAddMeta(FOLLOW_STATIC_LINK);
-        t = makeTarget(rsl,bits_64);
+        t = makeTarget(rsl);
     }
     else
-        t = makeTarget(rbp,bits_64);
+        t = makeTarget(rbp);
 
     Mode* m = makeModeIRL(varDepthAndOffset[1]);
     quickAddPush(getSizeOfId(name),t,m);
@@ -545,7 +557,7 @@ void quickAddPushId(char* name)
 
 void quickAddPopRRT(opSuffix size)
 {
-    Target* t = makeTarget(rrt,size);
+    Target* t = makeTarget(rrt);
     ARG* arg = makeARG(t,makeMode(dir));
     ARG* args[2] = {arg,NULL};
     OP* op = makeOP(pop,size);
@@ -555,7 +567,7 @@ void quickAddPopRRT(opSuffix size)
 //Pop into a register (normal or XMM)
 void quickAddPopReg(opSuffix size, int registerNumber)
 {
-    Target* t = makeTargetReg(size,registerNumber);
+    Target* t = makeTargetReg(registerNumber);
     ARG* arg = makeARG(t,makeMode(dir));
     ARG* args[2] = {arg,NULL};
     OP* op = makeOP(pop,size);
@@ -564,19 +576,19 @@ void quickAddPopReg(opSuffix size, int registerNumber)
 
 void quickAddPushReg(int regNumber, opSuffix size)
 {
-    Target* t = makeTargetReg(size,regNumber);
+    Target* t = makeTargetReg(regNumber);
     quickAddPush(size,t,makeMode(dir));
 }
 
 void quickAddMoveRBPToRSL()
 {
-    Target* rbpTarget = makeTarget(rbp,bits_64);
-    ARG* rbpARG = makeARG(rbpTarget,makeMode(dir));
+    Target* src = makeTarget(rbp);
+    ARG* srcA = makeARG(src,makeMode(dir));
 
-    Target* rslTarget = makeTarget(rsl,bits_64);
-    ARG* rslARG = makeARG(rslTarget,makeMode(dir));
+    Target* dest = makeTarget(rsl);
+    ARG* destA = makeARG(dest,makeMode(dir));
 
-    ARG* args[2] = {rbpARG, rslARG};
+    ARG* args[2] = {srcA, destA};
 
     OP* op = makeOP(move,bits_64);
     quickAddIns(makeINS(op,args));
@@ -584,13 +596,13 @@ void quickAddMoveRBPToRSL()
 
 void quickAddMoveRSLToRBP()
 {
-    Target* rbpTarget = makeTarget(rbp,bits_64);
-    ARG* rbpARG = makeARG(rbpTarget,makeMode(dir));
+    Target* src = makeTarget(rsl);
+    ARG* srcA = makeARG(src,makeMode(dir));
 
-    Target* rslTarget = makeTarget(rsl,bits_64);
-    ARG* rslARG = makeARG(rslTarget,makeMode(dir));
+    Target* dest = makeTarget(rbp);
+    ARG* destA = makeARG(dest,makeMode(dir));
 
-    ARG* args[2] = {rslARG,rbpARG};
+    ARG* args[2] = {srcA,destA};
 
     OP* op = makeOP(move,bits_64);
     quickAddIns(makeINS(op,args));
@@ -598,18 +610,22 @@ void quickAddMoveRSLToRBP()
 
 void quickAddCheckTruthValue()
 {
-    ARG* from = makeARG(makeTargetIMI(1),makeMode(dir));
-    ARG* to = makeARG(makeTarget(rrt,bits_64),makeMode(dir));
-    ARG* args[2] = {from,to};
-    OP* op = makeOP(cmp,bits_64);
+    Target* src = makeTargetIMI(1);
+    ARG* srcA = makeARG(src,makeMode(dir));
+
+    Target* dest = makeTarget(rrt);
+    ARG* destA = makeARG(dest,makeMode(dir));
+
+    ARG* args[2] = {srcA,destA};
+    OP* op = makeOP(cmp,bits_8);
     quickAddIns(makeINS(op,args));
 }
 
 void quickAddJumpIfFalse(labelKind k, char* labelName)
 {
     Target* t = makeTargetLabel(k,labelName);
-    ARG* arg = makeARG(t,makeMode(dir));
-    ARG* args[2] = {arg,NULL};
+    ARG* a = makeARG(t,makeMode(dir));
+    ARG* args[2] = {a,NULL};
     OP* op = makeOP(jne,bits_64);
     quickAddIns(makeINS(op,args));
 }
@@ -617,8 +633,8 @@ void quickAddJumpIfFalse(labelKind k, char* labelName)
 void quickAddUnconditionalJmp(labelKind k, char* labelName)
 {
     Target* t = makeTargetLabel(k,labelName);
-    ARG* arg = makeARG(t,makeMode(dir));
-    ARG* args[2] = {arg,NULL};
+    ARG* a = makeARG(t,makeMode(dir));
+    ARG* args[2] = {a,NULL};
     OP* op = makeOP(jmp,bits_64);
     quickAddIns(makeINS(op,args));
 }
@@ -628,38 +644,46 @@ void quickAddArithmeticINS(opKind k, opSuffix size)  //L 'OP' R
     quickAddPopReg(size,1); //Right side of binop
     quickAddPopReg(size,0); //Left side of binop
 
-    Target* rightEXP = makeTargetReg(size,1);
-    ARG* argRight = makeARG(rightEXP, makeMode(dir));
+    Target* src = makeTargetReg(1);
+    ARG* srcA = makeARG(src, makeMode(dir));
 
-    Target* leftEXP = makeTargetReg(size,0);
-    ARG* argLeft = makeARG(leftEXP, makeMode(dir));
+    Target* dest = makeTargetReg(0);
+    ARG* destA = makeARG(dest, makeMode(dir));
 
-    ARG* args[2] = {argRight,argLeft};
+    ARG* args[2] = {srcA,destA};
     OP* op = makeOP(k,size);
     quickAddIns(makeINS(op,args));
 }
 
 void quickAddCompareINS(opKind k, opSuffix size)
 {
-    quickAddPopReg(size, 0); //pop reg2  #Right side of binop
-    quickAddPopReg(size, 1); //pop reg1  #Left side of binop
+    Target* src, *dest;
+    ARG* srcA, *destA, *args[2];
+    OP* op;
 
-    Target* tLeft = makeTargetReg(size,1);
-    ARG* argLeft = makeARG(tLeft, makeMode(dir));
+    quickAddPopReg(size, 0); //pop reg1  #Right side of binop
+    quickAddPopReg(size, 1); //pop reg0  #Left side of binop
 
-    Target* tRight = makeTargetReg(size,0);
-    ARG* argRight = makeARG(tRight, makeMode(dir));
+    //Compare operands
+    src = makeTargetReg(0);
+    srcA = makeARG(src, makeMode(dir));
 
-    ARG* args[2] = {argRight,argLeft};
+    dest = makeTargetReg(1);
+    destA = makeARG(dest, makeMode(dir));
 
-    OP* cmpOP = makeOP(cmp,size);
-    quickAddIns(makeINS(cmpOP,args));
+    args[0] = srcA;
+    args[1] = destA;
 
-    Target* resultRegister = makeTargetReg(bits_8,0);
-    ARG* arg = makeARG(resultRegister,makeMode(dir));
-    ARG* argsSet[2] = {arg,NULL};
-    OP* setOP = makeOP(k,bits_8);
-    quickAddIns(makeINS(setOP,argsSet)); //setb reg2  #8 bits register
+    op = makeOP(cmp,size);
+    quickAddIns(makeINS(op,args));
+
+    //Store result in reg0 (example: setle %bl)
+    dest = makeTargetReg(0);
+    destA = makeARG(dest,makeMode(dir));
+    args[0] = destA;
+    args[1] = NULL;
+    op = makeOP(k,bits_8);
+    quickAddIns(makeINS(op, args));
 }
 
 void quickAddBooleanINS(opKind k)
@@ -667,15 +691,15 @@ void quickAddBooleanINS(opKind k)
     quickAddPopReg(bits_8,1); //Right side of binop
     quickAddPopReg(bits_8,0); //Left side of binop
 
-    Target* rightEXP = makeTargetReg(bits_8,1);
-    ARG* argRight = makeARG(rightEXP, makeMode(dir));
+    Target* src = makeTargetReg(1);
+    ARG* srcA = makeARG(src, makeMode(dir));
 
-    Target* leftEXP = makeTargetReg(bits_8,0);
-    ARG* argLeft = makeARG(leftEXP, makeMode(dir));
-    ARG* args[2] = {argRight,argLeft};
+    Target* dest = makeTargetReg(0);
+    ARG* destA = makeARG(dest, makeMode(dir));
+    ARG* args[2] = {srcA,destA};
 
-    OP* boolOP = makeOP(k,bits_8);
-    quickAddIns(makeINS(boolOP,args));
+    OP* op = makeOP(k,bits_8);
+    quickAddIns(makeINS(op,args));
 }
 
 void quickAddCallFun(char* funLabel)
@@ -690,37 +714,37 @@ void quickAddCallFun(char* funLabel)
 
 void quickAddPushRSP()
 {
-    Target* t = makeTarget(rsp,bits_64);
-    ARG* arg = makeARG(t,makeMode(dir));
+    Target* dest = makeTarget(rsp);
+    ARG* destA = makeARG(dest,makeMode(dir));
     OP* op = makeOP(push, bits_64);
-    ARG* args[2] = {arg,NULL};
+    ARG* args[2] = {destA,NULL};
     quickAddIns(makeINS(op,args));
 }
 
 void quickAddMoveRBPToRSP()
 {
-    Target* from = makeTarget(rbp,bits_64);
-    ARG* argFrom = makeARG(from,makeMode(dir));
-    Target* to = makeTarget(rsp,bits_64);
-    ARG* argTo = makeARG(to,makeMode(dir));
     OP* op = makeOP(move, bits_64);
-    ARG* args[2] = {argFrom, argTo};
+    Target* src = makeTarget(rbp);
+    ARG* srcA = makeARG(src,makeMode(dir));
+    Target* dest = makeTarget(rsp);
+    ARG* destA = makeARG(dest,makeMode(dir));
+    ARG* args[2] = {srcA, destA};
     quickAddIns(makeINS(op,args));
 }
 
 void quickAddPopRBP()
 {
-    Target* t = makeTarget(rbp,bits_64);
-    ARG* arg = makeARG(t,makeMode(dir));
     OP* op = makeOP(pop, bits_64);
-    ARG* args[2] = {arg, NULL};
+    Target* dest = makeTarget(rbp);
+    ARG* destA = makeARG(dest,makeMode(dir));
+    ARG* args[2] = {destA, NULL};
     quickAddIns(makeINS(op,args));
 }
 
 void quickAddPushRRT(opSuffix suffix)
 {
     OP* op = makeOP(push, suffix);
-    Target* dest = makeTarget(rrt,suffix);
+    Target* dest = makeTarget(rrt);
     ARG* destA = makeARG(dest,makeMode(dir));
     ARG* args[2] = {destA, NULL};
     quickAddIns(makeINS(op,args));
