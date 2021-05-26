@@ -48,7 +48,7 @@ void tcTraverseSTMT(STMT* s)
             break;
         case assignK:
             tcTraverseEXP(s->val.assignS.val);
-            SYMBOL* var = lookupSymbolVar(s->val.assignS.name, currentScope);
+            SYMBOL* var = lookupSymbolVarName(s->val.assignS.name, currentScope);
             if(!isSubtype(stringToType(s->val.assignS.val->type),stringToType(var->type)))
             {
                 printf("ERROR: Incompatible type, expected %s, got %s on line: %d\n",var->type,s->val.assignS.val->type,s->lineno);
@@ -91,11 +91,6 @@ void tcTraverseSTMT(STMT* s)
             break;
         case expK:
             tcTraverseEXP(s->val.expS);
-            if(s->val.expS->kind != funK)
-            {
-                printf("ERROR: Expected function at line: %d.\n",s->lineno);
-                exit(0);
-            }
             break;
         case funDeclK:
             tcTraverseFUNCTION(s->val.funDeclS);
@@ -109,8 +104,7 @@ void tcTraverseEXP(EXP* e)
     {
         case idK:
         {
-            SYMBOL* symbol = lookupSymbolVar(e->val.idE, currentScope);
-            e->type = symbol->type;
+            e->type = e->val.idE.symbol->type;
             break;
         }
         case binopK:
@@ -143,7 +137,7 @@ void tcTraverseEXP(EXP* e)
         }
         case funK:
         {
-            SYMBOL *functionSymbol = lookupSymbolFun(e->val.funE.id, currentScope);
+            SYMBOL* functionSymbol = lookupSymbolFunName(e->val.funE.id, currentScope);
             if (functionSymbol == NULL)
             {
                 printf("ERROR: Function does not exist: %s on line: %d\n", e->val.funE.id, e->lineno);
@@ -151,9 +145,11 @@ void tcTraverseEXP(EXP* e)
             }
             tcTraverseAPARAMETERNODE(e->val.funE.aparameternode, functionSymbol->fpn);
             e->type = functionSymbol->type;
-
             break;
         }
+        case coerceK:
+            tcTraverseEXP(e->val.coerceE);
+            break;
         default:
             break;
     }

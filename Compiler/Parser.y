@@ -133,6 +133,14 @@ stmtcompound : '{' stmtnode '}'
 	       {$$ = makeSTMTCOMP($2);}
 ;
 
+/*
+stmt_or_stmtcompound : stmtcompound
+		       {$$ = $1;}
+		     | stmt
+		       {STMTNODE* stmtnode = makeSTMTNODE($1, NULL);
+		        $$ = makeSTMTCOMP(stmtnode);}
+		        */
+
 syntactic_sugar : type tIDENTIFIER ASSIGN exp ';'
                   {STMT* stmt1 = makeSTMTvarDecl($1,$2);
                    STMT* stmt2 = makeSTMTassign($2,$4);

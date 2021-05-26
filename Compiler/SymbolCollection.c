@@ -66,11 +66,13 @@ void scTraverseSTMT(STMT* s, SYMBOLTABLE* st)
         }
         case assignK:
         {
-            if(lookupSymbolVar(s->val.assignS.name, st) == NULL)
+            SYMBOL* symbol = lookupSymbolVarName(s->val.assignS.name, st);
+            if(symbol == NULL)
             {
                 printf("ERROR: Variable not declared: %s on line: %d\n",s->val.assignS.name,s->lineno);
                 exit(0);
             }
+            s->val.assignS.symbol = symbol;
             scTraverseEXP(s->val.assignS.val,st);
             break;
         }
@@ -80,7 +82,8 @@ void scTraverseSTMT(STMT* s, SYMBOLTABLE* st)
         case returnK:
             scTraverseEXP(s->val.returnS,st);
             break;
-        default:
+        case expK:
+            scTraverseEXP(s->val.expS, st);
             break;
     }
 }
@@ -91,17 +94,21 @@ void scTraverseEXP(EXP* e, SYMBOLTABLE* st)
     {
         case idK:
         {
-            SYMBOL* symbol = lookupSymbolVar(e->val.idE, st);
+            SYMBOL* symbol = lookupSymbolVarName(e->val.idE.id, st);
             if(symbol == NULL)
             {
-                printf("ERROR: Variable not declared: %s on line: %d\n",e->val.idE,e->lineno);
+                printf("ERROR: Variable not declared: %s on line: %d\n",e->val.idE.id,e->lineno);
                 exit(0);
             }
+            e->val.idE.symbol = symbol;
             break;
         }
         case binopK:
             scTraverseEXP(e->val.binopE.left, st);
             scTraverseEXP(e->val.binopE.right, st);
+            break;
+        case funK:
+            scTraverseAPARAMETERNODE(e->val.funE.aparameternode, st);
             break;
         default:
             break;
@@ -113,13 +120,6 @@ void scTraverseFUNCTION(FUNCTION* f, SYMBOLTABLE* st)
     SYMBOLTABLE* newScope = makeSYMBOLTABLE(st);
     scTraverseFPARAMETERNODE(f->args, newScope);
     scTraverseSTMTCOMP(f->body, newScope);
-
-    //Check if all branches of computation ends with a return stmt
-    if(allBranchesReturn(f->body->stmtnode) == 0)
-    {
-        printf("ERROR: not all branches of function \"%s\" have a return statement on line: %d",f->name,f->lineno);
-        exit(0);
-    }
 }
 
 void scTraverseFPARAMETERNODE(FPARAMETERNODE* fpn, SYMBOLTABLE* st)
@@ -131,18 +131,11 @@ void scTraverseFPARAMETERNODE(FPARAMETERNODE* fpn, SYMBOLTABLE* st)
     scTraverseFPARAMETERNODE(fpn->next, st);
 }
 
-int allBranchesReturn(STMTNODE* sn)
+void scTraverseAPARAMETERNODE(APARAMETERNODE* apn, SYMBOLTABLE* st)
 {
-    int alwaysReturn = 0;
-    while(sn != NULL && alwaysReturn == 0)
-    {
-        STMT* this = sn->stmt;
-        if(this->kind == returnK)
-            alwaysReturn = 1;
-        else if(this->kind == ifElseK && this->val.ifElseS.elsebody != NULL)
-            alwaysReturn = allBranchesReturn(this->val.ifElseS.ifbody->stmtnode) & allBranchesReturn(this->val.ifElseS.elsebody->stmtnode);
-        sn = sn->next;
-    }
-    return alwaysReturn;
+    if(apn == NULL)
+        return;
+    scTraverseEXP(apn->current->exp, st);
+    scTraverseAPARAMETERNODE(apn->next, st);
 }
 

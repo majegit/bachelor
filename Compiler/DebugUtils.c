@@ -33,6 +33,16 @@ void printEXP(EXP* exp)
     }
 }
 
+void printSYMBOLTABLE(SYMBOLTABLE* st)
+{
+    SYMBOLNODE* currentNode = st->symbols;
+    while(currentNode != NULL)
+    {
+        printf("VARIABLE IN TABLE: %s\n",currentNode->current->name);
+        currentNode = currentNode->next;
+    }
+}
+
 void printIC(LL* iCode)
 {
     LLN* node = iCode->first;

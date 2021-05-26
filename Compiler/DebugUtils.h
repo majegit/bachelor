@@ -4,6 +4,7 @@
 #include "IntermediateCodeGeneration.h"
 
 void printEXP(EXP* exp);
+void printSYMBOLTABLE(SYMBOLTABLE* st);
 void printIC(LL* iCode);
 void printOP(OP* op);
 

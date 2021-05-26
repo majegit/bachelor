@@ -26,12 +26,14 @@ typedef enum opKind {
     setge,   //20
     setl,
     setle,
-    xor,
+    setb,  //used by doubles
+    setbe, //used by doubles
+    xor,    //25
     and,
-    or,     //25
+    or,
     meta,
-    label,  //27
-    dconst,
+    label,
+    dconst, //30
     cvtsi2sd
 } opKind;
 
@@ -197,7 +199,7 @@ void quickAddMetaWithInfo(metaKind kind, int metaInt);
 void quickAddMetaString(metaKind metaK, char* str);
 void quickAddLabelString(labelKind kind, char* label);
 void quickAddPush(opSuffix size, Target* target, Mode* mode);
-void quickAddPushId(char* name);
+void quickAddPushId(SYMBOL* s);
 void quickAddPopRRT(opSuffix size);
 void quickAddPopReg(opSuffix size, int registerNumber);
 void quickAddPop(Target* t, Mode* m);
@@ -214,6 +216,8 @@ void quickAddCallFun(char* funLabel);
 void quickAddPushRSP();
 void quickAddMoveRBPToRSP();
 void quickAddPopRBP();
+void quickAddPushRBP();
+void quickAddIncrementScopeOneLevel();
 void quickAddPushRRT(opSuffix suffix);
 void quickAddPushDoubleLabel(char* label);
 
@@ -225,6 +229,7 @@ opSuffix getSuffixOfType(char* typeName);
 opSuffix getSizeOfId(char* idName);
 int getIntFromSuffix(opSuffix size);
 int getSizeOfParameters(FPARAMETERNODE* fpn);
+opKind translateCMPtoCMPSD(opKind kind);
 
 
 //Check if an operator is a compare/arithmetic/boolean operator

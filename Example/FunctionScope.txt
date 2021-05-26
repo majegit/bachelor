@@ -1,0 +1,15 @@
+int x = 100;
+b();
+c();
+
+int b()
+{
+    print(x);
+    return 1;
+}
+
+int c()
+{
+    b();
+    return 2;
+}

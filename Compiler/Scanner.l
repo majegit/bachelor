@@ -59,7 +59,7 @@ true|false          {
 \>=|=\>             return GEQ;
 \n                  lineno++;
 [ \t]               ;
-\#[^\n]*\n          ;
+\#[^\n]*\n          lineno++;
 .                   printf("Unknown char: %s\n", yytext);
 
 %%

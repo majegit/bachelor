@@ -11,7 +11,8 @@ EXP* makeEXPid(char* id)
     e = (EXP*)malloc(sizeof(EXP));
     e->lineno = lineno;
     e->kind = idK;
-    e->val.idE = id;
+    e->val.idE.id = id;
+    e->val.idE.symbol = NULL;
     return e;
 }
 
@@ -99,7 +100,8 @@ EXP* makeEXPUnaryMinusId(char* id)
     eId = (EXP*)malloc(sizeof(EXP));
     eId->lineno = lineno;
     eId->kind = idK;
-    eId->val.idE = id;
+    eId->val.idE.id = id;
+    eId->val.idE.symbol = NULL;
 
     EXP* eZero;
     eZero = (EXP*)malloc(sizeof(EXP));
@@ -193,6 +195,11 @@ STMT* makeSTMTexp(EXP* exp)
     s->lineno = lineno;
     s->kind = expK;
     s->val.expS = exp;
+    if(exp->kind != funK)
+    {
+        printf("ERROR: Expected function at line: %d.\n",exp->lineno);
+        exit(0);
+    }
     return s;
 }
 
@@ -260,7 +267,29 @@ FUNCTION* makeFUNCTION(char* returnType, char* name, FPARAMETERNODE* args, STMTC
     fun->name = name;
     fun->args = args;
     fun->body = body;
+
+    //Check if all branches of computation ends with a return stmt
+    if(allBranchesReturn(fun->body->stmtnode) == 0)
+    {
+        printf("ERROR: not all branches of function \"%s\" have a return statement on line: %d",fun->name,fun->lineno);
+        exit(0);
+    }
     return fun;
+}
+
+int allBranchesReturn(STMTNODE* sn)
+{
+    int alwaysReturn = 0;
+    while(sn != NULL && alwaysReturn == 0)
+    {
+        STMT* this = sn->stmt;
+        if(this->kind == returnK)
+            alwaysReturn = 1;
+        else if(this->kind == ifElseK && this->val.ifElseS.elsebody != NULL)
+            alwaysReturn = allBranchesReturn(this->val.ifElseS.ifbody->stmtnode) & allBranchesReturn(this->val.ifElseS.elsebody->stmtnode);
+        sn = sn->next;
+    }
+    return alwaysReturn;
 }
 
 PROGRAM* makePROGRAM(STMTNODE* sn)
@@ -323,7 +352,8 @@ SYMBOLTABLE* makeSYMBOLTABLE(SYMBOLTABLE* par)
     st->nextParameterLabel = 16;
     return st;
 }
-SYMBOL* lookupSymbolCurrentTable(char* name, SYMBOLTABLE* st)
+
+SYMBOL* lookupSymbolNameCurrentTable(char* name, SYMBOLTABLE* st)
 {
     SYMBOLNODE* currentNode = st->symbols;
     while(currentNode)
@@ -335,38 +365,57 @@ SYMBOL* lookupSymbolCurrentTable(char* name, SYMBOLTABLE* st)
     return NULL;
 }
 
-SYMBOL* lookupSymbolVar(char* name, SYMBOLTABLE* st)
+SYMBOL* lookupSymbolVarName(char* name, SYMBOLTABLE* st)
 {
     if(st == NULL)
         return NULL;
-    SYMBOL* s = lookupSymbolCurrentTable(name,st);
-    if(s != NULL)
+    SYMBOL* s = lookupSymbolNameCurrentTable(name,st);
+    if(s != NULL && (s->kind == variable || s->kind == formalParameter))
         return s;
-    return lookupSymbolVar(name, st->par);
+    return lookupSymbolVarName(name, st->par);
 }
 
-SYMBOL* lookupSymbolFun(char* name, SYMBOLTABLE* st)
+SYMBOL* lookupSymbolFunName(char* name, SYMBOLTABLE* st)
 {
     if(st == NULL)
         return NULL;
-    if(lookupSymbolCurrentTable(name,st))
+    SYMBOL* s = lookupSymbolNameCurrentTable(name,st);
+    if(s != NULL && s->kind == function)
+        return s;
+    return lookupSymbolFunName(name, st->par);
+}
+
+int getSymbolDepth(SYMBOL* s, SYMBOLTABLE* st)
+{
+    if(st == NULL)
+        return -1;
+
+    int depth = 0;
+    SYMBOLTABLE* currTable = st;
+    while(currTable != NULL)
     {
-        SYMBOL* symbol = lookupSymbolCurrentTable(name,st);
-        if(symbol != NULL && symbol->kind == function)
-            return symbol;
+        SYMBOLNODE* currNode = currTable->symbols;
+        while(currNode != NULL)
+        {
+            if(s == currNode->current)
+                return depth;
+            currNode = currNode->next;
+        }
+        currTable = currTable->par;
+        depth++;
     }
-    lookupSymbolFun(name, st->par);
+    return -1;
 }
 
 int* staticLinkCount(char* name, SYMBOLTABLE* st)
 {
     int* levelAndNextLabel = (int*)calloc(2,sizeof(int));
-    SYMBOL* temp = lookupSymbolCurrentTable(name,st);
+    SYMBOL* temp = lookupSymbolNameCurrentTable(name,st);
     while(temp == NULL)
     {
         levelAndNextLabel[0]++;
         st = st->par;
-        temp = lookupSymbolCurrentTable(name,st);
+        temp = lookupSymbolNameCurrentTable(name,st);
     }
     levelAndNextLabel[1] = temp->offset;
     return levelAndNextLabel;
@@ -374,7 +423,7 @@ int* staticLinkCount(char* name, SYMBOLTABLE* st)
 
 void addSymbol(SYMBOL* symbol, SYMBOLTABLE* st)
 {
-    if(lookupSymbolCurrentTable(symbol->name, st))
+    if(lookupSymbolNameCurrentTable(symbol->name, st))
     {
         printf("ERROR: Identifier '%s' already declared in this scope!",symbol->name);
         exit(-1);
@@ -443,30 +492,4 @@ char* concatStrFree(char* str1, const char* str2)
     char* res = concatStr(str1,str2);
     free(str1);
     return res;
-}
-
-char* concatStrFreeFree(char* str1, char* str2)
-{
-    char* res = concatStr(str1,str2);
-    free(str1);
-    free(str2);
-    return res;
-}
-
-//Copies a string into a new memory location and returns a pointer to it
-char* deepCopy(const char* str)
-{
-    char* res = (char*)malloc(strlen(str)+1);
-    memcpy(res,str,strlen(str)+1);
-    return res;
-}
-
-void printSYMBOLTABLE(SYMBOLTABLE* st)
-{
-    SYMBOLNODE* currentNode = st->symbols;
-    while(currentNode != NULL)
-    {
-        printf("VARIABLE IN TABLE: %s\n",currentNode->current->name);
-        currentNode = currentNode->next;
-    }
 }

@@ -975,7 +975,7 @@ case 36:
 /* rule 36 can match eol */
 YY_RULE_SETUP
 #line 62 "Compiler\\Scanner.l"
-;
+lineno++;
 	YY_BREAK
 case 37:
 YY_RULE_SETUP

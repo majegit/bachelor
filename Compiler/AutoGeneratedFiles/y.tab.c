@@ -643,9 +643,9 @@ static const yytype_uint8 yyrline[] =
        0,    62,    62,    66,    68,    70,    72,    74,    76,    78,
       80,    82,    84,    86,    88,    90,    92,    94,    96,    98,
      100,   102,   104,   106,   108,   112,   114,   116,   118,   120,
-     122,   124,   126,   128,   132,   136,   145,   147,   149,   151,
-     161,   165,   167,   172,   173,   177,   181,   183,   188,   189,
-     193,   197,   199,   201,   203
+     122,   124,   126,   128,   132,   144,   153,   155,   157,   159,
+     169,   173,   175,   180,   181,   185,   189,   191,   196,   197,
+     201,   205,   207,   209,   211
 };
 #endif
 
@@ -1520,7 +1520,7 @@ yyreduce:
     break;
 
   case 35: /* syntactic_sugar: type tIDENTIFIER ASSIGN exp ';'  */
-#line 137 "Compiler\\Parser.y"
+#line 145 "Compiler\\Parser.y"
                   {STMT* stmt1 = makeSTMTvarDecl((yyvsp[-4].stringconst),(yyvsp[-3].stringconst));
                    STMT* stmt2 = makeSTMTassign((yyvsp[-3].stringconst),(yyvsp[-1].exp));
                    STMTNODE* stmtnode1 = makeSTMTNODE(stmt1,NULL);
@@ -1531,25 +1531,25 @@ yyreduce:
     break;
 
   case 36: /* stmtnode: stmt  */
-#line 146 "Compiler\\Parser.y"
+#line 154 "Compiler\\Parser.y"
            {(yyval.stmtnode) = makeSTMTNODE((yyvsp[0].stmt),NULL);}
 #line 1537 "y.tab.c"
     break;
 
   case 37: /* stmtnode: stmt stmtnode  */
-#line 148 "Compiler\\Parser.y"
+#line 156 "Compiler\\Parser.y"
            {(yyval.stmtnode) = makeSTMTNODE((yyvsp[-1].stmt),(yyvsp[0].stmtnode));}
 #line 1543 "y.tab.c"
     break;
 
   case 38: /* stmtnode: syntactic_sugar  */
-#line 150 "Compiler\\Parser.y"
+#line 158 "Compiler\\Parser.y"
            {(yyval.stmtnode) = (yyvsp[0].stmtnode);}
 #line 1549 "y.tab.c"
     break;
 
   case 39: /* stmtnode: syntactic_sugar stmtnode  */
-#line 152 "Compiler\\Parser.y"
+#line 160 "Compiler\\Parser.y"
            {STMTNODE* curr = (yyvsp[-1].stmtnode);
 	    while(curr->next != NULL)
 	    	curr = curr->next;
@@ -1559,91 +1559,91 @@ yyreduce:
     break;
 
   case 40: /* aparameter: exp  */
-#line 162 "Compiler\\Parser.y"
+#line 170 "Compiler\\Parser.y"
              {(yyval.aparameter) = makeAPARAMETER((yyvsp[0].exp));}
 #line 1565 "y.tab.c"
     break;
 
   case 41: /* aparameternode: aparameter  */
-#line 166 "Compiler\\Parser.y"
+#line 174 "Compiler\\Parser.y"
                 {(yyval.aparameternode) = makeAPARAMETERNODE((yyvsp[0].aparameter),NULL);}
 #line 1571 "y.tab.c"
     break;
 
   case 42: /* aparameternode: aparameter ',' aparameternode  */
-#line 168 "Compiler\\Parser.y"
+#line 176 "Compiler\\Parser.y"
                 {(yyval.aparameternode) = makeAPARAMETERNODE((yyvsp[-2].aparameter),(yyvsp[0].aparameternode));}
 #line 1577 "y.tab.c"
     break;
 
   case 43: /* opt_aparameternode: %empty  */
-#line 172 "Compiler\\Parser.y"
+#line 180 "Compiler\\Parser.y"
                      {(yyval.aparameternode) = NULL;}
 #line 1583 "y.tab.c"
     break;
 
   case 44: /* opt_aparameternode: aparameternode  */
-#line 174 "Compiler\\Parser.y"
+#line 182 "Compiler\\Parser.y"
                      {(yyval.aparameternode) = (yyvsp[0].aparameternode);}
 #line 1589 "y.tab.c"
     break;
 
   case 45: /* fparameter: type tIDENTIFIER  */
-#line 178 "Compiler\\Parser.y"
+#line 186 "Compiler\\Parser.y"
              {(yyval.fparameter) = makeFPARAMETER((yyvsp[-1].stringconst),(yyvsp[0].stringconst));}
 #line 1595 "y.tab.c"
     break;
 
   case 46: /* fparameternode: fparameter  */
-#line 182 "Compiler\\Parser.y"
+#line 190 "Compiler\\Parser.y"
                  {(yyval.fparameternode) = makeFPARAMETERNODE(NULL,(yyvsp[0].fparameter));}
 #line 1601 "y.tab.c"
     break;
 
   case 47: /* fparameternode: fparameternode ',' fparameter  */
-#line 184 "Compiler\\Parser.y"
+#line 192 "Compiler\\Parser.y"
                  {(yyval.fparameternode) = makeFPARAMETERNODE((yyvsp[-2].fparameternode),(yyvsp[0].fparameter));}
 #line 1607 "y.tab.c"
     break;
 
   case 48: /* opt_fparameternode: %empty  */
-#line 188 "Compiler\\Parser.y"
+#line 196 "Compiler\\Parser.y"
                      {(yyval.fparameternode) = NULL;}
 #line 1613 "y.tab.c"
     break;
 
   case 49: /* opt_fparameternode: fparameternode  */
-#line 190 "Compiler\\Parser.y"
+#line 198 "Compiler\\Parser.y"
                      {(yyval.fparameternode) = (yyvsp[0].fparameternode);}
 #line 1619 "y.tab.c"
     break;
 
   case 50: /* functionDecl: type tIDENTIFIER '(' opt_fparameternode ')' stmtcompound  */
-#line 194 "Compiler\\Parser.y"
+#line 202 "Compiler\\Parser.y"
            {(yyval.function) = makeFUNCTION((yyvsp[-5].stringconst),(yyvsp[-4].stringconst),(yyvsp[-2].fparameternode),(yyvsp[0].stmtcomp));}
 #line 1625 "y.tab.c"
     break;
 
   case 51: /* type: BOOLEAN  */
-#line 198 "Compiler\\Parser.y"
+#line 206 "Compiler\\Parser.y"
        {(yyval.stringconst) = "BOOLEAN";}
 #line 1631 "y.tab.c"
     break;
 
   case 52: /* type: CHAR  */
-#line 200 "Compiler\\Parser.y"
+#line 208 "Compiler\\Parser.y"
        {(yyval.stringconst) = "CHAR";}
 #line 1637 "y.tab.c"
     break;
 
   case 53: /* type: DOUBLE  */
-#line 202 "Compiler\\Parser.y"
+#line 210 "Compiler\\Parser.y"
        {(yyval.stringconst) = "DOUBLE";}
 #line 1643 "y.tab.c"
     break;
 
   case 54: /* type: INT  */
-#line 204 "Compiler\\Parser.y"
+#line 212 "Compiler\\Parser.y"
        {(yyval.stringconst) = "INT";}
 #line 1649 "y.tab.c"
     break;
@@ -1843,4 +1843,4 @@ yyreturn:
   return yyresult;
 }
 
-#line 207 "Compiler\\Parser.y"
+#line 215 "Compiler\\Parser.y"

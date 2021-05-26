@@ -7,6 +7,7 @@
 #include "DebugUtils.h"
 #include "Emit.h"
 
+
 int lineno = 1;
 void yyparse();
 PROGRAM* program;
@@ -22,7 +23,7 @@ int main()
     printf("STARTING INTERMEDIATE CODE GENERATION\n");
     LL* iCode = icgTraversePROGRAM(program);
     printf("STARTING PEEPHOLE OPTIMIZATION\n");
-    peepholeOptimize(iCode);
+    //peepholeOptimize(iCode);
     printf("STARTING CODE EMIT\n");
     emit(iCode,"asmCode.s");
     return 0;

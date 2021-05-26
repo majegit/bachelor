@@ -5,7 +5,7 @@ typedef struct EXP {
     int lineno;
     enum {idK,intK,doubleK,boolK,charK,binopK,funK,coerceK} kind;
     union {
-        char* idE;
+        struct {char* id; struct SYMBOL* symbol;} idE;
         char charE;
         int intE, boolE;
         double doubleE;
@@ -31,7 +31,7 @@ typedef struct STMT {
     enum {whileK,assignK,ifElseK,returnK,printK,varDeclK,funDeclK,expK} kind;
     union {
         struct {struct EXP* guard; struct STMTCOMP* body;} whileS;
-        struct {char* name; struct EXP* val;} assignS;
+        struct {char* name; struct SYMBOL* symbol; struct EXP* val;} assignS;
         struct {struct EXP* cond; struct STMTCOMP* ifbody; struct STMTCOMP* elsebody;} ifElseS;
         struct {char* type; char* name;} varDeclS;
         struct FUNCTION* funDeclS;
@@ -104,6 +104,10 @@ typedef struct FUNCTION {
 
 FUNCTION* makeFUNCTION(char* returnType, char* name, FPARAMETERNODE* args, STMTCOMP* body);
 
+//This function checks if all branches of a function contain a return stmt
+int allBranchesReturn(STMTNODE* sn);
+
+
 typedef struct PROGRAM {
     STMTCOMP* sc;
     struct SYMBOLTABLE* globalScope;
@@ -119,7 +123,7 @@ typedef struct SYMBOL {
     char* name;
     char* type;
     FPARAMETERNODE* fpn; //Only functions use this
-    int offset; //Only variables and formalParameters use this
+    int offset;  //Only variables and formalParameters use this
     char* label; //Used by functions and
 } SYMBOL;
 
@@ -144,9 +148,11 @@ typedef struct SYMBOLTABLE {
 
 SYMBOLTABLE* makeSYMBOLTABLE(SYMBOLTABLE* par);
 
-SYMBOL* lookupSymbolCurrentTable(char* name, SYMBOLTABLE* st); //Checks only the current table
-SYMBOL* lookupSymbolVar(char* name, SYMBOLTABLE* st); //Checks current table and all parent tables
-SYMBOL* lookupSymbolFun(char* name, SYMBOLTABLE* st);
+SYMBOL* lookupSymbolNameCurrentTable(char* name, SYMBOLTABLE* st); //Checks only the current table
+SYMBOL* lookupSymbolVarName(char* name, SYMBOLTABLE* st);
+SYMBOL* lookupSymbolFunName(char* name, SYMBOLTABLE* st);
+int getSymbolDepth(SYMBOL* s, SYMBOLTABLE* st);
+
 int* staticLinkCount(char* name, SYMBOLTABLE* st);
 
 void addSymbol(SYMBOL* symbol, SYMBOLTABLE* st);
@@ -155,11 +161,7 @@ char* funLabelGenerator(char* funName);
 //Util functions
 char* concatStr(const char* str1, const char* str2);
 char* concatStrFree(char* str1, const char* str2);
-char* concatStrFreeFree(char* str1, char* str2);
-char* deepCopy(const char* str);
 
-//Print functions
-void printSYMBOLTABLE(SYMBOLTABLE* st);
 
 
 

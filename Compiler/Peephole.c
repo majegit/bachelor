@@ -30,17 +30,17 @@ void peepholeOptimize(LL* code)
 }
 
 //TEMPLATE:
-//PUSH <OP0>
-//POP <OP1>
+//PUSH<suffix> <OP0>
+//POP<suffix> <OP1>
 //
 //RESULT:
-//MOVE <OP0> <OP1>
+//MOV<suffix> <OP0> <OP1>
 int pattern0(LLN* previous, LLN** current)
 {
-    printf("0\n");
     LLN* c = *current;
     if(c->ins->op->opK == push && c->next != NULL && c->next->ins->op->opK == pop)
     {
+        printf("0\n");
         INS* ins0 = c->ins;
         INS* ins1 = c->next->ins;
         OP* op = makeOP(move, ins0->op->size);
@@ -65,7 +65,6 @@ int pattern0(LLN* previous, LLN** current)
 //MOV<suffix> <offset>(RBP), <TARGET1>
 int pattern1(LLN* previous, LLN** current)
 {
-    printf("1\n");
     LLN* c = *current;
     if(!c->next)
         return 0;
@@ -87,7 +86,7 @@ int pattern1(LLN* previous, LLN** current)
         ins1->args[1] != NULL &&
         ins1->args[1]->mode->mode == dir)
     {
-        printf("made it in 1\n");
+        printf("1\n");
         OP* op = makeOP(move, ins1->op->size);
         Target* src = makeTarget(rbp);
         ARG* srcA = makeARG(src,makeModeIRL(ins1->args[0]->mode->offset));
@@ -112,7 +111,6 @@ int pattern1(LLN* previous, LLN** current)
 //MOV<suffix> <TARGET1>, <offset>(RBP)
 int pattern2(LLN* previous, LLN** current)
 {
-    printf("2\n");
     LLN* c = *current;
     if(!c->next)
         return 0;
@@ -132,7 +130,7 @@ int pattern2(LLN* previous, LLN** current)
         ins1->args[1]->target->targetK == rsl &&
         ins1->args[1]->mode->mode == irl)
     {
-        printf("Made it in boy\n");
+        printf("2\n");
         OP* op = makeOP(move, ins1->op->size);
         Target* src = makeTarget(ins1->args[0]->target->targetK);
         ARG* srcA = makeARG(src,ins1->args[0]->mode);
@@ -156,10 +154,10 @@ int pattern2(LLN* previous, LLN** current)
 //
 int pattern3(LLN* previous, LLN** current)
 {
-    printf("3\n");
     INS* ins = (*current)->ins;
     if(ins->op != NULL && ins->op->opK == add && ins->args[0] != NULL && ins->args[0]->target->targetK == imi && ins->args[0]->target->additionalInfo == 0)
     {
+        printf("3\n");
         previous->next = (*current)->next;
         *current = NULL;
         return 1;

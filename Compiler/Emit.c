@@ -69,7 +69,6 @@ char* convertInsToAsm(INS* ins)
             fputs(indentation,fp);
             if(ins->op->size == bits_64_d)
             {
-                fputs(indentation,fp);
                 fputs("movq ",fp);
                 fputARG(ins->args[0],ins->op->size);
                 fputs(", %rax\n",fp);
@@ -104,7 +103,6 @@ char* convertInsToAsm(INS* ins)
             }
             else if(ins->op->size == bits_64)
             {
-                fputs(indentation, fp);
                 fputs("push ",fp);
                 fputARG(ins->args[0],ins->op->size);
                 fputs("\n",fp);
@@ -252,7 +250,10 @@ char* convertInsToAsm(INS* ins)
         {
             fputs(indentation,fp);
             if(ins->op->size == bits_64_d)
+            {
                 fputs("comisd ",fp);
+                //if(ins->op->opK == )
+            }
             else
                 fputs("cmp ",fp);
             fputARG(ins->args[0],ins->op->size);
@@ -321,6 +322,22 @@ char* convertInsToAsm(INS* ins)
         {
             fputs(indentation,fp);
             fputs( "setle ",fp);
+            fputARG(ins->args[0],ins->op->size);
+            fputs("\n",fp);
+            break;
+        }
+        case setb:
+        {
+            fputs(indentation,fp);
+            fputs( "setb ",fp);
+            fputARG(ins->args[0],ins->op->size);
+            fputs("\n",fp);
+            break;
+        }
+        case setbe:
+        {
+            fputs(indentation,fp);
+            fputs( "setbe ",fp);
             fputARG(ins->args[0],ins->op->size);
             fputs("\n",fp);
             break;
@@ -520,6 +537,8 @@ void fputTarget(Target* t, opSuffix suffix)
         }
         case reg:
         {
+            if(t->additionalInfo >= 4)
+                printf("not good: %d\n",t->additionalInfo);
             if(suffix == bits_64_d)
                 fputs(sseVariants[t->additionalInfo],fp);
             else
