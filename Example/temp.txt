@@ -1,34 +1,6 @@
-double g = 2.3;
-double h = 3.3;
-
-if(g < h)
-{
-    print(0);
-}
-if(g <= h)
-{
-    print(1);
-}
-if(g == h)
-{
-    print(2);
-}
-if(g >= h)
-{
-    print(3);
-}
-if(g > h)
-{
-    print(4);
-}
-if(g != h)
-{
-    print(5);
-}
-if(g == g)
-{
-    print(6);
-}
-
-
-
+print(true);
+print(false);
+print(-1212);
+print(77.3);
+double x = 0;
+print(x);

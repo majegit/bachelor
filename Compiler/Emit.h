@@ -2,6 +2,9 @@
 #define __Emit_h
 #include "IntermediateCodeGeneration.h"
 
+extern FILE* fp;
+extern const char* indentation;
+
 void emit(LL* code, const char* outputFileName);
 char* convertInsToAsm(INS* ins);
 
@@ -13,6 +16,8 @@ void putLongsFromDouble(double val);
 const char* printCHAR;
 const char* printBOOLEAN;
 const char* printINT;
+const char* printDOUBLE;
+const char* printNewline;
 
 #endif
 

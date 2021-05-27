@@ -163,7 +163,11 @@ void icgTraverseSTMT(STMT* s)
             if(strcmp(s->val.printS->type,"INT") == 0)
                 code->pFlagINT = 1;
             if(strcmp(s->val.printS->type,"DOUBLE") == 0)
+            {
+                code->pFlagINT = 1;
                 code->pFlagDOUBLE = 1;
+            }
+
 
             quickAddCallFun(printFun);
 
@@ -177,6 +181,8 @@ void icgTraverseSTMT(STMT* s)
             ARG* args[2] = {srcA,destA};
             OP* op = makeOP(add, bits_64);
             quickAddIns(makeINS(op,args));
+
+            quickAddCallFun("printNewline");
             break;
         }
         case varDeclK:
@@ -309,7 +315,7 @@ void icgTraverseEXP(EXP* e)
                 exit(1); //ERROR, should never happen
 
             //The expression to be coerced is on the stack, convert it and save result in register 0
-            op = makeOP(opK,0);
+            op = makeOP(opK,suffixPost);
             src = makeTarget(rsp);
             srcA = makeARG(src,makeMode(ind));
 
