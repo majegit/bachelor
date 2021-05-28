@@ -1,7 +1,7 @@
 /*** Definitions ***/
 %{
     #include <string.h>
-    #include "Compiler\Tree.h"
+    #include "Tree.h"
     #include "y.tab.h"
     extern int lineno;
 %}
