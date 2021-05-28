@@ -349,7 +349,7 @@ SYMBOLTABLE* makeSYMBOLTABLE(SYMBOLTABLE* par)
     st->symbols = NULL;
     st->symbolCount = 0;
     st->nextVariableLabel = 0;
-    st->nextParameterLabel = 16;
+    st->nextParameterLabel = 24;
     return st;
 }
 

@@ -1,1 +1,0 @@
-#Forberedt til syntaktisk sugar, en enkelt stmt bliver lavet om til flere stmts i en node, og det er kun et problem fordi vi ikke kan lægge flere ting på stakken.
