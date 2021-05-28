@@ -1,8 +1,11 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
-#include "Tree.h"
-#include "DebugUtils.h"
+#ifdef _WIN32
+	#include "Compiler\Tree.h"
+#else
+	#include "Tree.h"
+#endif
 
 extern char *yytext;
 extern int lineno;

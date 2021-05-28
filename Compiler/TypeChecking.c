@@ -137,14 +137,8 @@ void tcTraverseEXP(EXP* e)
         }
         case funK:
         {
-            SYMBOL* functionSymbol = lookupSymbolFunName(e->val.funE.id, currentScope);
-            if (functionSymbol == NULL)
-            {
-                printf("ERROR: Function does not exist: %s on line: %d\n", e->val.funE.id, e->lineno);
-                exit(0);
-            }
-            tcTraverseAPARAMETERNODE(e->val.funE.aparameternode, functionSymbol->fpn);
-            e->type = functionSymbol->type;
+            tcTraverseAPARAMETERNODE(e->val.funE.aparameternode, e->val.funE.symbol->fpn);
+            e->type = e->val.funE.symbol->type;
             break;
         }
         case coerceK:
@@ -159,9 +153,14 @@ void tcTraverseAPARAMETERNODE(APARAMETERNODE* apn, FPARAMETERNODE* fpn)
 {
     if(apn == NULL && fpn == NULL)
         return;
-    if(apn == NULL && fpn != NULL || apn != NULL && fpn == NULL)
+    if(apn == NULL)
     {
-        printf("ERROR: Mismatched arguments for function call on line:\n");
+        printf("ERROR: Mismatched arguments for function call on line: %d\n", fpn->current->lineno);
+        exit(0);
+    }
+    if(fpn == NULL)
+    {
+        printf("ERROR: Mismatched arguments for function call on line: %d\n", apn->current->lineno);
         exit(0);
     }
     tcTraverseEXP(apn->current->exp);

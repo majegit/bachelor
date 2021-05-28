@@ -1,7 +1,12 @@
 /*** Definitions ***/
 %{
-    #include <string.h>
+#ifdef _WIN32
+    #include "Compiler\Tree.h"
+#else
     #include "Tree.h"
+#endif
+
+    #include <string.h>
     #include "y.tab.h"
     extern int lineno;
 %}

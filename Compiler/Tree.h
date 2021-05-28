@@ -10,7 +10,7 @@ typedef struct EXP {
         int intE, boolE;
         double doubleE;
         struct {struct EXP* left; struct EXP* right; char* operator;} binopE;
-        struct {char* id; struct APARAMETERNODE* aparameternode;} funE;
+        struct {char* id; struct SYMBOL* symbol; struct APARAMETERNODE* aparameternode;} funE;
         struct EXP* coerceE;
     } val;
     char* type;
@@ -124,7 +124,7 @@ typedef struct SYMBOL {
     char* type;
     FPARAMETERNODE* fpn; //Only functions use this
     int offset;  //Only variables and formalParameters use this
-    char* label; //Used by functions and
+    char* label; //Used by functions
 } SYMBOL;
 
 SYMBOL* makeSYMBOLvariable(char* name, char* type);
