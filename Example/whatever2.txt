@@ -1,7 +1,0 @@
-
-main() {
-    int x;
-    x = 2;
-    char a = 'b';
-
-}

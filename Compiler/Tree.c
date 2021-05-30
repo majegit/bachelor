@@ -347,7 +347,6 @@ SYMBOLTABLE* makeSYMBOLTABLE(SYMBOLTABLE* par)
     st = (SYMBOLTABLE*)malloc(sizeof(SYMBOLTABLE));
     st->par = par;
     st->symbols = NULL;
-    st->symbolCount = 0;
     st->nextVariableLabel = 0;
     st->nextParameterLabel = 24;
     return st;
@@ -407,20 +406,6 @@ int getSymbolDepth(SYMBOL* s, SYMBOLTABLE* st)
     return -1;
 }
 
-int* staticLinkCount(char* name, SYMBOLTABLE* st)
-{
-    int* levelAndNextLabel = (int*)calloc(2,sizeof(int));
-    SYMBOL* temp = lookupSymbolNameCurrentTable(name,st);
-    while(temp == NULL)
-    {
-        levelAndNextLabel[0]++;
-        st = st->par;
-        temp = lookupSymbolNameCurrentTable(name,st);
-    }
-    levelAndNextLabel[1] = temp->offset;
-    return levelAndNextLabel;
-}
-
 void addSymbol(SYMBOL* symbol, SYMBOLTABLE* st)
 {
     if(lookupSymbolNameCurrentTable(symbol->name, st))
@@ -455,7 +440,6 @@ void addSymbol(SYMBOL* symbol, SYMBOLTABLE* st)
     }
     SYMBOLNODE* sn = makeSYMBOLNODE(symbol, st->symbols);
     st->symbols = sn;
-    st->symbolCount++;
 }
 
 int funCounter = 0;

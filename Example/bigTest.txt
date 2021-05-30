@@ -1,97 +1,15 @@
-int x = 4;
-int y = -4;
-char a = 'a';
-char b = 'b';
-boolean t = true;
-boolean f = false;
+boolean b = true;
+int i = 33;
+char c = 'N';
+double d = 3.4;
 
-int main(){
-	print(x);
-	print(y);
-	print(a);
-	print(b);
-	print(t);
-	print(f);
-
-
-	int t1 = x*x;
-	print(t1);
-	int t2 = x*y;
-	print(t2);
-	int t3 = y*y;
-	print(t3);
-
-	int t4 = x/x;
-	print(t4);
-	int t5 = x/y;
-	print(t5);
-	int t6 = y/y;
-	print(t6);
-
-
-	int t7 = x+x;
-	print(t7);
-	int t8 = x+y;
-	print(t8);
-	int t9 = y+y;
-	print(t9);
-
-	int t10 = x-x;
-	print(t10);
-	int t11 = x-y;
-	print(t11);
-	int t12 = y-y;
-	print(t12);
-
-	boolean t13 = t&&t;
-	print(t13);
-	boolean t14 = t&&f;
-	print(t14);
-	boolean t15 = f&&f;
-	print(t15);
-	boolean t16 = t||t;
-	print(t15);
-	boolean t17 = t||f;
-	print(t17);
-	boolean t18 = f||f;
-	print(t18);
-
-	print(test1(1,2,test2(5)));
-	print(test2(4));
-
-	int i = 0;
-	while(i <= 10){
-		print(i);
-		i=i+1;
-	}
-
-	if(i<100){
-		print(1);
-	} else {
-		print(0);
-	}
-
-	if(i>100){
-		print(1);
-	} else {
-		print(0);
-	}
-    return 7;
+int something(int h)
+{
+    while(i < 100)
+    {
+        i = i + 1;
+    }
+    d = 33 * i;
+    return i*2;
 }
 
-int test1(int a, int b, int c){
-	print(c);
-	if(a < b){
-		return a*b;
-	} else {
-		return a/b;
-	}
-
-}
-
-int test2(int x){
-	return test2(x);
-	int test2(int x){
-		return x*2;
-	}
-}

@@ -1,8 +1,0 @@
-main() {
-   int a = 2+2;
-   a = a+something(2);
-}
-
-int something(int formalInt){
-    return formalInt*2;
-}

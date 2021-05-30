@@ -25,5 +25,6 @@ int main()
     peepholeOptimize(iCode);
     printf("STARTING CODE EMIT\n");
     emit(iCode,"asmCode.s");
+
     return 0;
 }

@@ -1,7 +1,0 @@
-main(){
-    double i = ASD(2);
-}
-
-double function ASD(int formalInt) {
-    return 2.2*'a';
-}

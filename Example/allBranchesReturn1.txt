@@ -1,0 +1,12 @@
+int simple()
+{
+    if()
+    {
+        return 3;
+    }
+    else
+    {
+        return 8;
+    }
+}
+

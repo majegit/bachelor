@@ -192,34 +192,34 @@ LLN* makeLLN(INS* ins);
 
 
 //Quick Add Functions
-void quickAddIns(INS* ins);
-void quickAddMeta(metaKind kind);
-void quickAddMetaWithInfo(metaKind kind, int metaInt);
+void quickIns(INS* ins);
+void quickMeta(metaKind kind);
+void quickMetaWithInfo(metaKind kind, int metaInt);
 
-void quickAddMetaString(metaKind metaK, char* str);
-void quickAddLabelString(labelKind kind, char* label);
-void quickAddPush(opSuffix size, Target* target, Mode* mode);
-void quickAddPushId(SYMBOL* s);
-void quickAddPopRRT(opSuffix size);
-void quickAddPopReg(opSuffix size, int registerNumber);
-void quickAddPop(Target* t, Mode* m);
-void quickAddMoveRBPToRSL();
-void quickAddMoveRSLToRBP();
-void quickAddCheckTruthValue();
-void quickAddJumpIfFalse(labelKind k, char* labelName);
-void quickAddUnconditionalJmp(labelKind k, char* labelString);
-void quickAddArithmeticINS(opKind k, opSuffix size);
-void quickAddCompareINS(opKind k, opSuffix size);
-void quickAddBooleanINS(opKind k);
-void quickAddPushReg(int regNumber,opSuffix size);
-void quickAddCallFun(char* funLabel);
-void quickAddPushRSP();
-void quickAddMoveRBPToRSP();
-void quickAddPopRBP();
-void quickAddPushRBP();
-void quickAddIncrementScopeOneLevel();
-void quickAddPushRRT(opSuffix suffix);
-void quickAddPushDoubleLabel(char* label);
+void quickMetaString(metaKind metaK, char* str);
+void quickLabelString(labelKind kind, char* label);
+void quickPush(opSuffix size, Target* target, Mode* mode);
+void quickPushId(SYMBOL* s);
+void quickPopRRT(opSuffix size);
+void quickPopReg(char* type, int registerNumber);
+void quickPop(Target* t, Mode* m);
+void quickMoveRBPToRSL();
+void quickMoveRSLToRBP();
+void quickCheckTruthValue();
+void quickJumpIfFalse(labelKind k, char* labelName);
+void quickUnconditionalJmp(labelKind k, char* labelString);
+void quickArithmeticINS(opKind k, opSuffix size);
+void quickCompareINS(opKind k, opSuffix size);
+void quickBooleanINS(opKind k);
+void quickPushReg(int regNumber,opSuffix size);
+void quickCallFun(char* funLabel);
+void quickPushRSP();
+void quickMoveRBPToRSP();
+void quickPopRBP();
+void quickPushRBP();
+void quickIncrementScopeOneLevel();
+void quickPushRRT(opSuffix suffix);
+void quickPushDoubleLabel(char* label);
 
 
 //Other

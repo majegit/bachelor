@@ -1,0 +1,17 @@
+scope1();
+
+int deepScope(int a, int b, int c)
+{
+    return a+b+c;
+}
+
+int scope1()
+{
+    scope(2);
+    int scope2()
+    {
+        print(deepScope(1,2,3));
+        return 0;
+    }
+    return 3;
+}

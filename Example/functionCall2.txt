@@ -1,0 +1,8 @@
+simple(2,'c');
+
+int simple(int a, char b)
+{
+    print(a);
+    print(b);
+    return 4;
+}

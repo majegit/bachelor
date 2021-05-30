@@ -1,0 +1,6 @@
+int g = a(3)*3 + x;
+
+int a(int l)
+{
+    return l * 3;
+}

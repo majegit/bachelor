@@ -1,0 +1,11 @@
+int simple()
+{
+    if(true)
+    {
+        int g = 2;
+    }
+    else
+    {
+        return 19;
+    }
+}

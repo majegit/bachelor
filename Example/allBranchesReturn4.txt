@@ -1,0 +1,18 @@
+int nestedIfElse()
+{
+    if()
+    {
+        return 3;
+    }
+    else
+    {
+        if(true)
+        {
+            return 7;
+        }
+        else
+        {
+            return 8;
+        }
+    }
+}

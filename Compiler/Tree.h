@@ -141,7 +141,6 @@ SYMBOLNODE* makeSYMBOLNODE(SYMBOL* symbol, SYMBOLNODE* next);
 typedef struct SYMBOLTABLE {
     struct SYMBOLTABLE* par;
     SYMBOLNODE* symbols;
-    int symbolCount;
     int nextVariableLabel;   //Used to determine where on the stack the local variables of a scope is
     int nextParameterLabel;  //used to determine where on the stack the formal (actual) parameter is during a function call
 } SYMBOLTABLE;
@@ -152,8 +151,6 @@ SYMBOL* lookupSymbolNameCurrentTable(char* name, SYMBOLTABLE* st); //Checks only
 SYMBOL* lookupSymbolVarName(char* name, SYMBOLTABLE* st);
 SYMBOL* lookupSymbolFunName(char* name, SYMBOLTABLE* st);
 int getSymbolDepth(SYMBOL* s, SYMBOLTABLE* st);
-
-int* staticLinkCount(char* name, SYMBOLTABLE* st);
 
 void addSymbol(SYMBOL* symbol, SYMBOLTABLE* st);
 char* funLabelGenerator(char* funName);

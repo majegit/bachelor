@@ -1,0 +1,9 @@
+
+int x = simple();
+simple();
+
+int simple()
+{
+    print(3);
+    return 0;
+}

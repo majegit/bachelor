@@ -1,0 +1,33 @@
+boolean b;
+double aux;
+double x = 3.0;
+
+aux = x + x;
+print(aux);
+
+aux = x - x;
+print(aux);
+
+aux = x * x;
+print(aux);
+
+aux = x / x;
+print(aux);
+
+b = x < x;
+print(b);
+
+b = x > x;
+print(b);
+
+b = x == x;
+print(b);
+
+b = x != x;
+print(b);
+
+b = x <= x;
+print(b);
+
+b = x >= x;
+print(b);

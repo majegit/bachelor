@@ -1,0 +1,11 @@
+int simple()
+{
+    if(true)
+    {
+        return 4;
+    }
+    else
+    {
+        int h = 33 * 2;
+    }
+}

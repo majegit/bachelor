@@ -1,26 +1,20 @@
 boolean t = true;
 boolean f = false;
 
+boolean t1 = t&&t;
+print(t1);
 
-int main()
-{
-    int x = 2;
-    int y = 3;
-    x = y;
-    print(x);
+boolean t2 = t&&f;
+print(t2);
 
+boolean t3 = f&&f;
+print(t3);
 
-    boolean t13 = t&&t;
-	print(t13);
-	boolean t14 = t&&f;
-	print(t14);
-	boolean t15 = f&&f;
-	print(t15);
-	boolean t16 = t||t;
-	print(t15);
-	boolean t17 = t||f;
-	print(t17);
-	boolean t18 = f||f;
-	print(t18);
-    return 3;
-}
+boolean t4 = t||t;
+print(t4);
+
+boolean t5 = t||f;
+print(t5);
+
+boolean t6 = f||f;
+print(t6);
