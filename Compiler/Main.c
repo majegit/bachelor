@@ -13,17 +13,11 @@ PROGRAM* program;
 
 int main()
 {
-    printf("STARTING SCANNING AND PARSING\n");
     yyparse();
-    printf("STARTING SYMBOL COLLECTION\n");
     symbolCollection(program);
-    printf("STARTING TYPECHECK\n");
     typeChecking(program);
-    printf("STARTING INTERMEDIATE CODE GENERATION\n");
     LL* iCode = icgTraversePROGRAM(program);
-    printf("STARTING PEEPHOLE OPTIMIZATION\n");
     peepholeOptimize(iCode);
-    printf("STARTING CODE EMIT\n");
     emit(iCode,"asmCode.s");
 
     return 0;
