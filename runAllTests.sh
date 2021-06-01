@@ -33,6 +33,9 @@ chmod 755 $r
 ./compile.sh Tests/integers.txt
 ./Tests/integers.out >> $r
 
+./compile.sh Tests/doubles.txt
+./Tests/doubles.out >> $r
+
 ./compile.sh Tests/coercion.txt
 ./Tests/coercion.out >> $r
 
