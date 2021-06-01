@@ -7,7 +7,7 @@ int deepScope(int a, int b, int c)
 
 int scope1()
 {
-    scope(2);
+    scope2();
     int scope2()
     {
         print(deepScope(1,2,3));

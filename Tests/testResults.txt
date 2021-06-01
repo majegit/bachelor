@@ -1,11 +1,14 @@
-yyerror triggered by: (, lineno: 1
-ERROR: not all branches of function "simple" have a return statement on line: 9ERROR: not all branches of function "simple" have a return statement on line: 9hereERROR: Variable not declared: x on line: 1
-hereERROR: Variable not declared: x on line: 1
-hereERROR: Function does not exist: square on line: 3
-herehere2ERROR: Incompatible type, expected INT, got DOUBLE on line: 1
-herehere2ERROR: Operator '+' not defined for CHAR INT on line: 1
+yyerror triggered by: '(' lineno: 1
+ERROR: not all branches of function "simple" have a return statement on line: 9
+ERROR: not all branches of function "simple" have a return statement on line: 9
+ERROR: Variable not declared: x on line: 1
+ERROR: Variable not declared: x on line: 1
+ERROR: Function does not exist: square on line: 3
+ERROR: Incompatible type, expected INT, got DOUBLE on line: 1
+ERROR: Operator '+' not defined for CHAR INT on line: 1
 ERROR: Expected function at line: 2.
 1
+2
 true
 false
 false
@@ -25,8 +28,12 @@ true
 (2^2)*1.5
 3
 3
+2
+c
+6
 3
 2
 3
 3
+(2^6)*1.0625
 120

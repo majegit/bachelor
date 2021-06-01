@@ -3,7 +3,7 @@ int i = 33;
 char c = 'N';
 double d = 3.4;
 
-double d = something(i);
+d = something(i);
 if(d<300 && b)
 {
     print(d);
