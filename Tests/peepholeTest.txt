@@ -1,11 +1,9 @@
-int i = 23+0;
+int i = 0;
 
-while(i < 1000)
+while(i < 10000000)
 {
     int x = 100;
     x = x + 0;
-
-
-
-
+    int y = x + 2;
+    i = i + 1;
 }

@@ -2,8 +2,8 @@
 #include "Emit.h"
 #include <stdio.h>
 
-const int pattern_count = 6;
-int (*patterns[6])(LLN*,LLN**) = {pattern0,pattern1,pattern2,pattern3,pattern4,pattern5};
+const int pattern_count = 7;
+int (*patterns[7])(LLN*,LLN**) = {pattern0,pattern1,pattern2,pattern3,pattern4,pattern5,pattern6};
 
 
 void peepholeOptimize(LL* code)
@@ -40,7 +40,9 @@ void peepholeOptimize(LL* code)
 int pattern0(LLN* previous, LLN** current)
 {
     LLN* c = *current;
-    if(c->ins->op->opK == push && c->next != NULL && c->next->ins->op->opK == pop &&
+    if(c->ins->op->opK == push &&
+    c->next != NULL &&
+    c->next->ins->op->opK == pop &&
     c->ins->op->size == c->next->ins->op->size &&
     memRefs(c->ins->args[0],c->next->ins->args[0]) <= 1)
     {
@@ -68,6 +70,7 @@ int pattern0(LLN* previous, LLN** current)
 //MOV<suffix> <offset>(RBP), <TARGET1>
 int pattern1(LLN* previous, LLN** current)
 {
+
     LLN* c = *current;
     if(!c->next)
         return 0;
@@ -114,7 +117,6 @@ int pattern1(LLN* previous, LLN** current)
 //MOV<suffix> <ARG0>, <offset>(RBP)
 int pattern2(LLN* previous, LLN** current)
 {
-
     LLN* c = *current;
     if(!c->next)
         return 0;
@@ -160,10 +162,10 @@ int pattern2(LLN* previous, LLN** current)
 //MOV<suffix> <offset>(RBP), <ARG0>
 int pattern3(LLN* previous, LLN** current)
 {
+
     INS* ins = (*current)->ins;
     if((*current)->next == NULL)
         return 0;
-
     INS* next = (*current)->next->ins;
 
     if(ins->op->opK == move &&
@@ -198,8 +200,6 @@ int pattern3(LLN* previous, LLN** current)
 }
 
 //TEMPLATE:
-//PUSH $0
-//POP
 //ADDQ $0, <OP0>
 //
 //RESULT:
@@ -207,7 +207,10 @@ int pattern3(LLN* previous, LLN** current)
 int pattern4(LLN* previous, LLN** current)
 {
     INS* ins = (*current)->ins;
-    if(ins->op->opK == add && ins->args[0] != NULL && ins->args[0]->target->targetK == imi && ins->args[0]->target->additionalInfo == 0)
+    if(ins->op->opK == add &&
+    ins->args[0] != NULL &&
+    ins->args[0]->target->targetK == imi &&
+    ins->args[0]->target->additionalInfo == 0)
     {
         previous->next = (*current)->next;
         *current = NULL;
@@ -217,6 +220,7 @@ int pattern4(LLN* previous, LLN** current)
 }
 
 
+//Note, this happens a lot because of emit, so in most cases it is undetectable in peephole
 //TEMPLATE:
 //MOV<suffix> <REG0> <REG0>
 //
@@ -224,12 +228,56 @@ int pattern4(LLN* previous, LLN** current)
 //
 int pattern5(LLN* previous, LLN** current)
 {
+
     INS* ins = (*current)->ins;
     if(ins->op->opK == move &&
     equalArgs(ins->args[0],ins->args[1]))
     {
         previous->next = previous->next->next;
         (*current) = NULL;
+        return 1;
+    }
+    return 0;
+}
+
+//Pushing variable in same scope
+//TEMPLATE:
+//MOVQ RBP, RSL
+//PUSH <offset>(RSL)
+//
+//RESULT:
+//PUSH <offset>(RBP)
+int pattern6(LLN* previous, LLN** current)
+{
+    INS* ins = (*current)->ins;
+    if((*current)->next == NULL)
+        return 0;
+    INS* next = (*current)->next->ins;
+
+    if(ins->op->opK == move &&
+       ins->op->size == bits_64 &&
+       ins->args[0] != NULL &&
+       ins->args[0]->target->targetK == rbp &&
+       ins->args[0]->mode->mode == dir &&
+       ins->args[1] != NULL &&
+       ins->args[1]->target->targetK == rsl &&
+       ins->args[1]->mode->mode == dir &&
+       next->args[0] != NULL &&
+       next->op->opK == push &&
+       next->args[0]->target->targetK == rsl &&
+       next->args[0]->mode->mode == irl)
+    {
+
+        OP* op = makeOP(push, next->op->size);
+        Target* dest = makeTarget(rbp);
+        ARG* destA = makeARG(dest,makeModeIRL(next->args[0]->mode->offset));
+
+        ARG* args[2] = {destA,NULL};
+        LLN* newNode = makeLLN(makeINS(op,args));
+
+        newNode->next = (*current)->next->next;
+        previous->next = newNode;
+        *current = newNode;
         return 1;
     }
     return 0;

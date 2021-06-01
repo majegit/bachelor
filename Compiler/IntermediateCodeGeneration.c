@@ -58,7 +58,7 @@ void icgTraverseSTMTCOMP(STMTCOMP* sc)
     int compStackSpace = currentScope->nextVariableLabel;  //Stack space needed for local variables
     quickMetaWithInfo(ALLOCATE_STACK_SPACE, compStackSpace);   //Push rbp and allocate stack space
     icgTraverseSTMTNODE(sc->stmtnode);
-    quickMetaWithInfo(DEALLOCATE_STACK_SPACE, compStackSpace); //Deallocate stack space and pop rbp
+    quickMetaWithInfo(DEALLOCATE_STACK_SPACE, -1*compStackSpace); //Deallocate stack space and pop rbp
 
     depth--;
     currentScope = sc->symbolTable->par;                           //Update pointer to current scope
