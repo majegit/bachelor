@@ -3,13 +3,18 @@ int i = 33;
 char c = 'N';
 double d = 3.4;
 
+double d = something(i);
+if(d<300 && b)
+{
+    print(d);
+}
+
 int something(int h)
 {
     while(i < 100)
     {
         i = i + 1;
     }
-    d = 33 * i;
     return i*2;
 }
 

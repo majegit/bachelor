@@ -1,6 +1,8 @@
+print(2);
+
 int nestedIfElse()
 {
-    if()
+    if(2 + 2 < 5)
     {
         return 3;
     }

@@ -1,0 +1,10 @@
+print(fun());
+
+int fun()
+{
+    return fun();
+    int fun()
+    {
+        return 3;
+    }
+}
