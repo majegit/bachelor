@@ -66,8 +66,10 @@ chmod 755 $r
 ./compile.sh Tests/factorial.txt
 ./Tests/factorial.out >> $r
 
-
 cd Tests
 find . -name "*.s" -type f -delete
 find . -name "*.out" -type f -delete
 cd ..
+
+diff -q Tests/expectedResults.txt Tests/testResults.txt
+
