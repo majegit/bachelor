@@ -11,7 +11,7 @@ extern char *yytext;
 extern int lineno;
 extern PROGRAM* program;
 void yyerror (char const *s) {
-   printf ("yyerror triggered by: %s, lineno: %d\n", yytext,lineno);
+   printf ("yyerror triggered by: '%s' lineno: %d\n", yytext,lineno);
    exit(0);
 }
 int yylex();
@@ -191,8 +191,8 @@ fparameter : type tIDENTIFIER
 ;
 
 fparameternode : fparameter
-                 {$$ = makeFPARAMETERNODE(NULL,$1);}
-           | fparameternode ',' fparameter
+                 {$$ = makeFPARAMETERNODE($1,NULL);}
+           | fparameter ',' fparameternode
              {$$ = makeFPARAMETERNODE($1,$3);}
 ;
 

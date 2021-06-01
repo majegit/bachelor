@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <string.h>
 #include "Tree.h"
 #include "SymbolCollection.h"
 
@@ -127,9 +128,43 @@ void scTraverseFPARAMETERNODE(FPARAMETERNODE* fpn, SYMBOLTABLE* st)
 {
     if(fpn == NULL)
         return;
-    SYMBOL* newSymbol = makeSYMBOLformalParameter(fpn->current->name, fpn->current->type);
-    addSymbol(newSymbol, st);
-    scTraverseFPARAMETERNODE(fpn->next, st);
+    FPARAMETERNODE *currentNode = fpn;
+    int stackOffset = 24; //caller rbp, return address, and callee rbp will be on stack above parameters
+
+    //Getting the offset of the first variable is determined by the size of all others
+    while(currentNode != NULL)
+    {
+        char *type = currentNode->current->type;
+        if (strcmp(type, "BOOLEAN") == 0) {
+            stackOffset += 1;
+        } else if (strcmp(type, "INT") == 0) {
+            stackOffset += 4;
+        } else if (strcmp(type, "DOUBLE") == 0) {
+            stackOffset += 8;
+        } else if (strcmp(type, "CHAR") == 0) {
+            stackOffset += 1;
+        }
+        currentNode = currentNode->next;
+    }
+
+    currentNode = fpn; //Look at the first formal parameter again
+    //Run through all nodes again, this time add them to the symbol table with the offset.
+    while(currentNode != NULL)
+    {
+        char *type = currentNode->current->type;
+        if (strcmp(type, "BOOLEAN") == 0) {
+            stackOffset -= 1;
+        } else if (strcmp(type, "INT") == 0) {
+            stackOffset -= 4;
+        } else if (strcmp(type, "DOUBLE") == 0) {
+            stackOffset -= 8;
+        } else if (strcmp(type, "CHAR") == 0) {
+            stackOffset -= 1;
+        }
+        SYMBOL* newSymbol = makeSYMBOLformalParameter(currentNode->current->name, type, stackOffset);
+        addSymbol(newSymbol,st);
+        currentNode = currentNode->next;
+    }
 }
 
 void scTraverseAPARAMETERNODE(APARAMETERNODE* apn, SYMBOLTABLE* st)

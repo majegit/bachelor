@@ -249,7 +249,7 @@ FPARAMETER* makeFPARAMETER(char* type, char* name)
     return p;
 }
 
-FPARAMETERNODE* makeFPARAMETERNODE(FPARAMETERNODE* next, FPARAMETER* p)
+FPARAMETERNODE* makeFPARAMETERNODE(FPARAMETER* p, FPARAMETERNODE* next)
 {
     FPARAMETERNODE* fn;
     fn = (FPARAMETERNODE*)malloc(sizeof(FPARAMETERNODE));
@@ -322,13 +322,14 @@ SYMBOL* makeSYMBOLfunction(char* name, char* type, FPARAMETERNODE* fpn)
     return s;
 }
 
-SYMBOL* makeSYMBOLformalParameter(char* name, char* type)
+SYMBOL* makeSYMBOLformalParameter(char* name, char* type, int offset)
 {
     SYMBOL* s;
     s = (SYMBOL*)malloc(sizeof(SYMBOL));
     s->name = name;
     s->kind = formalParameter;
     s->type = type;
+    s->offset = offset;
     return s;
 }
 
@@ -348,7 +349,6 @@ SYMBOLTABLE* makeSYMBOLTABLE(SYMBOLTABLE* par)
     st->par = par;
     st->symbols = NULL;
     st->nextVariableLabel = 0;
-    st->nextParameterLabel = 24;
     return st;
 }
 
@@ -413,7 +413,7 @@ void addSymbol(SYMBOL* symbol, SYMBOLTABLE* st)
         printf("ERROR: Identifier '%s' already declared in this scope!",symbol->name);
         exit(-1);
     }
-    if(symbol->kind == variable) {
+    if(symbol->kind == variable) { //Set offset
         if (strcmp(symbol->type, "BOOLEAN") == 0) {
             st->nextVariableLabel -= 1;
         } else if (strcmp(symbol->type, "INT") == 0) {
@@ -424,19 +424,6 @@ void addSymbol(SYMBOL* symbol, SYMBOLTABLE* st)
             st->nextVariableLabel -= 1;
         }
         symbol->offset = st->nextVariableLabel;
-    }
-    else if(symbol->kind == formalParameter)
-    {
-        symbol->offset = st->nextParameterLabel;
-        if (strcmp(symbol->type, "BOOLEAN") == 0) {
-            st->nextParameterLabel += 1;
-        } else if (strcmp(symbol->type, "INT") == 0) {
-            st->nextParameterLabel += 4;
-        } else if (strcmp(symbol->type, "DOUBLE") == 0) {
-            st->nextParameterLabel += 8;
-        } else if (strcmp(symbol->type, "CHAR") == 0) {
-            st->nextParameterLabel += 1;
-        }
     }
     SYMBOLNODE* sn = makeSYMBOLNODE(symbol, st->symbols);
     st->symbols = sn;

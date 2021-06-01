@@ -92,7 +92,7 @@ typedef struct FPARAMETERNODE {
     struct FPARAMETERNODE* next;
 } FPARAMETERNODE;
 
-FPARAMETERNODE* makeFPARAMETERNODE(FPARAMETERNODE* next, FPARAMETER* p);
+FPARAMETERNODE* makeFPARAMETERNODE(FPARAMETER* p, FPARAMETERNODE* next);
 
 typedef struct FUNCTION {
     int lineno;
@@ -129,7 +129,7 @@ typedef struct SYMBOL {
 
 SYMBOL* makeSYMBOLvariable(char* name, char* type);
 SYMBOL* makeSYMBOLfunction(char* name, char* type, FPARAMETERNODE* fpn);
-SYMBOL* makeSYMBOLformalParameter(char* name, char* type);
+SYMBOL* makeSYMBOLformalParameter(char* name, char* type, int offset);
 
 typedef struct SYMBOLNODE {
     SYMBOL* current;

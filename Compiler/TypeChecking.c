@@ -155,18 +155,18 @@ void tcTraverseAPARAMETERNODE(APARAMETERNODE* apn, FPARAMETERNODE* fpn)
         return;
     if(apn == NULL)
     {
-        printf("ERROR: Mismatched arguments for function call on line: %d\n", fpn->current->lineno);
+        printf("ERROR1: Mismatched arguments for function call on line: %d\n", fpn->current->lineno);
         exit(0);
     }
     if(fpn == NULL)
     {
-        printf("ERROR: Mismatched arguments for function call on line: %d\n", apn->current->lineno);
+        printf("ERROR2: Mismatched arguments for function call on line: %d\n", apn->current->lineno);
         exit(0);
     }
     tcTraverseEXP(apn->current->exp);
     if(!isSubtype(stringToType(apn->current->exp->type), stringToType(fpn->current->type)))
     {
-        printf("ERROR: Mismatched arguments for function call on line: %d\n", apn->current->exp->lineno);
+        printf("ERROR3: Mismatched arguments for function call on line: %d\n", apn->current->exp->lineno);
         exit(0);
     }
     if(strcmp(apn->current->exp->type,fpn->current->type) != 0)

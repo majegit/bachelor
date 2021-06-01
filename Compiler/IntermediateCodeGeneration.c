@@ -213,7 +213,15 @@ void icgTraverseEXP(EXP* e)
         case boolK:
         case charK:
         {
-            Target* target = makeTargetIMI(e->val.intE); //e->val.intE = e->val.charE = e->val.boolE, they are all single ints in an union
+            Target* target;
+
+            if(strcmp(e->type, "INT") == 0)
+                target = makeTargetIMI(e->val.intE);
+            else if(strcmp(e->type, "CHAR") == 0)
+                target = makeTargetIMI(e->val.charE);
+            else
+                target = makeTargetIMI(e->val.boolE);
+
             ARG* arg = makeARG(target, makeMode(dir));
             ARG* args[2] = {arg, NULL};
             opSuffix size = e->kind == intK ? bits_32 : bits_8;
