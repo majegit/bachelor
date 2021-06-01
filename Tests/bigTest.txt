@@ -4,6 +4,7 @@ char c = 'N';
 double d = 3.4;
 
 d = something(i);
+
 if(d<300 && b)
 {
     print(d);

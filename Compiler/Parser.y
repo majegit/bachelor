@@ -11,7 +11,7 @@ extern char *yytext;
 extern int lineno;
 extern PROGRAM* program;
 void yyerror (char const *s) {
-   printf ("yyerror triggered by: '%s' lineno: %d\n", yytext,lineno);
+   printf ("yyerror triggered by: '%s' on line: %d\n", yytext,lineno);
    exit(0);
 }
 int yylex();

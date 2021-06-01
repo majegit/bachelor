@@ -1,4 +1,4 @@
-int g = a(3)*3 + x;
+int g = a(3)*3 + z;
 
 int a(int l)
 {

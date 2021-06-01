@@ -73,12 +73,13 @@ void icgTraverseSTMT(STMT* s)
             char* labelName = labelGenerator(while_label);     //Generate start label
             char* endlabelName = concatStr("end",labelName);    //Make end label
 
-            quickLabelString(while_label, labelName);       //while_X:
-            icgTraverseEXP(s->val.whileS.guard);                    //Guard
+            quickLabelString(while_label, labelName);        //while_X:
+            icgTraverseEXP(s->val.whileS.guard);                  //Guard
             quickPopRRT(bits_8);                             //Move boolean to rrt
-            quickCheckTruthValue();                              //cmp rrt, $1
-            quickJumpIfFalse(endwhile_label,endlabelName);    //jne endwhile_X
-            icgTraverseSTMTCOMP(s->val.whileS.body);                //generate the code for the body of the whileloop
+            quickCheckTruthValue();                               //cmp rrt, $1
+            quickJumpIfFalse(endwhile_label,endlabelName);     //jne endwhile_X
+            icgTraverseSTMTCOMP(s->val.whileS.body);              //generate the code for the body of the whileloop
+            quickUnconditionalJmp(while_label,labelName);      //Jmp while_X
             quickLabelString(endwhile_label, endlabelName); //endwhile_X:
             break;
         }

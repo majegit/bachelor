@@ -1,8 +1,8 @@
-yyerror triggered by: '(' lineno: 1
+yyerror triggered by: '(' on line: 1
 ERROR: not all branches of function "simple" have a return statement on line: 9
 ERROR: not all branches of function "simple" have a return statement on line: 9
 ERROR: Variable not declared: x on line: 1
-ERROR: Variable not declared: x on line: 1
+ERROR: Variable not declared: z on line: 1
 ERROR: Function does not exist: square on line: 3
 ERROR: Incompatible type, expected INT, got DOUBLE on line: 1
 ERROR: Operator '+' not defined for CHAR INT on line: 1
@@ -35,5 +35,5 @@ c
 2
 3
 3
-(2^6)*1.0625
+(2^7)*1.5625
 120
