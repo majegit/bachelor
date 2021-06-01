@@ -382,9 +382,7 @@ char* convertInsToAsm(INS* ins)
             fputs("\n",fp);
             break;
         }
-        default:
-            printf("DEBUG OPKIND: %d\n",ins->op->opK);
-            fputs("DEBUG INSTRUCTION\n",fp);
+        default: //Should not happen
             break;
     }
     return res;
@@ -535,8 +533,6 @@ void fputTarget(Target* t, opSuffix suffix)
         }
         case reg:
         {
-            if(t->additionalInfo >= 4)
-                printf("not good: %d\n",t->additionalInfo);
             if(suffix == bits_64_d)
                 fputs(sseVariants[t->additionalInfo],fp);
             else

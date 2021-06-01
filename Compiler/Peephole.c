@@ -11,7 +11,6 @@ void peepholeOptimize(LL* code)
     LLN* previous;
     LLN* current;
     int change = 1;
-    printf("here");
     while(change)
     {
         change = 0;
@@ -21,7 +20,6 @@ void peepholeOptimize(LL* code)
         {
             for(int i = 4; i<pattern_count; ++i)
             {
-                printf("i: %d\n",i);
                 change |= (*patterns[i])(previous,&current);
                 if(current == NULL)
                     break; //Break out of for loop
@@ -31,7 +29,6 @@ void peepholeOptimize(LL* code)
                 current = current->next;
         }
     }
-    printf("here");
 }
 
 //TEMPLATE:
@@ -47,7 +44,6 @@ int pattern0(LLN* previous, LLN** current)
     c->ins->op->size == c->next->ins->op->size &&
     memRefs(c->ins->args[0],c->next->ins->args[0]) <= 1)
     {
-        printf("0\n");
         INS* ins0 = c->ins;
         INS* ins1 = c->next->ins;
         OP* op = makeOP(move, ins0->op->size);
@@ -138,7 +134,6 @@ int pattern2(LLN* previous, LLN** current)
         ins1->args[1]->target->targetK == rsl &&
         ins1->args[1]->mode->mode == irl)
     {
-        printf("2\n");
         OP* op = makeOP(move, ins1->op->size);
         Target* src = makeTarget(ins1->args[0]->target->targetK);
         src->additionalInfo = ins1->args[0]->target->additionalInfo;
@@ -166,7 +161,6 @@ int pattern3(LLN* previous, LLN** current)
     INS* ins = (*current)->ins;
     if(ins->op->opK == add && ins->args[0] != NULL && ins->args[0]->target->targetK == imi && ins->args[0]->target->additionalInfo == 0)
     {
-        printf("3\n");
         previous->next = (*current)->next;
         *current = NULL;
         return 1;
@@ -199,7 +193,6 @@ int pattern4(LLN* previous, LLN** current)
     next->args[1]->target->targetK == rsl &&
     next->args[1]->mode->mode == irl)
     {
-        printf("4\n");
 
         OP* op = next->op;
         ARG* srcA = next->args[0];
@@ -244,7 +237,6 @@ int pattern5(LLN* previous, LLN** current)
        next->args[0]->target->targetK == rsl &&
        next->args[0]->mode->mode == irl)
     {
-        printf("5\n");
 
         OP* op = next->op;
 
@@ -275,7 +267,6 @@ int pattern6(LLN* previous, LLN** current)
     if(ins->op->opK == move &&
     equalArgs(ins->args[0],ins->args[1]))
     {
-        printf("6\n");
         previous->next = previous->next->next;
         (*current) = NULL;
         return 1;
@@ -322,16 +313,12 @@ int equalTargets(Target* t0, Target* t1)
 
 int equalArgs(ARG* arg0, ARG* arg1)
 {
-    printf("yo");
     if(arg0 == NULL && arg1 == NULL)
         return 1;
-    printf("yo2");
     if(arg0 == NULL || arg1 == NULL)
         return 0;
-    printf("yo3");
     if(equalTargets(arg0->target,arg1->target) && equalModes(arg0->mode,arg1->mode))
         return 1;
-    printf("yo4");
     return 0;
 }
 

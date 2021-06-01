@@ -271,7 +271,7 @@ FUNCTION* makeFUNCTION(char* returnType, char* name, FPARAMETERNODE* args, STMTC
     //Check if all branches of computation ends with a return stmt
     if(allBranchesReturn(fun->body->stmtnode) == 0)
     {
-        printf("ERROR: not all branches of function \"%s\" have a return statement on line: %d",fun->name,fun->lineno);
+        printf("ERROR: not all branches of function \"%s\" have a return statement on line: %d\n",fun->name,fun->lineno);
         exit(0);
     }
     return fun;
