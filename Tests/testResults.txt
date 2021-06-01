@@ -5,6 +5,7 @@ hereERROR: Function does not exist: square on line: 3
 herehere2ERROR: Incompatible type, expected INT, got DOUBLE on line: 1
 herehere2ERROR: Operator '+' not defined for CHAR INT on line: 1
 ERROR: Expected function at line: 2.
+1
 true
 false
 false
@@ -24,6 +25,8 @@ true
 (2^2)*1.5
 3
 3
+3
 2
+3
 3
 120
