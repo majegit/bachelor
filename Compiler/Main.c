@@ -14,7 +14,9 @@ PROGRAM* program;
 int main()
 {
     yyparse();
+    printf("here");
     symbolCollection(program);
+    printf("here2");
     typeChecking(program);
     LL* iCode = icgTraversePROGRAM(program);
     printf("here1");

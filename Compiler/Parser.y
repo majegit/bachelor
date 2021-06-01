@@ -2,9 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef _WIN32
-	#include "Compiler\Tree.h"
+    #include "Compiler\Tree.h"
 #else
-	#include "Tree.h"
+    #include "Tree.h"
 #endif
 
 extern char *yytext;
@@ -12,6 +12,7 @@ extern int lineno;
 extern PROGRAM* program;
 void yyerror (char const *s) {
    printf ("yyerror triggered by: %s, lineno: %d\n", yytext,lineno);
+   exit(0);
 }
 int yylex();
 %}
@@ -133,16 +134,16 @@ stmt : WHILE '(' exp ')' stmtcompound
 ;
 
 stmtcompound : '{' stmtnode '}'
-	       {$$ = makeSTMTCOMP($2);}
+           {$$ = makeSTMTCOMP($2);}
 ;
 
 /*
 stmt_or_stmtcompound : stmtcompound
-		       {$$ = $1;}
-		     | stmt
-		       {STMTNODE* stmtnode = makeSTMTNODE($1, NULL);
-		        $$ = makeSTMTCOMP(stmtnode);}
-		        */
+               {$$ = $1;}
+             | stmt
+               {STMTNODE* stmtnode = makeSTMTNODE($1, NULL);
+                $$ = makeSTMTCOMP(stmtnode);}
+                */
 
 syntactic_sugar : type tIDENTIFIER ASSIGN exp ';'
                   {STMT* stmt1 = makeSTMTvarDecl($1,$2);
@@ -154,45 +155,45 @@ syntactic_sugar : type tIDENTIFIER ASSIGN exp ';'
 ;
 
 stmtnode : stmt
-	   {$$ = makeSTMTNODE($1,NULL);}
-	 | stmt stmtnode
-	   {$$ = makeSTMTNODE($1,$2);}
-	 | syntactic_sugar
-	   {$$ = $1;}
-	 | syntactic_sugar stmtnode
-	   {STMTNODE* curr = $1;
-	    while(curr->next != NULL)
-	    	curr = curr->next;
-	    curr->next = $2;
-	    $$ = $1;}
+       {$$ = makeSTMTNODE($1,NULL);}
+     | stmt stmtnode
+       {$$ = makeSTMTNODE($1,$2);}
+     | syntactic_sugar
+       {$$ = $1;}
+     | syntactic_sugar stmtnode
+       {STMTNODE* curr = $1;
+        while(curr->next != NULL)
+            curr = curr->next;
+        curr->next = $2;
+        $$ = $1;}
 ;
 
 
 
 aparameter : exp
-	     {$$ = makeAPARAMETER($1);}
+         {$$ = makeAPARAMETER($1);}
 ;
 
 aparameternode : aparameter
-		{$$ = makeAPARAMETERNODE($1,NULL);}
-	      | aparameter ',' aparameternode
-	      	{$$ = makeAPARAMETERNODE($1,$3);}
+        {$$ = makeAPARAMETERNODE($1,NULL);}
+          | aparameter ',' aparameternode
+            {$$ = makeAPARAMETERNODE($1,$3);}
 ;
 
 opt_aparameternode :
-		     {$$ = NULL;}
-		   | aparameternode
-		     {$$ = $1;}
+             {$$ = NULL;}
+           | aparameternode
+             {$$ = $1;}
 ;
 
 fparameter : type tIDENTIFIER
-	     {$$ = makeFPARAMETER($1,$2);}
+         {$$ = makeFPARAMETER($1,$2);}
 ;
 
 fparameternode : fparameter
                  {$$ = makeFPARAMETERNODE(NULL,$1);}
-	       | fparameternode ',' fparameter
-	         {$$ = makeFPARAMETERNODE($1,$3);}
+           | fparameternode ',' fparameter
+             {$$ = makeFPARAMETERNODE($1,$3);}
 ;
 
 opt_fparameternode :
@@ -202,7 +203,7 @@ opt_fparameternode :
 ;
 
 functionDecl : type tIDENTIFIER '(' opt_fparameternode ')' stmtcompound
-	   {$$ = makeFUNCTION($1,$2,$4,$6);}
+       {$$ = makeFUNCTION($1,$2,$4,$6);}
 ;
 
 type : BOOLEAN
@@ -216,3 +217,4 @@ type : BOOLEAN
 ;
 
 %%
+
