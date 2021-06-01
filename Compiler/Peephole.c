@@ -2,8 +2,8 @@
 #include "Emit.h"
 #include <stdio.h>
 
-const int pattern_count = 7;
-int (*patterns[7])(LLN*,LLN**) = {pattern0,pattern1,pattern2,pattern3,pattern4,pattern5,pattern6};
+const int pattern_count = 6;
+int (*patterns[6])(LLN*,LLN**) = {pattern0,pattern1,pattern2,pattern3,pattern4,pattern5};
 
 
 void peepholeOptimize(LL* code)
@@ -18,7 +18,7 @@ void peepholeOptimize(LL* code)
         current = code->first;
         while(current != NULL)
         {
-            for(int i = 4; i<pattern_count; ++i)
+            for(int i = 0; i<pattern_count; ++i)
             {
                 change |= (*patterns[i])(previous,&current);
                 if(current == NULL)
@@ -108,12 +108,13 @@ int pattern1(LLN* previous, LLN** current)
 
 //TEMPLATE:
 //MOVQ RBP, RSL
-//MOV<suffix> <TARGET1>, <offset>(RSL)
+//MOV<suffix> <ARG0>, <offset>(RSL)
 //
 //RESULT:
-//MOV<suffix> <TARGET1>, <offset>(RBP)
+//MOV<suffix> <ARG0>, <offset>(RBP)
 int pattern2(LLN* previous, LLN** current)
 {
+
     LLN* c = *current;
     if(!c->next)
         return 0;
@@ -150,64 +151,6 @@ int pattern2(LLN* previous, LLN** current)
     return 0;
 }
 
-//TEMPLATE:
-//ADDQ $0, <OP0>
-//
-//RESULT:
-//
-int pattern3(LLN* previous, LLN** current)
-{
-    INS* ins = (*current)->ins;
-    if(ins->op->opK == add && ins->args[0] != NULL && ins->args[0]->target->targetK == imi && ins->args[0]->target->additionalInfo == 0)
-    {
-        previous->next = (*current)->next;
-        *current = NULL;
-        return 1;
-    }
-    return 0;
-}
-
-//TEMPLATE:
-//MOVQ RBP, RSL
-//MOV<suffix> <ARG0>, <offset>(RSL)
-//
-//RESULT:
-//MOV<suffix> <ARG0>, <offset>(RBP)
-int pattern4(LLN* previous, LLN** current)
-{
-    INS* ins = (*current)->ins;
-    if((*current)->next == NULL)
-        return 0;
-    INS* next = (*current)->next->ins;
-    if(ins->op->opK == move &&
-    ins->op->size == bits_64 &&
-    ins->args[0] != NULL &&
-    ins->args[0]->target->targetK == rbp &&
-    ins->args[0]->mode->mode == dir &&
-    ins->args[1] != NULL &&
-    ins->args[1]->target->targetK == rsl &&
-    ins->args[1]->mode->mode == dir &&
-    next->args[0] != NULL &&
-    next->args[1] != NULL &&
-    next->args[1]->target->targetK == rsl &&
-    next->args[1]->mode->mode == irl)
-    {
-
-        OP* op = next->op;
-        ARG* srcA = next->args[0];
-
-        Target* dest = makeTarget(rbp);
-        ARG* destA = makeARG(dest,next->args[1]->mode);
-
-        ARG* args[2] = {srcA,destA};
-        LLN* newNode = makeLLN(makeINS(op,args));
-        newNode->next = (*current)->next->next;
-        previous->next = newNode;
-        *current = newNode;
-        return 1;
-    }
-    return 0;
-}
 
 //TEMPLATE:
 //MOVQ RBP, RSL
@@ -215,7 +158,7 @@ int pattern4(LLN* previous, LLN** current)
 //
 //RESULT:
 //MOV<suffix> <offset>(RBP), <ARG0>
-int pattern5(LLN* previous, LLN** current)
+int pattern3(LLN* previous, LLN** current)
 {
     INS* ins = (*current)->ins;
     if((*current)->next == NULL)
@@ -254,13 +197,32 @@ int pattern5(LLN* previous, LLN** current)
     return 0;
 }
 
+//TEMPLATE:
+//PUSH $0
+//POP
+//ADDQ $0, <OP0>
+//
+//RESULT:
+//
+int pattern4(LLN* previous, LLN** current)
+{
+    INS* ins = (*current)->ins;
+    if(ins->op->opK == add && ins->args[0] != NULL && ins->args[0]->target->targetK == imi && ins->args[0]->target->additionalInfo == 0)
+    {
+        previous->next = (*current)->next;
+        *current = NULL;
+        return 1;
+    }
+    return 0;
+}
+
 
 //TEMPLATE:
 //MOV<suffix> <REG0> <REG0>
 //
 //RESULT:
 //
-int pattern6(LLN* previous, LLN** current)
+int pattern5(LLN* previous, LLN** current)
 {
     INS* ins = (*current)->ins;
     if(ins->op->opK == move &&

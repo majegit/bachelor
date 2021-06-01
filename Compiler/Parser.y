@@ -82,7 +82,7 @@ exp : tIDENTIFIER
     | tBOOLEAN
       {$$ = makeEXPbool($1);}
     | '\'' tIDENTIFIER '\''
-      {$$ = makeEXPchar(* $2);}
+      {$$ = makeEXPchar($2);}
     | '(' exp ')'
       {$$ = $2;}
     | exp '-' exp

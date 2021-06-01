@@ -1375,7 +1375,7 @@ yyreduce:
 
   case 10: /* exp: '\'' tIDENTIFIER '\''  */
 #line 85 "Compiler\\Parser.y"
-      {(yyval.exp) = makeEXPchar(* (yyvsp[-1].stringconst));}
+      {(yyval.exp) = makeEXPchar((yyvsp[-1].stringconst));}
 #line 1380 "y.tab.c"
     break;
 

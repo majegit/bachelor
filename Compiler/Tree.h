@@ -17,7 +17,7 @@ typedef struct EXP {
 } EXP;
 
 EXP* makeEXPid(char* id);
-EXP* makeEXPchar(char charval);
+EXP* makeEXPchar(char* charval);
 EXP* makeEXPint(int intval);
 EXP* makeEXPbool(int boolval);
 EXP* makeEXPdouble(double doubleval);

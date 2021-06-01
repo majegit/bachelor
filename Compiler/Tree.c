@@ -16,13 +16,18 @@ EXP* makeEXPid(char* id)
     return e;
 }
 
-EXP* makeEXPchar(char charval)
+EXP* makeEXPchar(char* charval)
 {
     EXP* e;
     e = (EXP* )malloc(sizeof(EXP));
     e->lineno = lineno;
     e->kind = charK;
-    e->val.charE = charval;
+    e->val.charE = charval[0];
+    if(charval[1] != '\0') //A char that is longer than 1 is illegal.
+    {
+        printf("ERROR: this is not a character: '%s' on line: %d\n",charval,lineno);
+        exit(0);
+    }
     e->type = "CHAR";
     return e;
 }
