@@ -39,7 +39,6 @@ LL* icgTraversePROGRAM(PROGRAM* prog)
         cNode = cNode->next;
     }
 
-    printf("beforea");
     return code;
 }
 
