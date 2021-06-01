@@ -44,11 +44,11 @@ int yylex();
 
 %start program
 
+%left AND
+%left OR
+%left L G LEQ GEQ EQ NEQ
 %left '+' '-'
 %left '*' '/'
-%left L G LEQ GEQ EQ NEQ
-%left OR
-%left AND
 
 %type <stringconst> type
 %type <program> program
