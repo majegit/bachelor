@@ -89,7 +89,6 @@ int pattern1(LLN* previous, LLN** current)
         ins1->args[1] != NULL &&
         ins1->args[1]->mode->mode == dir)
     {
-        printf("1\n");
         OP* op = makeOP(move, ins1->op->size);
         Target* src = makeTarget(rbp);
         ARG* srcA = makeARG(src,makeModeIRL(ins1->args[0]->mode->offset));

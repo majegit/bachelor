@@ -14,14 +14,10 @@ PROGRAM* program;
 int main()
 {
     yyparse();
-    printf("here");
     symbolCollection(program);
-    printf("here2");
     typeChecking(program);
     LL* iCode = icgTraversePROGRAM(program);
-    printf("here1");
     peepholeOptimize(iCode);
-    printf("here");
     emit(iCode,"asmCode.s");
 
     return 0;
