@@ -18,6 +18,7 @@ int pattern5(LLN* previous, LLN** current);
 int pattern6(LLN* previous, LLN** current);
 
 int equalModes(Mode* m0, Mode* m1);
+int equalLabels(char* str0, char *str1);
 int equalTargets(Target* t0, Target* t1);
 int equalArgs(ARG* arg0, ARG* arg1);
 int memRefs(ARG* src, ARG* dest);

@@ -1,6 +1,6 @@
 int simple()
 {
-    if()
+    if(true)
     {
         return 3;
     }

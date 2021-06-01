@@ -39,6 +39,7 @@ LL* icgTraversePROGRAM(PROGRAM* prog)
         cNode = cNode->next;
     }
 
+    printf("beforea");
     return code;
 }
 
@@ -117,7 +118,7 @@ void icgTraverseSTMT(STMT* s)
             quickLabelString(if_label, labelName);          //if_X:
             icgTraverseEXP(s->val.ifElseS.cond);                    //Guard
             quickPopRRT(bits_8);                             //Move boolean to rrt
-            quickCheckTruthValue();                              //cmp rrt, $1
+            quickCheckTruthValue();                              //cmp $1   , rrt
             labelName = concatStr("end",labelName);             //Generate endif_X label
             quickJumpIfFalse(endif_label,labelName);          //jne endif_X
             icgTraverseSTMTCOMP(s->val.ifElseS.ifbody);             //if-body
@@ -139,7 +140,11 @@ void icgTraverseSTMT(STMT* s)
         case returnK:
         {
             icgTraverseEXP(s->val.returnS);
-            SYMBOL* funSymbol = lookupSymbolFunName(currentFunction->name, currentScope);
+
+            //This needs to be reimplemented, functions should have a SYMBOL *symbol in their struct,
+            //so we dont need to have this crazy lookup, but instead should be able to write:
+            //SYMBOL* funSymbol = s->val.returnS.function->symbol;
+            SYMBOL* funSymbol = lookupSymbolFunName(currentFunction->name,currentFunction->body->symbolTable->par);
 
             quickMoveRBPToRSL();
             for (int i = 0; i < depth; i++)
@@ -153,7 +158,7 @@ void icgTraverseSTMT(STMT* s)
         case printK:
         {
             opSuffix typeSize = getSuffixOfType(s->val.printS->type);
-            icgTraverseEXP(s->val.printS);  //TODO: DOUBLES
+            icgTraverseEXP(s->val.printS);
 
             char* printFun = concatStr("print",s->val.printS->type);
             if(strcmp(s->val.printS->type,"BOOLEAN") == 0)
@@ -257,7 +262,6 @@ void icgTraverseEXP(EXP* e)
                 quickBooleanINS(and);
             else if (strcmp(op,"OR") == 0)
                 quickBooleanINS(or);
-
             break;
         }
         case funK:
@@ -357,7 +361,7 @@ void icgTraverseFUNCTION(FUNCTION* f)
     depth = 0;
     currentFunction = f;
 
-    char* funLabel = lookupSymbolFunName(f->name,f->body->symbolTable->par)->label;//funLabel = funX_<function name>
+    char* funLabel = lookupSymbolFunName(f->name,currentScope)->label;//funLabel = funX_<function name>
     quickMetaString(FUNCTION_DECLARATION,funLabel); //.type funX_<function name>, @function
     quickLabelString(function_label,funLabel);       //funX_<function name>
     currentScope = f->body->symbolTable;                     //update currentScope
@@ -410,6 +414,7 @@ Target* makeTarget(targetKind k)
 {
     Target* t = (Target*)malloc(sizeof(Target));
     t->targetK = k;
+    t->labelName = NULL;
     return t;
 }
 
@@ -528,14 +533,6 @@ void quickPush(opSuffix size, Target* target, Mode* mode)
     ARG* arg = makeARG(target, mode);
     ARG* args[2] = {arg,NULL};
     OP* op = makeOP(push,size);
-    quickIns(makeINS(op, args));
-}
-
-void quickPop(Target* t, Mode* m)
-{
-    ARG* arg = makeARG(t, m);
-    ARG* args[2] = {arg, NULL};
-    OP* op = makeOP(pop,bits_64);
     quickIns(makeINS(op, args));
 }
 
@@ -888,12 +885,6 @@ opSuffix getSuffixOfType(char* typeName)
     if (strcmp(typeName, "CHAR") == 0)
         return bits_8;
     return 0;
-}
-
-opSuffix getSizeOfId(char* idName)
-{
-    SYMBOL* id = lookupSymbolVarName(idName,currentScope);
-    return getSuffixOfType(id->type);
 }
 
 opKind translateCMPtoCMPSD(opKind k)

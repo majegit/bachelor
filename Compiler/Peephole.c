@@ -5,14 +5,13 @@
 const int pattern_count = 7;
 int (*patterns[7])(LLN*,LLN**) = {pattern0,pattern1,pattern2,pattern3,pattern4,pattern5,pattern6};
 
-FILE* fp;
 
 void peepholeOptimize(LL* code)
 {
-    fp = stdout;
     LLN* previous;
     LLN* current;
     int change = 1;
+    printf("here");
     while(change)
     {
         change = 0;
@@ -22,6 +21,7 @@ void peepholeOptimize(LL* code)
         {
             for(int i = 4; i<pattern_count; ++i)
             {
+                printf("i: %d\n",i);
                 change |= (*patterns[i])(previous,&current);
                 if(current == NULL)
                     break; //Break out of for loop
@@ -31,7 +31,7 @@ void peepholeOptimize(LL* code)
                 current = current->next;
         }
     }
-    fclose(fp);
+    printf("here");
 }
 
 //TEMPLATE:
@@ -229,26 +229,8 @@ int pattern5(LLN* previous, LLN** current)
     if((*current)->next == NULL)
         return 0;
 
-
     INS* next = (*current)->next->ins;
-    convertInsToAsm(ins);
-    convertInsToAsm(next);
-    printf("HERE:::\n");
-//sleep(3);
-    if(ins->op->opK == move &&
-    ins->op->size == bits_64 &&
-       ins->args[0] != NULL &&
-       ins->args[0]->target->targetK == rbp &&
-       ins->args[0]->mode->mode == dir &&
-       ins->args[1] != NULL &&
-       ins->args[1]->target->targetK == rsl &&
-       ins->args[1]->mode->mode == dir)
-        printf("PART 1 true\n");
 
-    if(next->args[0] != NULL &&
-       next->args[1] != NULL &&
-       next->args[0]->target->targetK == rsl)
-        printf("PART 2 true\n");
     if(ins->op->opK == move &&
        ins->op->size == bits_64 &&
        ins->args[0] != NULL &&
@@ -313,6 +295,17 @@ int equalModes(Mode* m0, Mode* m1)
     return 0;
 }
 
+int equalLabels(char* str0, char* str1)
+{
+    if(str0 == NULL && str1 == NULL)
+        return 1;
+    if(str0 == NULL || str1 == NULL)
+        return 0;
+    if(strcmp(str0,str1) == 0)
+        return 1;
+    return 0;
+}
+
 int equalTargets(Target* t0, Target* t1)
 {
     if(t0 == NULL && t1 == NULL)
@@ -321,7 +314,7 @@ int equalTargets(Target* t0, Target* t1)
         return 0;
     if(t0->targetK == t1->targetK
         && t0->additionalInfo == t1->additionalInfo
-        && strcmp(t0->labelName,t1->labelName) == 0
+        && equalLabels(t0->labelName,t1->labelName)
         && t0->labelK == t1->labelK)
         return 1;
     return 0;
@@ -329,12 +322,16 @@ int equalTargets(Target* t0, Target* t1)
 
 int equalArgs(ARG* arg0, ARG* arg1)
 {
+    printf("yo");
     if(arg0 == NULL && arg1 == NULL)
         return 1;
+    printf("yo2");
     if(arg0 == NULL || arg1 == NULL)
         return 0;
+    printf("yo3");
     if(equalTargets(arg0->target,arg1->target) && equalModes(arg0->mode,arg1->mode))
         return 1;
+    printf("yo4");
     return 0;
 }
 

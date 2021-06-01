@@ -55,8 +55,6 @@ void emit(LL* code, const char* outputFileName)
         fputs(printDOUBLE,fp);
     if(code->pFlagBOOLEAN || code->pFlagCHAR || code->pFlagINT || code->pFlagDOUBLE)
         fputs(printNewline,fp);
-
-    printf("closing file\n");
     fclose(fp);
 }
 

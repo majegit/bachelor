@@ -187,10 +187,6 @@ INS* makeINS(OP* op, ARG** args);
 LLN* makeLLN(INS* ins);
 
 
-
-
-
-
 //Quick Add Functions
 void quickIns(INS* ins);
 void quickMeta(metaKind kind);
@@ -202,7 +198,6 @@ void quickPush(opSuffix size, Target* target, Mode* mode);
 void quickPushId(SYMBOL* s);
 void quickPopRRT(opSuffix size);
 void quickPopReg(char* type, int registerNumber);
-void quickPop(Target* t, Mode* m);
 void quickMoveRBPToRSL();
 void quickMoveRSLToRBP();
 void quickCheckTruthValue();
@@ -226,16 +221,11 @@ void quickPushDoubleLabel(char* label);
 char* labelGenerator(labelKind kind);
 char* doubleLabelGenerator(double val);
 opSuffix getSuffixOfType(char* typeName);
-opSuffix getSizeOfId(char* idName);
 int getIntFromSuffix(opSuffix size);
 int getSizeOfParameters(FPARAMETERNODE* fpn);
 opKind translateCMPtoCMPSD(opKind kind);
 
 
-//Check if an operator is a compare/arithmetic/boolean operator
-int isCompareOp(char* operator);
-int isArithmeticOp(char* operator);
-int isBooleanOp(char* operator);
 
 
 #endif

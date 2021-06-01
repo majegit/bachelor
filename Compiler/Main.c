@@ -17,7 +17,9 @@ int main()
     symbolCollection(program);
     typeChecking(program);
     LL* iCode = icgTraversePROGRAM(program);
+    printf("here1");
     peepholeOptimize(iCode);
+    printf("here");
     emit(iCode,"asmCode.s");
 
     return 0;
