@@ -61,20 +61,14 @@ typedef enum targetKind {
 } targetKind;
 
 typedef enum metaKind {
-    PROGRAM_PROLOGUE,           //0
+    PROGRAM_PROLOGUE,
     PROGRAM_EPILOGUE,
-    MAIN_CALLEE_SAVE,
-    MAIN_CALLEE_RESTORE,
     FUNCTION_DECLARATION,
-    CALLEE_SAVE,                //5
+    DOUBLE_DECLARATION,
+    CALLEE_SAVE,
     CALLEE_RESTORE,
-    CALLEE_EPILOGUE,
     CALLER_SAVE,
     CALLER_RESTORE,
-    ALLOCATE_STACK_SPACE,       //10
-    DEALLOCATE_STACK_SPACE,
-    FOLLOW_STATIC_LINK,
-    DOUBLE_DECLARATION,         //13
 } metaKind;
 
 typedef enum labelKind {
@@ -215,6 +209,13 @@ void quickPushRBP();
 void quickIncrementScopeOneLevel();
 void quickPushRRT(opSuffix suffix);
 void quickPushDoubleLabel(char* label);
+void quickReturn();
+void quickFollowStaticLink();
+void quickMoveRSPToRBP();
+void quickSubFromRSP(int stackSpace);
+void quickAllocateStackSpace(int stackSpace);
+void quickDeallocateStackSpace(int stackSpace);
+void quickAddToRSP(int stackSpace);
 
 
 //Other

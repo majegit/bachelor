@@ -17,10 +17,10 @@ LL* icgTraversePROGRAM(PROGRAM* prog)
     currentScope = prog->sc->symbolTable;                          //Update pointer to global scope
     quickMeta(PROGRAM_PROLOGUE);
 
-    int globalStackSpace = currentScope->nextVariableLabel;              //Stack space needed in global scope
-    quickMetaWithInfo(ALLOCATE_STACK_SPACE, globalStackSpace);   //Push rbp and allocate stack space
-    icgTraverseSTMTNODE(prog->sc->stmtnode);
+    int globalStackSpace = currentScope->nextVariableLabel;        //Stack space needed in global scope
+    quickAllocateStackSpace(globalStackSpace);                     //Allocate stack space
 
+    icgTraverseSTMTNODE(prog->sc->stmtnode);
     quickMeta(PROGRAM_EPILOGUE);
 
     LLNFUN* currentNode = funs->first;
@@ -55,13 +55,13 @@ void icgTraverseSTMTCOMP(STMTCOMP* sc)
     depth++;
     currentScope = sc->symbolTable;
 
-    int compStackSpace = currentScope->nextVariableLabel;  //Stack space needed for local variables
-    quickMetaWithInfo(ALLOCATE_STACK_SPACE, compStackSpace);   //Push rbp and allocate stack space
+    int compStackSpace = currentScope->nextVariableLabel;   //Stack space needed for local variables
+    quickAllocateStackSpace(compStackSpace);                //Push rbp and allocate
     icgTraverseSTMTNODE(sc->stmtnode);
-    quickMetaWithInfo(DEALLOCATE_STACK_SPACE, -1*compStackSpace); //Deallocate stack space and pop rbp
+    quickDeallocateStackSpace(compStackSpace);              //Deallocate stack space and pop rbp
 
     depth--;
-    currentScope = sc->symbolTable->par;                           //Update pointer to current scope
+    currentScope = sc->symbolTable->par;                    //Update pointer to current scope
 }
 
 void icgTraverseSTMT(STMT* s)
@@ -80,7 +80,7 @@ void icgTraverseSTMT(STMT* s)
             quickJumpIfFalse(endwhile_label,endlabelName);     //jne endwhile_X
             icgTraverseSTMTCOMP(s->val.whileS.body);              //generate the code for the body of the whileloop
             quickUnconditionalJmp(while_label,labelName);      //Jmp while_X
-            quickLabelString(endwhile_label, endlabelName); //endwhile_X:
+            quickLabelString(endwhile_label, endlabelName);  //endwhile_X:
             break;
         }
         case assignK:
@@ -98,7 +98,7 @@ void icgTraverseSTMT(STMT* s)
 
             quickMoveRBPToRSL();
             for(int i=0; i < varDepth; i++)
-                quickMeta(FOLLOW_STATIC_LINK);
+                quickFollowStaticLink();
 
             op = makeOP(move,getSuffixOfType(e->type));
             src = makeTarget(rrt);
@@ -148,7 +148,7 @@ void icgTraverseSTMT(STMT* s)
 
             quickMoveRBPToRSL();
             for (int i = 0; i < depth; i++)
-                quickMeta(FOLLOW_STATIC_LINK);
+                quickFollowStaticLink();
             quickMoveRSLToRBP();
 
             char *endLabel = concatStr("end", funSymbol->label);
@@ -369,13 +369,14 @@ void icgTraverseFUNCTION(FUNCTION* f)
     depth = 0;
     currentFunction = f;
 
-    char* funLabel = lookupSymbolFunName(f->name,currentScope)->label;//funLabel = funX_<function name>
+    SYMBOLTABLE* functionScope = f->body->symbolTable->par;
+    char* funLabel = lookupSymbolFunName(f->name,functionScope)->label;//funLabel = funX_<function name>
+
     quickMetaString(FUNCTION_DECLARATION,funLabel); //.type funX_<function name>, @function
     quickLabelString(function_label,funLabel);       //funX_<function name>
     currentScope = f->body->symbolTable;                     //update currentScope
     int stackSpace = currentScope->nextVariableLabel;
-
-    quickMetaWithInfo(ALLOCATE_STACK_SPACE,stackSpace);
+    quickAllocateStackSpace(stackSpace);
     quickMeta(CALLEE_SAVE);                          //Push callee save registers
 
     icgTraverseSTMTNODE(f->body->stmtnode);                  //Traverse contents of function
@@ -386,7 +387,7 @@ void icgTraverseFUNCTION(FUNCTION* f)
     quickMoveRBPToRSP();
     quickPopRBP();
     quickMeta(CALLEE_RESTORE);                       //Pop callee save registers
-    quickMeta(CALLEE_EPILOGUE);                      //ret
+    quickReturn();
 
     currentFunction = NULL;
     depth = 0;
@@ -552,7 +553,7 @@ void quickPushId(SYMBOL* s)
 
     quickMoveRBPToRSL();
     for(int i=0; i < varDepth; i++)
-        quickMeta(FOLLOW_STATIC_LINK);
+        quickFollowStaticLink();
 
     Target* t = makeTarget(rsl);
     Mode* m = makeModeIRL(varOffset);
@@ -767,6 +768,7 @@ void quickPushRBP()
     ARG* args[2] = {destA, NULL};
     quickIns(makeINS(op,args));
 }
+
 void quickIncrementScopeOneLevel()
 {
     OP* op = makeOP(move, bits_64);
@@ -777,6 +779,7 @@ void quickIncrementScopeOneLevel()
     ARG* args[2] = {srcA, destA};
     quickIns(makeINS(op,args));
 }
+
 void quickPushRRT(opSuffix suffix)
 {
     OP* op = makeOP(push, suffix);
@@ -792,6 +795,70 @@ void quickPushDoubleLabel(char* label)
     ARG* arg = makeARG(t,makeMode(dir));
     OP* op = makeOP(push, bits_64_d);
     ARG* args[2] = {arg, NULL};
+    quickIns(makeINS(op,args));
+}
+
+void quickReturn()
+{
+    OP* op = makeOP(ret, bits_64);
+    ARG* args[2] = {NULL, NULL};
+    quickIns(makeINS(op,args));
+}
+
+void quickFollowStaticLink()
+{
+    OP* op = makeOP(move,bits_64);
+    Target* src = makeTarget(rsl);
+    ARG* srcA = makeARG(src,makeMode(ind));
+    Target* dest = makeTarget(rsl);
+    ARG* destA = makeARG(dest,makeMode(dir));
+    ARG* args[2] = {srcA,destA};
+    quickIns(makeINS(op,args));
+}
+
+void quickMoveRSPToRBP()
+{
+    OP* op = makeOP(move, bits_64);
+    Target* src = makeTarget(rsp);
+    ARG* srcA = makeARG(src,makeMode(dir));
+    Target* dest = makeTarget(rbp);
+    ARG* destA = makeARG(dest,makeMode(dir));
+    ARG* args[2] = {srcA, destA};
+    quickIns(makeINS(op,args));
+}
+
+void quickSubFromRSP(int stackSpace)
+{
+    OP* op = makeOP(sub,bits_64);
+    Target* src = makeTargetIMI(stackSpace);
+    ARG* srcA = makeARG(src,makeMode(dir));
+    Target* dest = makeTarget(rsp);
+    ARG* destA = makeARG(dest,makeMode(dir));
+    ARG* args[2] = {srcA,destA};
+    quickIns(makeINS(op,args));
+}
+
+void quickAllocateStackSpace(int stackSpace)
+{
+    quickPushRBP();
+    quickMoveRSPToRBP();
+    quickAddToRSP(stackSpace);
+}
+
+void quickDeallocateStackSpace(int stackSpace)
+{
+    quickSubFromRSP(stackSpace);
+    quickPopRBP();
+}
+
+void quickAddToRSP(int stackSpace)
+{
+    OP* op = makeOP(add,bits_64);
+    Target* src = makeTargetIMI(stackSpace);
+    ARG* srcA = makeARG(src,makeMode(dir));
+    Target* dest = makeTarget(rsp);
+    ARG* destA = makeARG(dest,makeMode(dir));
+    ARG* args[2] = {srcA,destA};
     quickIns(makeINS(op,args));
 }
 

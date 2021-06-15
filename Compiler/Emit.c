@@ -21,16 +21,12 @@ const char* suffixModifier2[] = {"1","4","8","8"};
 
 const char* program_prologue = ".section .data\n.section .text\n.global _start\n_start:\n";
 const char* program_epilogue = "    movq %rax, %rdi\n    movq $60, %rax\n    syscall\n\n";
-const char* main_callee_save = "";
-const char* main_callee_restore = "";
 //There is a function handling FUNCTION_DECLARATION metakind
+//There is a function handling DOUBLE_DECLARATION metakind
 const char* callee_save = "";
 const char* callee_restore = "";
-const char* callee_epilogue = "ret\n";
 const char* caller_save = "";
 const char* caller_restore = "";
-const char* follow_static_link = "movq (%rdi), %rdi\n";
-//There is a function handling DOUBLE_DECLARATION metakind
 
 FILE* fp;
 
@@ -245,14 +241,17 @@ char* convertInsToAsm(INS* ins)
             fputs("\n",fp);
             break;
         }
+        case ret:
+        {
+            fputs(indentation,fp);
+            fputs("ret\n",fp);
+            break;
+        }
         case cmp:
         {
             fputs(indentation,fp);
             if(ins->op->size == bits_64_d)
-            {
                 fputs("comisd ",fp);
-                //if(ins->op->opK == )
-            }
             else
                 fputs("cmp ",fp);
             fputARG(ins->args[0],ins->op->size);
@@ -398,18 +397,16 @@ void fputMeta(INS* ins) {
             fputs(program_epilogue, fp);
             break;
         }
-        case MAIN_CALLEE_SAVE: {
-            fputs(main_callee_save, fp);
-            break;
-        }
-        case MAIN_CALLEE_RESTORE: {
-            fputs(main_callee_restore, fp);
-            break;
-        }
         case FUNCTION_DECLARATION: {
             fputs("\n.type ", fp);
             fputs(ins->op->metaString, fp);
             fputs(", @function\n", fp);
+            break;
+        }
+        case DOUBLE_DECLARATION: {
+            fputs(ins->op->metaString, fp);
+            fputs(":\n", fp);
+            putLongsFromDouble(ins->op->metaDouble);
             break;
         }
         case CALLEE_SAVE: {
@@ -420,54 +417,12 @@ void fputMeta(INS* ins) {
             fputs(callee_restore, fp);
             break;
         }
-        case CALLEE_EPILOGUE: {
-            fputs(callee_epilogue, fp);
-            break;
-        }
         case CALLER_SAVE: {
             fputs(caller_save, fp);
             break;
         }
         case CALLER_RESTORE: {
             fputs(caller_restore, fp);
-            break;
-        }
-        case ALLOCATE_STACK_SPACE: {
-            char stackSpace[20];
-            fputs(indentation, fp);
-            fputs("push %rbp\t #ALLOCATE STACK SPACE\n", fp);
-
-            fputs(indentation, fp);
-            fputs("movq %rsp, %rbp\n", fp);
-
-            sprintf(stackSpace, "%d", ins->op->metaInt);
-            fputs(indentation, fp);
-            fputs("addq $", fp);
-            fputs(stackSpace, fp);
-            fputs(", %rsp\n", fp);
-            break;
-        }
-        case DEALLOCATE_STACK_SPACE: {
-            char stackSpace[20];
-            sprintf(stackSpace, "%d", ins->op->metaInt);
-            fputs(indentation, fp);
-            fputs("addq $", fp);
-            fputs(stackSpace, fp);
-            fputs(", %rsp\n", fp);
-
-            fputs(indentation, fp);
-            fputs("pop %rbp\n", fp);
-            break;
-        }
-        case FOLLOW_STATIC_LINK: {
-            fputs(indentation, fp);
-            fputs(follow_static_link, fp);
-            break;
-        }
-        case DOUBLE_DECLARATION: {
-            fputs(ins->op->metaString, fp);
-            fputs(":\n", fp);
-            putLongsFromDouble(ins->op->metaDouble);
             break;
         }
     }

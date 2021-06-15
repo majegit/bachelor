@@ -181,7 +181,6 @@ int pattern3(LLN* previous, LLN** current)
        next->args[0]->target->targetK == rsl &&
        next->args[0]->mode->mode == irl)
     {
-
         OP* op = next->op;
 
         Target* src = makeTarget(rbp);
@@ -267,7 +266,6 @@ int pattern6(LLN* previous, LLN** current)
        next->args[0]->target->targetK == rsl &&
        next->args[0]->mode->mode == irl)
     {
-
         OP* op = makeOP(push, next->op->size);
         Target* dest = makeTarget(rbp);
         ARG* destA = makeARG(dest,makeModeIRL(next->args[0]->mode->offset));
@@ -282,6 +280,7 @@ int pattern6(LLN* previous, LLN** current)
     }
     return 0;
 }
+
 
 int equalModes(Mode* m0, Mode* m1)
 {

@@ -1,0 +1,26 @@
+.section .data
+.section .text
+.global _start
+_start:
+    push %rbp
+    movq %rsp, %rbp
+    addq $-4, %rsp
+
+    subq $4, %rsp       #Push 3
+    movl $3, %eax
+    movl %eax, (%rsp)
+
+    movl $4, %ecx       #Push 4 ^ Pop %ecx -> movl 4 %ecx
+
+    movl (%rsp), %ebx   #Pop 3
+    addq $4, %rsp
+
+    addl %ecx, %ebx     #4 + 3 saved in ebx
+
+    movl %ebx, %eax     #Push ebx ^ Pop eax -> movl ebx eax
+
+    movl %eax, -4(%rbp) #No link computation
+
+    movq %rax, %rdi
+    movq $60, %rax
+    syscall

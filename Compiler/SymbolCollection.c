@@ -63,6 +63,7 @@ void scTraverseSTMT(STMT* s, SYMBOLTABLE* st)
         {
             SYMBOL* newSymbol = makeSYMBOLfunction(s->val.funDeclS->name,s->val.funDeclS->returnType,s->val.funDeclS->args);
             addSymbol(newSymbol,st);
+
             scTraverseFUNCTION(s->val.funDeclS,st);
             break;
         }
