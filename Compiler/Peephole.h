@@ -14,8 +14,6 @@ int pattern1(LLN* previous, LLN** current);
 int pattern2(LLN* previous, LLN** current);
 int pattern3(LLN* previous, LLN** current);
 int pattern4(LLN* previous, LLN** current);
-int pattern5(LLN* previous, LLN** current);
-int pattern6(LLN* previous, LLN** current);
 
 int equalModes(Mode* m0, Mode* m1);
 int equalLabels(char* str0, char *str1);

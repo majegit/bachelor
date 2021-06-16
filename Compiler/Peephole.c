@@ -1,9 +1,10 @@
 #include "Peephole.h"
 #include "Emit.h"
 #include <stdio.h>
+#include <stdlib.h>
 
-const int pattern_count = 7;
-int (*patterns[7])(LLN*,LLN**) = {pattern0,pattern1,pattern2,pattern3,pattern4,pattern5,pattern6};
+const int pattern_count = 5;
+int (*patterns[5])(LLN*,LLN**) = {pattern0,pattern1,pattern2,pattern3,pattern4};
 
 
 void peepholeOptimize(LL* code)
@@ -64,58 +65,11 @@ int pattern0(LLN* previous, LLN** current)
 
 //TEMPLATE:
 //MOVQ RBP, RSL
-//MOV<suffix> <offset>(RSL), <TARGET1>
-//
-//RESULT:
-//MOV<suffix> <offset>(RBP), <TARGET1>
-int pattern1(LLN* previous, LLN** current)
-{
-
-    LLN* c = *current;
-    if(!c->next)
-        return 0;
-    INS* ins0 = c->ins;
-    INS* ins1 = c->next->ins;
-
-    if (ins0->op->opK == move &&
-        ins0->op->size == bits_64 &&
-        ins0->args[0] != NULL &&
-        ins0->args[0]->target->targetK == rbp &&
-        ins0->args[0]->mode->mode == dir &&
-        ins0->args[1] != NULL &&
-        ins0->args[1]->target->targetK == rsl &&
-        ins0->args[1]->mode->mode == dir &&
-        ins1->op->opK == move &&
-        ins1->args[0] != NULL &&
-        ins1->args[0]->target->targetK == rsl &&
-        ins1->args[0]->mode->mode == irl &&
-        ins1->args[1] != NULL &&
-        ins1->args[1]->mode->mode == dir)
-    {
-        OP* op = makeOP(move, ins1->op->size);
-        Target* src = makeTarget(rbp);
-        ARG* srcA = makeARG(src,makeModeIRL(ins1->args[0]->mode->offset));
-        Target* dest = makeTarget(ins1->args[1]->target->targetK);
-        dest->additionalInfo = ins1->args[1]->target->additionalInfo;
-        ARG* destA = makeARG(dest,makeMode(dir));
-        ARG* args[2] = {srcA,destA};
-        INS* newINS = makeINS(op,args);
-        LLN* newLLN = makeLLN(newINS);
-        previous->next = newLLN;
-        newLLN->next = (*current)->next->next;
-        *current = newLLN;
-        return 1;
-    }
-    return 0;
-}
-
-//TEMPLATE:
-//MOVQ RBP, RSL
 //MOV<suffix> <ARG0>, <offset>(RSL)
 //
 //RESULT:
 //MOV<suffix> <ARG0>, <offset>(RBP)
-int pattern2(LLN* previous, LLN** current)
+int pattern1(LLN* previous, LLN** current)
 {
     LLN* c = *current;
     if(!c->next)
@@ -153,57 +107,12 @@ int pattern2(LLN* previous, LLN** current)
     return 0;
 }
 
-
-//TEMPLATE:
-//MOVQ RBP, RSL
-//MOV<suffix> <offset>(RSL), <ARG0>
-//
-//RESULT:
-//MOV<suffix> <offset>(RBP), <ARG0>
-int pattern3(LLN* previous, LLN** current)
-{
-
-    INS* ins = (*current)->ins;
-    if((*current)->next == NULL)
-        return 0;
-    INS* next = (*current)->next->ins;
-
-    if(ins->op->opK == move &&
-       ins->op->size == bits_64 &&
-       ins->args[0] != NULL &&
-       ins->args[0]->target->targetK == rbp &&
-       ins->args[0]->mode->mode == dir &&
-       ins->args[1] != NULL &&
-       ins->args[1]->target->targetK == rsl &&
-       ins->args[1]->mode->mode == dir &&
-       next->args[0] != NULL &&
-       next->args[1] != NULL &&
-       next->args[0]->target->targetK == rsl &&
-       next->args[0]->mode->mode == irl)
-    {
-        OP* op = next->op;
-
-        Target* src = makeTarget(rbp);
-        ARG* srcA = makeARG(src,next->args[0]->mode);
-
-        ARG* destA = next->args[1];
-
-        ARG* args[2] = {srcA,destA};
-        LLN* newNode = makeLLN(makeINS(op,args));
-        newNode->next = (*current)->next->next;
-        previous->next = newNode;
-        *current = newNode;
-        return 1;
-    }
-    return 0;
-}
-
 //TEMPLATE:
 //ADDQ $0, <OP0>
 //
 //RESULT:
 //
-int pattern4(LLN* previous, LLN** current)
+int pattern2(LLN* previous, LLN** current)
 {
     INS* ins = (*current)->ins;
     if(ins->op->opK == add &&
@@ -218,14 +127,13 @@ int pattern4(LLN* previous, LLN** current)
     return 0;
 }
 
-
 //Note, this happens a lot because of emit, so in most cases it is undetectable in peephole
 //TEMPLATE:
 //MOV<suffix> <REG0> <REG0>
 //
 //RESULT:
 //
-int pattern5(LLN* previous, LLN** current)
+int pattern3(LLN* previous, LLN** current)
 {
 
     INS* ins = (*current)->ins;
@@ -246,7 +154,7 @@ int pattern5(LLN* previous, LLN** current)
 //
 //RESULT:
 //PUSH <offset>(RBP)
-int pattern6(LLN* previous, LLN** current)
+int pattern4(LLN* previous, LLN** current)
 {
     INS* ins = (*current)->ins;
     if((*current)->next == NULL)
@@ -280,7 +188,6 @@ int pattern6(LLN* previous, LLN** current)
     }
     return 0;
 }
-
 
 int equalModes(Mode* m0, Mode* m1)
 {
